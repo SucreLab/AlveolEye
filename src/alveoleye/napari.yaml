@@ -1,0 +1,38 @@
+name: AlveolEye
+display_name: AlveolEye
+contributions:
+  commands:
+    - id: AlveolEye.get_reader
+      python_name: alveoleye._reader:napari_get_reader
+      title: Open data with AlveolEye
+    - id: AlveolEye.write_mlultiple
+      python_name: alveoleye._writer:write_multiple
+      title: Save multi-layer data with AlveolEye
+    - id: AlveolEye.write_single_image
+      python_name: alveoleye._writer:write_single_image
+      title: Save image data with AlveolEye
+    - id: AlveolEye.make_sample_data
+      python_name: alveoleye._sample_data:make_sample_data
+      title: Load sample data from AlveolEye
+    - id: AlveolEye.make_qwidget
+      python_name: alveoleye._widget:WidgetMain
+      title: Make example QWidget
+  readers:
+    - command: AlveolEye.get_reader
+      accepts_directories: false
+      filename_patterns: [".jpeg", ".jpg", ".png", ".tif", ".tiff"]
+  writers:
+    - command: AlveolEye.write_multiple
+      layer_types: ['image*','labels*']
+      filename_extensions: []
+    - command: AlveolEye.write_single_image
+      layer_types: ['labels+']
+      filename_extensions: ['.npy']
+  sample_data:
+    - command: AlveolEye.make_sample_data
+      display_name: AlveolEye
+      key: unique_id.1
+  widgets:
+    - command: AlveolEye.make_qwidget
+      display_name: AlveolEye
+

@@ -1,0 +1,17 @@
+name: AlveolEye
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python>=3.10
+  - torchvision>=0.16.2
+  - napari
+  - qtpy
+  - pytorch
+  - pillow
+  - pip
+  - pip:
+      - pycocotools
+      - opencv-python-headless
+

@@ -1,0 +1,76 @@
+QGroupBox:enabled {
+    color: rgba(240, 241, 242, 1.0);
+}
+
+QGroupBox:disabled {
+    color: rgba(240, 241, 242, 0.5);
+}
+
+QPushButton:enabled {
+    background-color: rgba(65, 72, 81, 1);
+    color: rgba(240, 241, 242, 1.0);
+    border: none;
+}
+
+QPushButton:disabled {
+    background-color: rgba(65, 72, 81, 0.5);
+    color: rgba(240, 241, 242, 0.5);
+    border: none;
+}
+
+QPushButton:hover {
+    background-color: rgba(90, 98, 108, 1.0);
+}
+
+QSpinBox:enabled, QDoubleSpinBox:enabled {
+    background-color: rgba(65, 72, 81, 1);
+}
+
+QSpinBox:disabled, QDoubleSpinBox:disabled {
+    background-color: rgba(65, 72, 81, 0.5);
+    color: rgba(240, 241, 242, 0.5);
+}
+
+QCheckBox:enabled {
+    color: rgba(240, 241, 242, 1.0);
+}
+
+QCheckBox:disabled {
+    color: rgba(240, 241, 242, 0.5);
+}
+
+QCheckBox::indicator:enabled {
+    background-color: rgba(65, 72, 81, 1);
+}
+
+QCheckBox::indicator:disabled {
+    background-color: rgba(65, 72, 81, 0.5);
+}
+
+QLineEdit:enabled {
+    background-color: rgba(32, 35, 40, 1);
+    color: rgba(240, 241, 242, 1.0);
+}
+
+QLineEdit:disabled {
+    background-color: rgba(32, 35, 40, 0.5);
+    color: rgba(240, 241, 242, 0.5);
+}
+
+QLineEdit#labelLineEdit:enabled {
+    color: rgba(240, 241, 242, 1.0);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+QLineEdit#labelLineEdit:disabled {
+    color: rgba(240, 241, 242, 0.5);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+ActionButton {
+    min-width: 320px;
+}
+
+QLabel#divider {
+    background-color: rgba(65, 72, 82);
+}

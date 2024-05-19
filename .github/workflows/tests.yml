@@ -1,0 +1,66 @@
+name: Tests
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install conda and environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml
+          condarc: |
+            channels:
+              - conda-forge
+              - pytorch
+          cache-environment: true
+
+      - if: runner.os != 'Windows'  # Mac and Linux
+        name: Install AlveolEye - Unix
+        shell: bash -l {0}
+        run: |
+          pip install pytest pytest-cov
+          pip install .
+
+      - if: runner.os != 'Windows'  # Mac and Linux
+        name: Run Pytest - Unix
+        shell: bash -l {0}
+        run: |
+          pytest --cov=automated_lung_morphometry
+
+      - if: runner.os == 'Windows'
+        name: Install AlveolEye - Windows
+        shell: powershell
+        run: |
+          micromamba run -n AlveolEye python -m pip install pytest pytest-cov
+          micromamba run -n AlveolEye python -m pip install .
+
+      - if: runner.os == 'Windows'
+        name: Run Pytest - Windows
+        shell: powershell
+        run: |
+          micromamba run -n AlveolEye python -m pytest --cov=automated_lung_morphometry
+
+
+#  flake8-lint:
+#    runs-on: ubuntu-latest
+#    name: Lint
+#    steps:
+#      - name: Check out source repository
+#        uses: actions/checkout@v3
+#      - name: Set up Python environment
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: "3.11"
+#      - name: flake8 Lint
+#        uses: py-actions/flake8@v2
+#        with:
+#          max-line-length: "120"

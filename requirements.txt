@@ -1,0 +1,6 @@
+napari
+qtpy
+pytorch
+torchvision >= 0.16.0
+opencv-python-headless
+pillow
