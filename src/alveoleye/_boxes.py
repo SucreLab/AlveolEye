@@ -3,13 +3,13 @@ from pathlib import Path
 
 from qtpy.QtWidgets import QFileDialog
 
-from automated_lung_morphometry._action_box import ActionBox
+from alveoleye._action_box import ActionBox
 
-from automated_lung_morphometry._workers import ProcessingWorker, PostprocessingWorker, AssessmentsWorker, ExportWorker
+from alveoleye._workers import ProcessingWorker, PostprocessingWorker, AssessmentsWorker, ExportWorker
 
-import automated_lung_morphometry._gui_creator as gui_creator
-import automated_lung_morphometry._layers_editor as layers_editor
-import automated_lung_morphometry._rules as rules
+import alveoleye._gui_creator as gui_creator
+import alveoleye._layers_editor as layers_editor
+import alveoleye._rules as rules
 
 
 class ProcessingActionBox(ActionBox):
