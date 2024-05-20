@@ -28,16 +28,18 @@ The target of this process is to create a conda environment that has both napari
 If you already have conda setup, you can skip step 1
 
 1. Install miniconda by downlading the appropriate version from (here)[https://docs.anaconda.com/free/miniconda/]
-2. Open a terminal, or miniconda prompt, and clone this git repository by running:
+    a. Choose the version that matches your processor
+    b. Download the "pkg" version for easy install
+3. Open a terminal, or miniconda prompt, and clone this git repository by running:
 
     ```git clone https://github.com/SucreLab/AlveolEye```
-3. Go to the AlveolEye directory
+4. Go to the AlveolEye directory
 
     ```cd AlveolEye```
-4. Create the conda environment
+5. Create the conda environment
 
     ```conda env create -f ./environment.yml```
-5. Activate the new environment
+6. Activate the new environment
 
     ```conda activate AlveolEye```
 5. Install the plugin
