@@ -1,9 +1,9 @@
 from qtpy.QtCore import Qt, QTimer, QThread
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 
-import automated_lung_morphometry._rules as rules
-import automated_lung_morphometry._gui_creator as gui_creator
-from automated_lung_morphometry._workers import WorkerParent
+import alveoleye._rules as rules
+import alveoleye._gui_creator as gui_creator
+from alveoleye._workers import WorkerParent
 
 
 class ActionBox(QGroupBox):
