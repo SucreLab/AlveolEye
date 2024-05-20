@@ -1,4 +1,4 @@
-from automated_lung_morphometry._workers import ProcessingWorker
+from alveoleye._workers import ProcessingWorker
 # tmp_path is a pytest fixture
 
 
