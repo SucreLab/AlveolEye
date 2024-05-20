@@ -7,7 +7,7 @@ dependencies:
   - python>=3.10
   - torchvision>=0.16.2
   - napari
-  - pyqt5
+  - pyqt
   - qtpy
   - pytorch
   - pillow
