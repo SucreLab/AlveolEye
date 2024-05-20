@@ -13,6 +13,5 @@ dependencies:
   - pillow
   - pip
   - pip:
-      - pycocotools
       - opencv-python-headless
 
