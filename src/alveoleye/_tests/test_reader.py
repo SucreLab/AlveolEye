@@ -1,4 +1,4 @@
-from automated_lung_morphometry import napari_get_reader
+from alveoleye import napari_get_reader
 
 
 def test_get_reader_pass():
