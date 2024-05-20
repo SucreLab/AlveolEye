@@ -1,16 +1,16 @@
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
-from automated_lung_morphometry.lungcv.mrcnn import model_operations
-from automated_lung_morphometry.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
+from alveoleye.lungcv.mrcnn import model_operations
+from alveoleye.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
                                                              create_postprocessing_labelmap, clean, greyscale,
                                                              invert_binary, create_processing_labelmap)
-from automated_lung_morphometry.lungcv.assessments import (calculate_mean_linear_intercept,
+from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
                                                            calculate_airspace_volume_density)
 import pathlib
 import json
-import automated_lung_morphometry._layers_editor as layers_editor
-import automated_lung_morphometry._export_operations as export_operations
+import alveoleye._layers_editor as layers_editor
+import alveoleye._export_operations as export_operations
 
 
 class WorkerParent(QObject):
