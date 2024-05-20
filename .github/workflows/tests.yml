@@ -34,7 +34,7 @@ jobs:
         name: Run Pytest - Unix
         shell: bash -l {0}
         run: |
-          pytest --cov=automated_lung_morphometry
+          pytest --cov=alveoleye
 
       - if: runner.os == 'Windows'
         name: Install AlveolEye - Windows
@@ -47,7 +47,7 @@ jobs:
         name: Run Pytest - Windows
         shell: powershell
         run: |
-          micromamba run -n AlveolEye python -m pytest --cov=automated_lung_morphometry
+          micromamba run -n AlveolEye python -m pytest --cov=alveoleye
 
 
   pypi-publish:
