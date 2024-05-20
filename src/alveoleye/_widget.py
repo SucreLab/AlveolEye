@@ -5,9 +5,9 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QScrollArea
 from napari.utils.theme import get_system_theme
 
-from automated_lung_morphometry._boxes import (ProcessingActionBox, PostprocessingActionBox,
+from alveoleye._boxes import (ProcessingActionBox, PostprocessingActionBox,
                                                AssessmentsActionBox, ExportActionBox)
-import automated_lung_morphometry._gui_creator as gui_creator
+import alveoleye._gui_creator as gui_creator
 
 
 class WidgetMain(QWidget):
