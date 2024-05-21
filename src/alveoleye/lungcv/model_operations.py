@@ -77,8 +77,8 @@ def init_trained_model(model_path: Path):
     model = init_untrained_model(3)
 
     # Downlad if default
-    if model_path.name == "default.pth":
-        if not model_path.exists():
+    if Path(model_path).name == "default.pth":
+        if not Path(model_path).exists():
             import gdown
             # Download
             print("Downloading pytorch model")
