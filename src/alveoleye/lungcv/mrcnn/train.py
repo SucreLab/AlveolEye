@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import torch
-import torchvision
 from PIL import Image
 from PIL import ImageOps
 import json
@@ -9,7 +8,7 @@ import cv2
 
 import automated_lung_morphometry.lungcv.mrcnn.utils as utils
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
-from model_operations import init_untrained_model, get_transform
+from alveoleye.lungcv.model_operations import init_untrained_model, get_transform
 
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid

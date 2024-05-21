@@ -55,8 +55,12 @@ def init_untrained_model(num_classes) -> MaskRCNN:
 
 
 def init_trained_model(model_path: Path):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     model = init_untrained_model(3)
     if str(model_path).endswith("gz"):
         import gzip

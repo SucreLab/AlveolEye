@@ -8,7 +8,7 @@ def test_config_load():
 
 
 def test_load_model():
-    from alveoleye.lungcv.mrcnn.model_operations import init_trained_model
+    from alveoleye.lungcv.model_operations import init_trained_model
     from torchvision.models.detection.mask_rcnn import MaskRCNN
     worker = ProcessingWorker()
     model = init_trained_model("src/alveoleye/data/default.pth")
