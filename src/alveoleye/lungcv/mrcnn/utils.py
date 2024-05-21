@@ -5,6 +5,7 @@ import time
 from collections import defaultdict, deque, OrderedDict
 
 import torch
+import torchvision
 import torch.distributed as dist
 
 from typing import Tuple, List, Dict, Optional
