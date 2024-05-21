@@ -1,4 +1,6 @@
 import torch
+import os.path
+import requests
 from pathlib import Path
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
@@ -52,6 +54,18 @@ def init_untrained_model(num_classes) -> MaskRCNN:
 
     return model
 
+def download_file(url, out_file):
+    # local_filename = url.split('/')[-1]
+    # NOTE the stream=True parameter below
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(out_file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                # If you have chunk encoded response uncomment if
+                # and set chunk_size parameter to None.
+                #if chunk:
+                f.write(chunk)
+    return out_file
 
 def init_trained_model(model_path: Path):
     if torch.cuda.is_available():
@@ -61,12 +75,15 @@ def init_trained_model(model_path: Path):
     else:
         device = torch.device("cpu")
     model = init_untrained_model(3)
-    if str(model_path).endswith("gz"):
-        import gzip
-        with gzip.open(model_path, 'rb') as f_in:
-            loaded_model = torch.load(f_in, map_location=torch.device(device))
-    else:
-        loaded_model = torch.load(model_path, map_location=torch.device(device))
+
+    # Downlad if default
+    if Path(model_path).name == "default.pth":
+        if not os.path.exists(model_path):
+            # Download
+            print("Downloading pytorch model")
+            download_file("https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing", model_path)
+
+    loaded_model = torch.load(model_path, map_location=torch.device(device))
     state_dictionary = loaded_model.state_dict()
     model.load_state_dict(state_dictionary)
     model.to(device)
