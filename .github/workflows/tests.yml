@@ -22,6 +22,8 @@ jobs:
             channels:
               - conda-forge
               - pytorch
+          create-args: >-
+            python=${{ matrix.python-version }}
           cache-environment: true
 
       - if: runner.os != 'Windows'  # Mac and Linux
