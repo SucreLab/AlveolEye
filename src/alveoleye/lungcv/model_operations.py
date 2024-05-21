@@ -77,11 +77,13 @@ def init_trained_model(model_path: Path):
     model = init_untrained_model(3)
 
     # Downlad if default
-    if Path(model_path).name == "default.pth":
-        if not os.path.exists(model_path):
+    if model_path.name == "default.pth":
+        if not model_path.exists():
+            import gdown
             # Download
             print("Downloading pytorch model")
-            download_file("https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing", model_path)
+            url = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
+            gdown.download(url=url, output=str(model_path), fuzzy=True)
 
     loaded_model = torch.load(model_path, map_location=torch.device(device))
     state_dictionary = loaded_model.state_dict()

@@ -12,6 +12,7 @@ dependencies:
   - pytorch
   - tensorboard
   - pillow
+  - gdown
   - pip
   - pip:
       - pycocotools

@@ -12,6 +12,7 @@ dependencies:
   - pytorch
   - pillow
   - pip
+  - gdown
   - pip:
       - opencv-python-headless
 
