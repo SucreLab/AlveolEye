@@ -52,13 +52,16 @@ jobs:
         run: |
           micromamba run -n AlveolEye python -m pytest --cov=alveoleye
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.1
-
-      - uses: actions/upload-artifact@v4
+      - name: Build
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: |
+          python -m build
+        uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ matrix.python-version }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
+          name: packaging
+          path: |
+            ./dist/AlveolEye*.whl
+            ./dist/alveoleye*.tar.gz
 
   pypi-publish:
     needs: ['build']
@@ -74,7 +77,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           # unpacks all CIBW artifacts into dist/
-          pattern: cibw-*
           path: dist
           merge-multiple: true
 
