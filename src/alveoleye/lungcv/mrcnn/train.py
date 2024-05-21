@@ -7,8 +7,8 @@ import json
 import cv2
 
 import automated_lung_morphometry.lungcv.mrcnn.utils as utils
-from mrcnn.engine import train_one_epoch
-from model_operations import init_untrained_model, get_transform
+from alveoleye.lungcv.mrcnn.engine import train_one_epoch
+from alveoleye.lungcv.model_operations import init_untrained_model, get_transform
 
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid

@@ -1,5 +1,6 @@
 import torch
-import torchvision
+import os.path
+import requests
 from pathlib import Path
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
@@ -53,17 +54,38 @@ def init_untrained_model(num_classes) -> MaskRCNN:
 
     return model
 
+def download_file(url, out_file):
+    # local_filename = url.split('/')[-1]
+    # NOTE the stream=True parameter below
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(out_file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                # If you have chunk encoded response uncomment if
+                # and set chunk_size parameter to None.
+                #if chunk:
+                f.write(chunk)
+    return out_file
 
 def init_trained_model(model_path: Path):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    model = init_untrained_model(3)
-    if str(model_path).endswith("gz"):
-        import gzip
-        with gzip.open(model_path, 'rb') as f_in:
-            loaded_model = torch.load(f_in, map_location=torch.device(device))
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     else:
-        loaded_model = torch.load(model_path, map_location=torch.device(device))
+        device = torch.device("cpu")
+    model = init_untrained_model(3)
+
+    # Downlad if default
+    if Path(model_path).name == "default.pth":
+        if not Path(model_path).exists():
+            import gdown
+            # Download
+            print("Downloading pytorch model")
+            url = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
+            gdown.download(url=url, output=str(model_path), fuzzy=True)
+
+    loaded_model = torch.load(model_path, map_location=torch.device(device))
     state_dictionary = loaded_model.state_dict()
     model.load_state_dict(state_dictionary)
     model.to(device)

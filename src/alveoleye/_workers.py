@@ -1,7 +1,7 @@
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
-from alveoleye.lungcv.mrcnn import model_operations
+from alveoleye.lungcv import model_operations
 from alveoleye.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
                                                              create_postprocessing_labelmap, clean, greyscale,
                                                              invert_binary, create_processing_labelmap)

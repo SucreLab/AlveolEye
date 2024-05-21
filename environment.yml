@@ -5,13 +5,14 @@ channels:
   - pytorch
 dependencies:
   - python>=3.10
-  - torchvision>=0.16.2
+  - torchvision>=0.16.2, <=0.17.2
   - napari
   - pyqt
   - qtpy
   - pytorch
   - pillow
   - pip
+  - gdown
   - pip:
       - opencv-python-headless
 
