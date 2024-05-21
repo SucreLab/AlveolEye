@@ -24,7 +24,7 @@ jobs:
               - pytorch
           create-args: >-
             python=${{ matrix.python-version }}
-          cache-environment: true
+          cache-environment: false
 
       - if: runner.os != 'Windows'  # Mac and Linux
         name: Install AlveolEye - Unix
