@@ -16,4 +16,7 @@ dependencies:
   - pip:
       - pycocotools
       - opencv-python-headless
+      - pytest
+      - pytest-cov
+      - pytest-qt
 

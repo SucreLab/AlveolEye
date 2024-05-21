@@ -16,7 +16,7 @@ jobs:
       - name: Install conda and environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment.yml
+          environment-file: environment-dev.yml
           condarc: |
             channels:
               - conda-forge
@@ -27,7 +27,6 @@ jobs:
         name: Install AlveolEye - Unix
         shell: bash -l {0}
         run: |
-          pip install pytest pytest-cov pytest-qt
           pip install .
 
       - if: runner.os != 'Windows'  # Mac and Linux
@@ -40,7 +39,6 @@ jobs:
         name: Install AlveolEye - Windows
         shell: powershell
         run: |
-          micromamba run -n AlveolEye python -m pip install pytest pytest-cov pytest-qt
           micromamba run -n AlveolEye python -m pip install .
 
       - if: runner.os == 'Windows'
