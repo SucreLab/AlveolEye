@@ -53,6 +53,7 @@ jobs:
       - name: Build
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         run: |
+          rm ./src/alveoleye/data/default.pth
           pip install build
           python -m build
 
