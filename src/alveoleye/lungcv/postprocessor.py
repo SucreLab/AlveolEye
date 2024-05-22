@@ -79,6 +79,7 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
     all_lumens = cv2.connectedComponents(thresholded_image)[1]
 
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
+    outline_labelmap = class_epithelium_labelmap.copy()
     class_epithelium_labelmap_parenchyma_overlap = np.where(thresholded_image, 0, class_epithelium_labelmap)
 
     contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)[0]
@@ -86,6 +87,7 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
     kernel_size = 5
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
 
+    # Fill edges if the drawn / predicted labels touch the edge
     for contour in contours:
         contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8),
                                         [contour], -1, 255, thickness=cv2.FILLED)
@@ -108,6 +110,7 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
 
     contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)[0]
 
+    # Run on image considering parenchyma
     for contour in contours:
         contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8),
                                         [contour], -1, 255, thickness=cv2.FILLED)
@@ -119,12 +122,15 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
 
         centroids = cv2.connectedComponentsWithStats(rough_empty_spaces)[3]
 
+        # Flood fill spaces
         for centroid in centroids[1:]:
             centroid_x, centroid_y = map(int, centroid)
             component = all_lumens[centroid_y, centroid_x]
 
             if component:
-                class_epithelium_labelmap_parenchyma_overlap[
-                    (all_lumens == component) & (eroded_contour_mask == 255)] = lumen_label
+                class_epithelium_labelmap[(all_lumens == component) & (eroded_contour_mask == 255)] = lumen_label
+                class_epithelium_labelmap[eroded_contour_mask == 255] = lumen_label
+                # add back in outline
+                class_epithelium_labelmap[outline_labelmap == epithelium_label] = epithelium_label
 
-    return class_epithelium_labelmap_parenchyma_overlap
+    return class_epithelium_labelmap
