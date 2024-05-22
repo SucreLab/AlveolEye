@@ -76,9 +76,13 @@ def init_trained_model(model_path: Path):
         device = torch.device("cpu")
     model = init_untrained_model(3)
 
+
     # Downlad if default
     if Path(model_path).name == "default.pth":
         if not Path(model_path).exists():
+            if not os.path.exists(str(Path(model_path).parent)):
+                os.makedirs(str(Path(model_path).parent), exist_ok=True)
+
             import gdown
             # Download
             print("Downloading pytorch model")
