@@ -69,9 +69,9 @@ def download_file(url, out_file):
 
 def init_trained_model(model_path: Path):
     if torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
+      device = torch.device('cuda')
+    # elif torch.backends.mps.is_available():
+    #     device = torch.device("mps")
     else:
         device = torch.device("cpu")
     model = init_untrained_model(3)
@@ -81,6 +81,7 @@ def init_trained_model(model_path: Path):
         if not Path(model_path).exists():
             if not os.path.exists(str(Path(model_path).parent)):
                 os.makedirs(str(Path(model_path).parent), exist_ok=True)
+            
             import gdown
             # Download
             print("Downloading pytorch model")
@@ -98,8 +99,8 @@ def init_trained_model(model_path: Path):
 def run_prediction(image_path, model):
     if torch.cuda.is_available():
         device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
+    # elif torch.backends.mps.is_available():
+    #     device = torch.device("mps")
     else:
         device = torch.device("cpu")
     image = T.PILToTensor()(Image.open(image_path).convert('RGB'))
