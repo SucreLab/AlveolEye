@@ -14,6 +14,7 @@ def test_load_model():
     model = init_trained_model("src/alveoleye/data/default.pth")
     assert type(model) is MaskRCNN
 
+
 def load_proxy_viewer(make_napari_viewer_proxy):
     viewer = make_napari_viewer_proxy()
     assert type(viewer) is not None

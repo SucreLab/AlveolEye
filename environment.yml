@@ -10,9 +10,9 @@ dependencies:
   - pyqt
   - qtpy
   - pytorch
-  - pillow
+  - pillow>=10.2.0
   - pip
   - gdown
   - pip:
-      - opencv-python-headless
+      - opencv-python>=4.1.1.26
 
