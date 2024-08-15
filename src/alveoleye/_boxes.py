@@ -1,4 +1,5 @@
 import cv2
+import os
 from pathlib import Path
 
 from qtpy.QtWidgets import QFileDialog
@@ -18,11 +19,6 @@ class ProcessingActionBox(ActionBox):
     def __init__(self, config_data, napari_viewer):
         super().__init__(config_data, napari_viewer)
 
-        self.import_paths = {
-            "image": None,
-            "weights": None
-        }
-
         self.image = None
 
         self.import_image_line_edit = None
@@ -40,7 +36,7 @@ class ProcessingActionBox(ActionBox):
         default_file_name = self.box_config_data["DEFAULT_WEIGHTS_PATH"]
         default_weights_path = Path(__file__).resolve().parent.parent / default_file_name
         self.import_weights_line_edit.setText(Path(default_weights_path).name)
-        self.import_paths["weights"] = default_weights_path
+        ActionBox.import_paths["weights"] = default_weights_path
 
         self.rules_engine.evaluate_rules()
 
@@ -48,8 +44,8 @@ class ProcessingActionBox(ActionBox):
         self.worker = ProcessingWorker()
 
         self.worker.set_napari_viewer(self.napari_viewer)
-        self.worker.set_image_path(self.import_paths["image"])
-        self.worker.set_weights(self.import_paths["weights"])
+        self.worker.set_image_path(ActionBox.import_paths["image"])
+        self.worker.set_weights(ActionBox.import_paths["weights"])
         self.worker.set_labels(self.labels_config_data)
         self.worker.set_image_shape(self.image.shape)
         self.worker.set_confidence_threshold_value(self.confidence_threshold_spin_box.value())
@@ -93,22 +89,22 @@ class ProcessingActionBox(ActionBox):
                                       self.box_config_data["TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
-        self.rules_engine.add_rule([lambda: self.import_paths["image"] is None,
-                                    lambda: self.import_paths["weights"] is None,
+        self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
+                                    lambda: ActionBox.import_paths["weights"] is None,
                                     lambda: not self.state == 2],
                                    lambda: rules.toggle(False, self.action_button))
-        self.rules_engine.add_rule([lambda: self.import_paths["image"] is not None,
-                                    lambda: self.import_paths["weights"] is not None],
+        self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is not None,
+                                    lambda: ActionBox.import_paths["weights"] is not None],
                                    lambda: rules.toggle(True, self.action_button))
 
-        self.rules_engine.add_rule(lambda: self.import_paths["image"] is None,
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is None,
                                    lambda: rules.toggle(False, self.import_image_line_edit))
-        self.rules_engine.add_rule(lambda: self.import_paths["image"] is not None,
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
                                    lambda: rules.toggle(True, self.import_image_line_edit))
 
-        self.rules_engine.add_rule(lambda: self.import_paths["weights"] is None,
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is None,
                                    lambda: rules.toggle(False, self.import_weights_line_edit))
-        self.rules_engine.add_rule(lambda: self.import_paths["weights"] is not None,
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is not None,
                                    lambda: rules.toggle(True, self.import_weights_line_edit))
 
         super().create_ui_rules()
@@ -118,12 +114,16 @@ class ProcessingActionBox(ActionBox):
             current_path = Path(__file__).resolve()
         else:
             current_path = self._image_open_path
+
         parent_directory = str(current_path.parent)
 
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
-        file_name = Path(file_path).name
 
-        self._image_open_path = Path(file_path)  # Set next open dialog to last opened file
+        if file_path:
+            file_name = Path(file_path).name
+            self._image_open_path = Path(file_path)
+        else:
+            file_name = None
 
         return file_path, file_name
 
@@ -136,9 +136,8 @@ class ProcessingActionBox(ActionBox):
         if self.state == 1:
             self.cancel_action()
 
-        self.import_paths[file_type] = file_path
+        ActionBox.import_paths[file_type] = file_path
         file_line_edit.setText(file_name)
-        ActionBox.file_name = file_name
 
         self.rules_engine.evaluate_rules()
 
@@ -150,7 +149,7 @@ class ProcessingActionBox(ActionBox):
                                     self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"]):
             return
         try:
-            self.image = cv2.imread(self.import_paths["image"])
+            self.image = cv2.imread(ActionBox.import_paths["image"])
         except Exception as e:
             print(f"Failed reading image {e}")
             self.broadcast_cancel_message()
@@ -417,9 +416,11 @@ class AssessmentsActionBox(ActionBox):
                                         self.layers_config_data["ASSESSMENTS_LAYER_NAME"],
                                         assessments_layer, True)
 
-        ActionBox.current_results = [ActionBox.file_name, asvd, mli, chords, stdev_chord_lengths,
-                                     airspace_pixels, non_airspace_pixels, self.lines_spin_box.value(),
-                                     self.min_length_spin_box.value(), self.scale_spin_box.value()]
+        ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
+                                     os.path.basename(ActionBox.import_paths["weights"]), asvd, mli, chords,
+                                     stdev_chord_lengths, airspace_pixels, non_airspace_pixels,
+                                     self.lines_spin_box.value(), self.min_length_spin_box.value(),
+                                     self.scale_spin_box.value()]
 
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
@@ -557,7 +558,7 @@ class ExportActionBox(ActionBox):
         super().create_ui_rules()
 
     def set_results(self):
-        file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
+        _, _, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
 
         gui_creator.update_line_edit(self.mli_line_edit, mli,
                                      self.box_config_data["MLI_METRIC_LINE_EDIT"], mli)
@@ -577,8 +578,11 @@ class ExportActionBox(ActionBox):
         self.rules_engine.evaluate_rules()
 
     def clear_results(self):
-        self.accumulated_results = []
-        self.rules_engine.evaluate_rules()
+        result = gui_creator.create_confirm_clear_message_box(self)
+
+        if result:
+            self.accumulated_results = []
+            self.rules_engine.evaluate_rules()
 
     def on_results_ready(self, wrapped_data, extension):
         pass

@@ -72,5 +72,5 @@ ActionButton {
 }
 
 QLabel#divider {
-    background-color: rgba(65, 72, 82);
+    background-color: rgba(65, 72, 82, 1);
 }

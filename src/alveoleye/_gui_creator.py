@@ -1,4 +1,6 @@
 from IPython.external.qt_for_kernel import QtCore
+from PyQt5.QtGui import QCursor
+from PyQt5.QtWidgets import QMessageBox
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
                              QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
@@ -173,3 +175,31 @@ def save_data_with_file_dialog():
                                                              "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
     return file_path, selected_filter
+
+
+def create_confirm_clear_message_box(parent):
+    message_box = QMessageBox(parent)
+    message_box.setIcon(QMessageBox.Warning)
+    message_box.setText(
+        "<html><body style='font-weight: normal;'>Are you sure you want to clear your results?</body></html>")
+
+    buttons = {
+        "Yes": QMessageBox.AcceptRole,
+        "No": QMessageBox.RejectRole
+    }
+
+    button_objects = {}
+
+    for text, role in buttons.items():
+        button = message_box.addButton(text, role)
+        button.setFixedSize(80, 25)
+        button.setCursor(QCursor(Qt.PointingHandCursor))
+        button_objects[text] = button
+
+    message_box.setDefaultButton(button_objects["No"])
+
+    message_box.exec_()
+    clicked_button = message_box.clickedButton()
+
+    return clicked_button == button_objects["Yes"]
+

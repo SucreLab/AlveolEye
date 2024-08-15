@@ -8,7 +8,12 @@ from alveoleye._workers import WorkerParent
 
 class ActionBox(QGroupBox):
     current_results = []
-    file_name = None
+
+    import_paths = {
+        "image": None,
+        "weights": None
+    }
+
     all_action_boxes = []
     step = 0
 
