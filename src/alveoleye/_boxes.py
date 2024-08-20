@@ -417,8 +417,8 @@ class AssessmentsActionBox(ActionBox):
                                         assessments_layer, True)
 
         ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
-                                     os.path.basename(ActionBox.import_paths["weights"]), asvd, mli, chords,
-                                     stdev_chord_lengths, airspace_pixels, non_airspace_pixels,
+                                     os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
+                                     stdev_chord_lengths, chords, airspace_pixels, non_airspace_pixels,
                                      self.lines_spin_box.value(), self.min_length_spin_box.value(),
                                      self.scale_spin_box.value()]
 
@@ -558,7 +558,7 @@ class ExportActionBox(ActionBox):
         super().create_ui_rules()
 
     def set_results(self):
-        _, _, asvd, mli, chords, stdev, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
+        _, _, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
 
         gui_creator.update_line_edit(self.mli_line_edit, mli,
                                      self.box_config_data["MLI_METRIC_LINE_EDIT"], mli)
