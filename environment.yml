@@ -5,6 +5,7 @@ channels:
   - pytorch
 dependencies:
   - python>=3.10
+  - pydantic>=1.10.17
   - torchvision>=0.16.2, <=0.17.2
   - napari
   - pyqt

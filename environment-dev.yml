@@ -5,18 +5,19 @@ channels:
   - pytorch
 dependencies:
   - python>=3.10
-  - torchvision>=0.16.2,<=0.17.2
+  - pydantic>=1.10.17
+  - torchvision>=0.16.2, <=0.17.2
   - napari
   - pyqt
   - qtpy
   - pytorch
   - tensorboard
-  - pillow>=10.2.0
+  - pillow
   - gdown
   - pip
   - pip:
       - pycocotools
-      - opencv-python>=4.1.1.26
+      - opencv-python-headless
       - pytest
       - pytest-cov
       - pytest-qt
