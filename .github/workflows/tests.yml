@@ -5,95 +5,95 @@ on:
   - pull_request
 
 jobs:
-    build-conda:
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
-        os: [ubuntu-latest, windows-latest, macos-13]
-    runs-on: ${{ matrix.os }}
+  build-conda:
+  strategy:
+    matrix:
+      python-version: ['3.10', '3.11', '3.12']
+      os: [ubuntu-latest, windows-latest, macos-13]
+  runs-on: ${{ matrix.os }}
+  steps:
+    - uses: actions/checkout@v4
+    - name: Install conda and environment
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment-dev.yml
+        environment-name: AlveolEye_${{ matrix.python-version }}
+        condarc: |
+          channels:
+            - conda-forge
+            - pytorch
+        create-args: >-
+          python=${{ matrix.python-version }}
+        cache-environment: true
+
+    - if: runner.os != 'Windows'  # Mac and Linux
+      name: Install AlveolEye - Unix
+      shell: bash -l {0}
+      run: |
+        pip install .
+
+    - if: runner.os != 'Windows'  # Mac and Linux
+      name: Run Pytest - Unix
+      shell: bash -l {0}
+      run: |
+        pytest --cov=alveoleye
+
+    - if: runner.os == 'Windows'
+      name: Install AlveolEye - Windows
+      shell: powershell
+      run: |
+        micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pip install .
+
+    - if: runner.os == 'Windows'
+      name: Run Pytest - Windows
+      shell: powershell
+      run: |
+        micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pytest --cov=alveoleye
+
+  build-pip:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install conda and environment
-        uses: mamba-org/setup-micromamba@v1
+      - uses: actions/setup-python@v5
         with:
-          environment-file: environment-dev.yml
-          environment-name: AlveolEye_${{ matrix.python-version }}
-          condarc: |
-            channels:
-              - conda-forge
-              - pytorch
-          create-args: >-
-            python=${{ matrix.python-version }}
-          cache-environment: true
-
-      - if: runner.os != 'Windows'  # Mac and Linux
-        name: Install AlveolEye - Unix
-        shell: bash -l {0}
-        run: |
+          python-version: '3.11'
+      - run: |
           pip install .
-
-      - if: runner.os != 'Windows'  # Mac and Linux
-        name: Run Pytest - Unix
-        shell: bash -l {0}
-        run: |
+          pip install pytest
           pytest --cov=alveoleye
-
-      - if: runner.os == 'Windows'
-        name: Install AlveolEye - Windows
-        shell: powershell
+      - name: build
         run: |
-          micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pip install .
+          rm ./src/alveoleye/data/default.pth
+          pip install build
+          python -m build
+      - uses: actions/upload-artifact@v4
+        name: Save artifact
+        with:
+          name: packaging
+          path: |
+            ./dist/AlveolEye*.whl
+            ./dist/alveoleye*.tar.gz
 
-      - if: runner.os == 'Windows'
-        name: Run Pytest - Windows
-        shell: powershell
-        run: |
-          micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pytest --cov=alveoleye
+  pypi-publish:
+    needs: ['build-pip']
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/AlveolEye
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          # unpacks all CIBW artifacts into dist/
+          path: dist
+          merge-multiple: true
 
-    build-pip:
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-python@v5
-          with:
-            python-version: '3.11'
-        - run: |
-            pip install .
-            pip install pytest
-            pytest --cov=alveoleye
-        - name: build
-          run: |
-            rm ./src/alveoleye/data/default.pth
-            pip install build
-            python -m build
-        - uses: actions/upload-artifact@v4
-          name: Save artifact
-          with:
-            name: packaging
-            path: |
-              ./dist/AlveolEye*.whl
-              ./dist/alveoleye*.tar.gz
-
-    pypi-publish:
-      needs: ['build-pip']
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      name: Upload release to PyPI
-      runs-on: ubuntu-latest
-      environment:
-        name: pypi
-        url: https://pypi.org/p/AlveolEye
-      permissions:
-        id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-      steps:
-        - uses: actions/download-artifact@v4
-          with:
-            # unpacks all CIBW artifacts into dist/
-            path: dist
-            merge-multiple: true
-
-        - name: Publish package distributions to PyPI
-          uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
 
 #  flake8-lint:
