@@ -7,7 +7,7 @@ dependencies:
   - python>=3.10
   - pydantic>=2.7.4
   - torchvision>=0.16.2, <=0.17.2
-  - napari
+  - napari>=0.4.17
   - pyqt
   - qtpy
   - pytorch
