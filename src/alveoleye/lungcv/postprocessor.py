@@ -47,7 +47,9 @@ def create_processing_labelmap(model_output, shape, confidence_threshold, labels
 
 
 def create_class_labelmap_from_model(model_output, class_id, confidence_threshold):
-    model_output_mask = np.array([mask.cpu().numpy() for idx, mask in enumerate(model_output["masks"]) if (model_output["labels"][idx].cpu().numpy() == class_id and model_output["scores"][idx] > confidence_threshold)])
+    model_output_mask = np.array([mask.cpu().numpy() for idx, mask in enumerate(model_output["masks"]) if
+                                  (model_output["labels"][idx].cpu().numpy() == class_id and
+                                   model_output["scores"][idx] > confidence_threshold)])
     mask_with_confidence = (model_output_mask > confidence_threshold).any(axis=0)
 
     return mask_with_confidence
@@ -55,11 +57,15 @@ def create_class_labelmap_from_model(model_output, class_id, confidence_threshol
 
 def create_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels):
     parenchyma_labelmap = np.where(thresholded_labelmap, labels["ALVEOLI"], labels["PARENCHYMA"])
-    airway_epithelium_labelmap = np.where(masks_labelmap == labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_EPITHELIUM"], 0)
-    vessel_epithelium_labelmap = np.where(masks_labelmap == labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_ENDOTHELIUM"], 0)
+    airway_epithelium_labelmap = np.where(masks_labelmap == labels["AIRWAY_EPITHELIUM"],
+                                          labels["AIRWAY_EPITHELIUM"], 0)
+    vessel_epithelium_labelmap = np.where(masks_labelmap == labels["VESSEL_ENDOTHELIUM"],
+                                          labels["VESSEL_ENDOTHELIUM"], 0)
 
-    airway_complete_labelmap = create_complete_class_labelmap(airway_epithelium_labelmap, thresholded_labelmap, labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"])
-    vessel_complete_labelmap = create_complete_class_labelmap(vessel_epithelium_labelmap, thresholded_labelmap, labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"])
+    airway_complete_labelmap = create_complete_class_labelmap(airway_epithelium_labelmap, thresholded_labelmap,
+                                                              labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"])
+    vessel_complete_labelmap = create_complete_class_labelmap(vessel_epithelium_labelmap, thresholded_labelmap,
+                                                              labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"])
 
     final_labelmap = np.zeros(masks_labelmap.shape, dtype="uint8")
     final_labelmap = np.where(parenchyma_labelmap, parenchyma_labelmap, final_labelmap)
@@ -73,6 +79,7 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
     all_lumens = cv2.connectedComponents(thresholded_image)[1]
 
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
+    outline_labelmap = class_epithelium_labelmap.copy()
     class_epithelium_labelmap_parenchyma_overlap = np.where(thresholded_image, 0, class_epithelium_labelmap)
 
     contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)[0]
@@ -82,7 +89,8 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
 
     # Fill edges if the drawn / predicted labels touch the edge
     for contour in contours:
-        contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8), [contour], -1, 255, thickness=cv2.FILLED)
+        contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8),
+                                        [contour], -1, 255, thickness=cv2.FILLED)
 
         edge_offset = 10
 
@@ -104,7 +112,8 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
 
     # Run on image considering parenchyma
     for contour in contours:
-        contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8), [contour], -1, 255, thickness=cv2.FILLED)
+        contour_mask = cv2.drawContours(np.zeros_like(class_epithelium_labelmap, dtype=np.uint8),
+                                        [contour], -1, 255, thickness=cv2.FILLED)
 
         eroded_contour_mask = cv2.erode(contour_mask, kernel, iterations=1)
 
@@ -119,6 +128,9 @@ def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image,
             component = all_lumens[centroid_y, centroid_x]
 
             if component:
-                class_epithelium_labelmap_parenchyma_overlap[(all_lumens == component) & (eroded_contour_mask == 255)] = lumen_label
+                class_epithelium_labelmap[(all_lumens == component) & (eroded_contour_mask == 255)] = lumen_label
+                class_epithelium_labelmap[eroded_contour_mask == 255] = lumen_label
+                # add back in outline
+                class_epithelium_labelmap[outline_labelmap == epithelium_label] = epithelium_label
 
-    return class_epithelium_labelmap_parenchyma_overlap
+    return class_epithelium_labelmap
