@@ -4,15 +4,16 @@ channels:
   - conda-forge
   - pytorch
 dependencies:
-  - python>=3.10, <=3.12.3
+  - python>=3.10
+  - pydantic>=2.7.4
   - torchvision>=0.16.2, <=0.17.2
-  - napari
+  - napari>=0.4.17
   - pyqt
   - qtpy
   - pytorch
-  - pillow
+  - pillow>=10.2.0
   - pip
   - gdown
   - pip:
-      - opencv-python-headless
+      - opencv-python>=4.1.1.26
 

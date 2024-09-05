@@ -4,6 +4,7 @@ import pathlib
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QScrollArea
 from napari.utils.theme import get_system_theme
+from typing import Union
 
 from alveoleye._boxes import (ProcessingActionBox, PostprocessingActionBox,
                                                AssessmentsActionBox, ExportActionBox)
@@ -13,10 +14,10 @@ import alveoleye._gui_creator as gui_creator
 class WidgetMain(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
-        self.assessments_group_box = None
-        self.postprocessing_group_box = None
-        self.processing_group_box = None
-        self.export_group_box = None
+        self.assessments_group_box: Union[AssessmentsActionBox, None] = None
+        self.postprocessing_group_box: Union[PostprocessingActionBox, None] = None
+        self.processing_group_box: Union[ProcessingActionBox, None] = None
+        self.export_group_box: Union[ExportActionBox, None] = None
 
         self.napari_viewer = napari_viewer
 
