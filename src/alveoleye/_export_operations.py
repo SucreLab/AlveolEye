@@ -7,9 +7,10 @@ def create_json_data(accumulated_results):
     data = {}
 
     for result in accumulated_results:
-        (file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
          lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
-        data[str(file_name)] = {
+        data[str(image_file_name)] = {
+            "Weights": weights_file_name,
             "ASVD": {
                 "asvd": asvd,
                 "airspace_pixels": airspace_pixels,
