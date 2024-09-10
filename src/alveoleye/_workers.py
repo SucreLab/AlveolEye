@@ -87,7 +87,7 @@ class ProcessingWorker(WorkerParent):
             if not self.terminate:
                 self.results_ready.emit(model_output, inference_labelmap)
         except Exception as e:
-            print(f"Error in postprocessing: {e}")
+            print(f"Error in processing: {e}")
         finally:
             self.finished.emit()
 

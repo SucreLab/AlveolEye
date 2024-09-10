@@ -7,9 +7,10 @@ def create_json_data(accumulated_results):
     data = {}
 
     for result in accumulated_results:
-        (file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
          lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
-        data[str(file_name)] = {
+        data[str(image_file_name)] = {
+            "Weights": weights_file_name,
             "ASVD": {
                 "asvd": asvd,
                 "airspace_pixels": airspace_pixels,
@@ -31,7 +32,7 @@ def create_json_data(accumulated_results):
 
 
 def create_csv_data(accumulated_results):
-    field_names = ["File Name", "ASVD", "Airspace Pixels", "Non-Airspace Pixels", "MLI", "Standard Deviation",
+    field_names = ["Image", "Weights", "ASVD", "Airspace Pixels", "Non-Airspace Pixels", "MLI", "Standard Deviation",
                    "Number of Chords", "Lines", "Minimum Length", "Scale"]
 
     csv_buffer = io.StringIO()
@@ -41,15 +42,16 @@ def create_csv_data(accumulated_results):
     written_rows = set()
 
     for result in accumulated_results:
-        (file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
          lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
 
-        row_tuple = (file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, lines_spin_box_value,
-                     min_length_spin_box_value, scale_spin_box_value)
+        row_tuple = (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+                     lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
 
         if row_tuple not in written_rows:
             writer.writerow({
-                "File Name": file_name,
+                "Image": image_file_name,
+                "Weights": weights_file_name,
                 "ASVD": asvd,
                 "Airspace Pixels": airspace_pixels,
                 "Non-Airspace Pixels": non_airspace_pixels,

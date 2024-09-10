@@ -5,13 +5,13 @@ from scipy import ndimage
 
 def calculate_airspace_volume_density(labelmap, labels):
     lumens_mask = np.logical_or(labelmap == labels["AIRWAY_LUMEN"], labelmap == labels["VESSEL_LUMEN"])
-    tissue_map = np.logical_or(labelmap == labels["AIRWAY_EPITHELIUM"], labelmap == labels["VESSEL_ENDOTHELIUM"])
-    mask = np.logical_or(lumens_mask, tissue_map)
-    total_non_lumen_pixels = np.size(labelmap) - np.count_nonzero(mask)
+    epithelium_mask = np.logical_or(labelmap == labels["AIRWAY_EPITHELIUM"], labelmap == labels["VESSEL_ENDOTHELIUM"])
+    mask = np.logical_or(lumens_mask, epithelium_mask)
+    total_non_lumen_or_epithelium_pixels = np.size(labelmap) - np.count_nonzero(mask)
     alveoli_pixels = np.count_nonzero(labelmap == labels["ALVEOLI"])
-    alveolar_density = (alveoli_pixels / total_non_lumen_pixels) * 100.0
+    alveolar_density = (alveoli_pixels / total_non_lumen_or_epithelium_pixels) * 100.0
 
-    return alveolar_density, alveoli_pixels, total_non_lumen_pixels
+    return alveolar_density, alveoli_pixels, total_non_lumen_or_epithelium_pixels
 
 
 def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels):
