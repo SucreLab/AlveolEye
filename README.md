@@ -109,13 +109,48 @@ napari
 ## Export Results: Collect assessment results for each image and export all the data into a file when done (*.csv or *.json).
 - **Interpreting Results**
     - **MLI:** Mean Linear Intercept for the given image
-    - **Standard deviation:** The standard deviation of the lengths of the chord used to calculate MLI.
-    - **Number of chords:** The number of chords used to calculate MLI.
-    - **ASVD:** Airspace Volume Density calculation for the given image.
+    - **Standard deviation:** The standard deviation of the lengths of the chord used to calculate MLI
+    - **Number of chords:** The number of chords used to calculate MLI
+    - **ASVD:** Airspace Volume Density calculation for the given image
     - **Airspace pixels:** The total number of airspace pixels
-    - **Non airspace pixels:** The total number non-airspace pixels.
+    - **Non airspace pixels:** The total number non-airspace pixels
 1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Add last result**: Click the “Add” button to add the assessment data to the final export file. Once the results are added, you can return to the "Processing" step and do another image.
 2. ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Remove last result**: Click the “Remove” button to remove the last results added to the export file.
 3. ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Clear export data**: Click the “Clear” button to clear the export data file.
 4. ![#f03c15](https://placehold.co/15x15/33FF33/33FF33.png) **Export Results**: Click the “Export Results” button to open a file dialogue for saving the assessments results. Note that the plugin supports two export result file types, *.csv and *.json that you can choose between.
+
+---
+
+## Manual Annotation Help: Information and tips to help you manually annotate your images
+# Annotated Diagram
+![annotated diagram](./docs/Colored_AlveolEye_2.png)
+
+- **Labels**
+  - **Airway Epithelium**: 5
+  - **Vessel Endothelium**: 11
+  - **Airway Lumen**: 3
+  - **Vessel Lumen**: 17
+  - **Parenchyma**: 18
+  - **Alveoli**: 8
+  - **Blocking**: 1
+- **Annotation Tips**
+  - ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Eyedropper Tool**: Quickly identify and switch to the correct label by using the eyedropper tool. Click on a part of the image to switch to the label of the pixel you clicked.
+  - ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Select the Correct Layer**: Before making annotations, ensure you're working on the proper layer. Select the appropriate layer under "layer list."
+  - ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Optimize Your View**: Hide unnecessary layers to make annotation easier. Toggle a layer's visibility by clicking the eye icon next to its name.
+
+---
+
+## More
+- **Light/Dark Mode**: Change application appearance to a lighter or darker aesthetic according to personal preference. 
+  - **On Windows/Linux**: Ctrl + Shift + T
+  - **On macOS**: Cmd + Shift + T
+  - **Switch theme through napari preferences**
+
+    a. In the menu bar at the top of the screen, select "napari."  
+
+    b. In the dropdown, select "Preferences."
+
+    c. In the menu on the left, click "Appearance."
+
+    e. Under the theme dropdown, select "dark," "light," or "system," according to personal preference.
 
