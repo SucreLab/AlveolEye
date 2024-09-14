@@ -60,7 +60,7 @@ napari
 # AlveolEye Usage Tutorial
 
 ## Annotated Diagram
-![annotated diagram](./docs/Colored_AlveolEye.png)
+![annotated diagram](./docs/AlveolEye_annotated_diagram.png)
 
 ## Processing: Identify and segment vessel and airway epithelium with an AI computer vision model.
 1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Select an image**: The remaining steps will concern this image.
@@ -123,7 +123,7 @@ napari
 
 ## Manual Annotation Help: Information and tips to help you manually annotate your images
 # Annotated Diagram
-![annotated diagram](./docs/Colored_AlveolEye_2.png)
+![annotated diagram](./docs/Napari_annotated_diagram.png)
 
 - **Labels**
   - **Airway Epithelium**: 5
