@@ -122,7 +122,7 @@ napari
 ---
 
 ## Manual Annotation Help: Information and tips to help you manually annotate your images
-# Annotated Diagram
+### Annotated Diagram
 ![annotated diagram](./docs/Napari_annotated_diagram.png)
 
 - **Labels**
@@ -141,16 +141,16 @@ napari
 ---
 
 ## More
-- **Light/Dark Mode**: Change application appearance to a lighter or darker aesthetic according to personal preference. 
+- **Light/Dark Mode**: Change application appearance to a lighter or darker aesthetic according to personal preference.
   - **On Windows/Linux**: Ctrl + Shift + T
   - **On macOS**: Cmd + Shift + T
   - **Switch theme through napari preferences**
 
-    a. In the menu bar at the top of the screen, select "napari."  
-
+    a. In the menu bar at the top of the screen, select "napari."
+  
     b. In the dropdown, select "Preferences."
-
+    
     c. In the menu on the left, click "Appearance."
-
+  
     e. Under the theme dropdown, select "dark," "light," or "system," according to personal preference.
 
