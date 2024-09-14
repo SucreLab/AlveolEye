@@ -145,12 +145,8 @@ napari
   - **On Windows/Linux**: Ctrl + Shift + T
   - **On macOS**: Cmd + Shift + T
   - **Switch theme through napari preferences**
-
-    a. In the menu bar at the top of the screen, select "napari."
-  
-    b. In the dropdown, select "Preferences."
-    
-    c. In the menu on the left, click "Appearance."
-  
-    e. Under the theme dropdown, select "dark," "light," or "system," according to personal preference.
+    - In the menu bar at the top of the screen, select "napari."
+    - In the dropdown, select "Preferences."
+    - In the menu on the left, click "Appearance."
+    - Under the theme dropdown, select "dark," "light," or "system," according to personal preference.
 
