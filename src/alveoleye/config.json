@@ -117,6 +117,7 @@
     "PARENCHYMA": 18,
     "ALVEOLI": 8,
     "MLI_LINES_INSIDE": 9,
-    "MLI_LINES_OUTSIDE": 24
+    "MLI_LINES_OUTSIDE": 24,
+    "BLOCKER": 1
   }
 }
