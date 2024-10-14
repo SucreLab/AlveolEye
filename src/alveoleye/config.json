@@ -110,14 +110,25 @@
     "ASSESSMENTS_LAYER_NAME": "Assessments"
   },
   "Labels": {
-    "AIRWAY_EPITHELIUM": 5,
-    "VESSEL_ENDOTHELIUM": 11,
+    "AIRWAY_EPITHELIUM": 1,
+    "VESSEL_ENDOTHELIUM": 2,
     "AIRWAY_LUMEN": 3,
-    "VESSEL_LUMEN": 17,
-    "PARENCHYMA": 18,
-    "ALVEOLI": 8,
-    "MLI_LINES_INSIDE": 9,
-    "MLI_LINES_OUTSIDE": 24,
-    "BLOCKER": 1
+    "VESSEL_LUMEN": 4,
+    "PARENCHYMA": 5,
+    "ALVEOLI": 6,
+    "MLI_LINES_INSIDE": 7,
+    "MLI_LINES_OUTSIDE": 8,
+    "BLOCKER": 9
+  },
+  "Colormap": {
+    "AIRWAY_EPITHELIUM": [0.87, 0.58, 0.30],
+    "VESSEL_ENDOTHELIUM": [0.95, 0.35, 0.25],
+    "AIRWAY_LUMEN": [0.70, 0.85, 0.90],
+    "VESSEL_LUMEN": [0.60, 0.40, 0.75],
+    "PARENCHYMA": [0.30, 0.70, 0.50],
+    "ALVEOLI": [0.95, 0.80, 0.40],
+    "MLI_LINES_INSIDE": [0.20, 0.60, 0.70],
+    "MLI_LINES_OUTSIDE": [0.90, 0.50, 0.65],
+    "BLOCKER": [0.10, 0.10, 0.10]
   }
 }

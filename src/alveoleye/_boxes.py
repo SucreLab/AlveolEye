@@ -157,7 +157,8 @@ class ProcessingActionBox(ActionBox):
             return
 
         layers_editor.remove_all_layers(self.napari_viewer)
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image, False)
+        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
+                                    self.colormap_config_data, False)
 
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
@@ -173,7 +174,7 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
-                                    inference_labelmap, True)
+                                    inference_labelmap, self.colormap_config_data, True)
 
         super().on_results_ready()
 
@@ -267,7 +268,8 @@ class PostprocessingActionBox(ActionBox):
 
     def on_results_ready(self, labelmap):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap, True)
+        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
+                                    self.colormap_config_data, True)
 
         super().on_results_ready()
 
@@ -414,7 +416,7 @@ class AssessmentsActionBox(ActionBox):
         if assessments_layer is not None:
             layers_editor.update_layers(self.napari_viewer,
                                         self.layers_config_data["ASSESSMENTS_LAYER_NAME"],
-                                        assessments_layer, True)
+                                        assessments_layer, self.colormap_config_data, True)
 
         ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
                                      os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,

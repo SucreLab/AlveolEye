@@ -23,6 +23,8 @@ class ActionBox(QGroupBox):
         self.action_box_config_data = config_data["ActionBox"]
         self.layers_config_data = config_data["Layers"]
         self.labels_config_data = config_data["Labels"]
+        self.colormap_config_data = {self.labels_config_data[key]: config_data["Colormap"][key] for key in self.labels_config_data}
+
         self.box_config_data = config_data[self.__class__.__name__]
 
         ActionBox.all_action_boxes.append(self)
