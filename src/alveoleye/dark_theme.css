@@ -50,21 +50,25 @@ QCheckBox::indicator:disabled {
 QLineEdit:enabled {
     background-color: rgba(32, 35, 40, 1);
     color: rgba(240, 241, 242, 1.0);
+    font-size: 13px;
 }
 
 QLineEdit:disabled {
     background-color: rgba(32, 35, 40, 0.5);
     color: rgba(240, 241, 242, 0.5);
+    font-size: 13px;
 }
 
 QLineEdit#labelLineEdit:enabled {
     color: rgba(240, 241, 242, 1.0);
     background-color: rgba(0, 0, 0, 0);
+    font-size: 13px;
 }
 
 QLineEdit#labelLineEdit:disabled {
     color: rgba(240, 241, 242, 0.5);
     background-color: rgba(0, 0, 0, 0);
+    font-size: 13px;
 }
 
 ActionButton {
