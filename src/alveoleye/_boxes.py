@@ -55,19 +55,19 @@ class ProcessingActionBox(ActionBox):
     def create_ui_elements(self):
         import_image_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_IMAGE_BUTTON_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT"],
             self.on_import_image_press,
             self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
         )
         import_weights_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
             self.on_import_weights_press,
             self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
         )
         confidence_threshold_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CONFIDENCE_THRESHOLD_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_DEFAULT_VALUE"],
@@ -89,7 +89,7 @@ class ProcessingActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
@@ -212,8 +212,8 @@ class PostprocessingActionBox(ActionBox):
     def create_ui_elements(self):
         thresholding_check_box_and_spin_box = gui_creator.create_check_box_and_spin_box_layout(
             self.box_config_data["THRESHOLDING_BOX_TEXT"],
-            "CHECK_TOOLTIP",
-            "SPIN_TOOLTIP",
+            self.box_config_data["MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT"],
+            self.box_config_data["MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["THRESHOLDING_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["THRESHOLDING_SPIN_BOX_MAX_VALUE"],
@@ -222,7 +222,7 @@ class PostprocessingActionBox(ActionBox):
         )
         clean_alveoli_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CLEAN_ALVEOLI_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_DEFAULT_VALUE"],
@@ -231,7 +231,7 @@ class PostprocessingActionBox(ActionBox):
         )
         clean_parenchyma_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CLEAN_PARENCHYMA_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_DEFAULT_VALUE"],
@@ -254,7 +254,7 @@ class PostprocessingActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
@@ -323,7 +323,7 @@ class AssessmentsActionBox(ActionBox):
          self.asvd_check_box,
          self.asvd_line_edit) = gui_creator.create_check_box_and_line_edit_layout(
             self.box_config_data["ASVD_CHECK_BOX_TITLE"],
-            "TOOLTIP",
+            self.box_config_data["ASVD_CHECKBOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["ASVD_RESULT_LINE_EDIT_DEFAULT"])
 
@@ -333,12 +333,12 @@ class AssessmentsActionBox(ActionBox):
          self.mli_check_box,
          self.mli_line_edit) = gui_creator.create_check_box_and_line_edit_layout(
             self.box_config_data["MLI_CHECK_BOX_TITLE"],
-            "TOOLTIP",
+            self.box_config_data["MLI_CHECKBOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["MLI_RESULT_LINE_EDIT_DEFAULT"])
         lines_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["LINES_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["LINES_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["LINES_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["LINES_SPIN_BOX_DEFAULT_VALUE"],
@@ -346,7 +346,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["LINES_SPIN_BOX_SUFFIX"])
         min_length_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["MIN_LENGTH_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_DEFAULT_VALUE"],
@@ -354,7 +354,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["MIN_LENGTH_SPIN_BOX_SUFFIX"])
         scale_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["SCALE_LABEL_TEXT"],
-            "TOOLTIP",
+            self.box_config_data["SCALE_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["SCALE_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["SCALE_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["SCALE_SPIN_BOX_DEFAULT_VALUE"],
@@ -379,7 +379,7 @@ class AssessmentsActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
@@ -521,15 +521,22 @@ class ExportActionBox(ActionBox):
         horizontal_line_two = gui_creator.create_horizontal_line_widget()
 
         add_label_and_button_layout, label, self.add_button = gui_creator.create_label_and_button_layout(
-            self.box_config_data["ADD_PROMPT"], self.box_config_data["ADD_BUTTON_TEXT"], "TOOLTIP", self.add_results)
+            self.box_config_data["ADD_PROMPT"],
+            self.box_config_data["ADD_BUTTON_TEXT"],
+            self.box_config_data["ADD_BUTTON_TOOLTIP_TEXT"],
+            self.add_results)
 
         clear_label_and_button_layout, label, self.clear_button = gui_creator.create_label_and_button_layout(
-            self.box_config_data["CLEAR_PROMPT"], self.box_config_data["CLEAR_BUTTON_TEXT"], "TOOLTIP", self.clear_results)
+            self.box_config_data["CLEAR_PROMPT"],
+            self.box_config_data["CLEAR_BUTTON_TEXT"],
+            self.box_config_data["CLEAR_BUTTON_TOOLTIP_TEXT"],
+            self.clear_results)
 
         self.create_action_box_layout([asvd_layout, asvd_airspace_pixels_layout, asvd_non_airspace_pixels_layout,
                                        horizontal_line_one, mli_layout, mli_stdev_layout, mli_chords_layout,
                                        horizontal_line_two, add_label_and_button_layout, clear_label_and_button_layout],
-                                      self.box_config_data["ACTION_BUTTON_TEXT"], self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TEXT"],
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
