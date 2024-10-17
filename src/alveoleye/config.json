@@ -16,10 +16,10 @@
     "CONFIDENCE_THRESHOLD_SPIN_BOX_DEFAULT_VALUE":  30,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_STEP": 1,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_SUFFIX": "%",
-    "IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT": "Select a histologic lung image for processing.",
-    "IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT": "Select a weights file to load into the computer vision AI.",
-    "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold that pixel classifications must exceed to appear in output.",
-    "ACTION_BUTTON_TOOLTIP_TEXT": "Process the provided image using the provided weights in a computer vision AI model."
+    "IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT": "Select a histologic lung image\nfor processing",
+    "IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT": "Select a weights file to load\ninto the computer vision AI",
+    "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold\nthat pixel classifications\nmust exceed to appear in\noutput",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Process the provided image\nusing the provided weights in\na computer vision AI model"
   },
   "PostprocessingActionBox": {
     "TITLE": "Postprocessing",
@@ -49,11 +49,11 @@
       "AIRWAY TISSUE": 4,
       "AIRWAY LUMEN": 5
     },
-    "MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT": "Toggle between using a user-determined or dynamically-determined binarization threshold.",
-    "MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT": "Set the binarization threshold for distinguishing between tissue and airspace.",
-    "REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT": "Set the minimum component size to exclude small matter (e.g., immune cells, fragments).",
-    "REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum component size to exclude small spaces (e.g. non-airspace gaps in tissue).",
-    "ACTION_BUTTON_TOOLTIP_TEXT": "Further process the image to create a complete label map with filled lumens."
+    "MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT": "Toggle between using a\nuser-determined or\ndynamically-determined\nbinarization threshold",
+    "MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT": "Set the binarization\nthreshold for distinguishing\nbetween tissue and airspace",
+    "REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT": "Set the minimum component size\nto exclude small matter\n(e.g., immune cells)",
+    "REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum component\nsize to exclude small spaces\n(e.g. non-airspace gaps in\ntissue)",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Further process the image to\ncreate a complete label map\nwith filled lumens"
   },
   "AssessmentsActionBox": {
     "TITLE": "Assessments",
@@ -82,12 +82,12 @@
     "ASVD_CHECK_BOX_TITLE": "ASVD",
     "ASVD_RESULT_LINE_EDIT_DEFAULT": "None",
     "INFO_BUTTON_TEXT": " i ",
-    "ASVD_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform ASVD when \"Run Assessments\" is clicked.",
-    "MLI_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform MLI when \"Run Assessments\" is clicked.",
-    "NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT": "Set the number of test lines for MLI.",
-    "MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum chord length to exclude small chords from MLI.",
-    "SCALE_SPIN_BOX_TOOLTIP_TEXT": "Scale the pixel MLI result to convert the value to physical units (e.g., micrometers).",
-    "ACTION_BUTTON_TOOLTIP_TEXT": "Run morphometry assessments with given parameters and display results."
+    "ASVD_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform\nASVD when \"Run Assessments\"\nis clicked",
+    "MLI_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform MLI\nwhen \"Run Assessments\" is\nclicked",
+    "NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT": "Set the number of test lines\nfor MLI",
+    "MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum chord length\nto exclude small chords from\nMLI",
+    "SCALE_SPIN_BOX_TOOLTIP_TEXT": "Scale the pixel MLI result to\nconvert the value to physical\nunits (e.g., micrometers)",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Run morphometry assessments\nwith given parameters and\ndisplay results"
   },
   "ExportActionBox": {
     "ACTION_BUTTON_TEXT": "Export Results",
@@ -111,9 +111,9 @@
     "CLEAR_BUTTON_TEXT": "Clear",
     "NAME_LABEL_TEXT": "Name: ",
     "NAME_DEFAULT_TEXT": "default.csv",
-    "ADD_BUTTON_TOOLTIP_TEXT": "Stage the latest morphometry results for export.",
-    "CLEAR_BUTTON_TOOLTIP_TEXT": "Clear all staged morphometry results.",
-    "ACTION_BUTTON_TOOLTIP_TEXT": "Export all staged morphometry results."
+    "ADD_BUTTON_TOOLTIP_TEXT": "Stage the latest morphometry\nresults for export",
+    "CLEAR_BUTTON_TOOLTIP_TEXT": "Clear all staged morphometry\nresults",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Export all staged morphometry\nresults"
 
   },
   "ActionBox": {
