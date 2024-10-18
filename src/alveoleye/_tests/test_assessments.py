@@ -12,7 +12,8 @@ class TestCalculateAirspaceVolumeDensity(unittest.TestCase):
             "VESSEL_LUMEN": 2,
             "AIRWAY_EPITHELIUM": 3,
             "VESSEL_ENDOTHELIUM": 4,
-            "ALVEOLI": 5
+            "ALVEOLI": 5,
+            "BLOCKER": 9
         }
 
     def test_basic_case(self):
@@ -70,7 +71,8 @@ class TestCalculateMeanLinearIntercept(unittest.TestCase):
         self.labels = {
             "ALVEOLI": 1,
             "MLI_LINES_OUTSIDE": 2,
-            "MLI_LINES_INSIDE": 3
+            "MLI_LINES_INSIDE": 3,
+            "BLOCKER": 9
         }
 
     def test_empty_labelmap(self):

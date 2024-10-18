@@ -270,7 +270,7 @@ class TestCreateProcessingLabelmap(unittest.TestCase):
         }
         self.shape = (3, 3)
         self.confidence_threshold = 50  # 50%
-        self.labels = {"AIRWAY_EPITHELIUM": 1, "VESSEL_ENDOTHELIUM": 2}
+        self.labels = {"AIRWAY_EPITHELIUM": 1, "VESSEL_ENDOTHELIUM": 2, "BLOCKER": 9}
 
     def test_create_processing_labelmap(self):
         # Test case for creating a labelmap with standard parameters
@@ -363,7 +363,8 @@ class TestPostprocessingLabelmapOne(unittest.TestCase):
             "AIRWAY_LUMEN": 3,
             "VESSEL_LUMEN": 4,
             "ALVEOLI": 5,
-            "PARENCHYMA": 6
+            "PARENCHYMA": 6,
+            "BLOCKER": 9
         }
 
         # Base mask for testing
@@ -426,7 +427,8 @@ class TestCreatePostprocessingLabelmapTwo(unittest.TestCase):
             "AIRWAY_EPITHELIUM": 3,
             "VESSEL_ENDOTHELIUM": 4,
             "AIRWAY_LUMEN": 5,
-            "VESSEL_LUMEN": 6
+            "VESSEL_LUMEN": 6,
+            "BLOCKER": 9
         }
 
     def test_create_postprocessing_labelmap(self):
