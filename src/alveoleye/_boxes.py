@@ -443,10 +443,11 @@ class ExportActionBox(ActionBox):
         self.asvd_metrics = None
 
         self.add_button = None
+        self.remove_button = None
         self.clear_button = None
         self.selected_filter = None
         self.file_path = None
-        self.accumulated_results = []
+        self.accumulated_results = set()
 
         self.name_line_edit = None
         self.box_id = 4
@@ -511,13 +512,17 @@ class ExportActionBox(ActionBox):
         add_label_and_button_layout, label, self.add_button = gui_creator.create_label_and_button_layout(
             self.box_config_data["ADD_PROMPT"], self.box_config_data["ADD_BUTTON_TEXT"], self.add_results)
 
+        remove_label_and_button_layout, label, self.remove_button = gui_creator.create_label_and_button_layout(
+            self.box_config_data["REMOVE_PROMPT"], self.box_config_data["REMOVE_BUTTON_TEXT"], self.remove_results)
+
         clear_label_and_button_layout, label, self.clear_button = gui_creator.create_label_and_button_layout(
             self.box_config_data["CLEAR_PROMPT"], self.box_config_data["CLEAR_BUTTON_TEXT"], self.clear_results)
 
         self.create_action_box_layout([asvd_layout, asvd_airspace_pixels_layout, asvd_non_airspace_pixels_layout,
                                        horizontal_line_one, mli_layout, mli_stdev_layout, mli_chords_layout,
-                                       horizontal_line_two, add_label_and_button_layout, clear_label_and_button_layout],
-                                      self.box_config_data["ACTION_BUTTON_TEXT"], self.box_config_data["TOOLTIP_TEXT"])
+                                       horizontal_line_two, add_label_and_button_layout, remove_label_and_button_layout,
+                                       clear_label_and_button_layout], self.box_config_data["ACTION_BUTTON_TEXT"],
+                                      self.box_config_data["TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
@@ -550,6 +555,13 @@ class ExportActionBox(ActionBox):
                                     lambda: self.accumulated_results],
                                    lambda: rules.toggle(True, self.clear_button))
 
+        self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
+                                   lambda: rules.toggle(False, self.remove_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
+                                   lambda: rules.toggle(True, self.remove_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
+                                   lambda: rules.toggle(False, self.remove_button))
+
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
                                    lambda: rules.toggle(True, self.action_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
@@ -574,14 +586,18 @@ class ExportActionBox(ActionBox):
                                      self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
 
     def add_results(self):
-        self.accumulated_results.append(ActionBox.current_results)
+        self.accumulated_results.add(tuple(ActionBox.current_results))
+        self.rules_engine.evaluate_rules()
+
+    def remove_results(self):
+        self.accumulated_results.pop()
         self.rules_engine.evaluate_rules()
 
     def clear_results(self):
         result = gui_creator.create_confirm_clear_message_box(self)
 
         if result:
-            self.accumulated_results = []
+            self.accumulated_results = set()
             self.rules_engine.evaluate_rules()
 
     def on_results_ready(self, wrapped_data, extension):

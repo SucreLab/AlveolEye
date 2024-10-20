@@ -94,6 +94,8 @@
     "ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
     "ADD_PROMPT": "Add last results",
     "ADD_BUTTON_TEXT": "Add",
+    "REMOVE_PROMPT": "Remove last results",
+    "REMOVE_BUTTON_TEXT": "Remove",
     "CLEAR_PROMPT": "Clear export data",
     "CLEAR_BUTTON_TEXT": "Clear",
     "NAME_LABEL_TEXT": "Name: ",
