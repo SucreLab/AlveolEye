@@ -3,12 +3,28 @@ import io
 import json
 
 
+def format_results(result):
+    (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+     lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+
+    asvd = float(asvd)
+    mli = float(mli)
+    stdev = float(stdev)
+    chords = int(chords)
+    airspace_pixels = int(airspace_pixels)
+    non_airspace_pixels = int(non_airspace_pixels)
+
+    return (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
+           lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
+
+
 def create_json_data(accumulated_results):
     data = {}
 
     for result in accumulated_results:
         (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
+
         data[str(image_file_name)] = {
             "Weights": weights_file_name,
             "ASVD": {
@@ -41,7 +57,7 @@ def create_csv_data(accumulated_results):
 
     for result in accumulated_results:
         (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
 
         writer.writerow({
             "Image": image_file_name,
