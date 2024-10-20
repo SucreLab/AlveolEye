@@ -590,11 +590,14 @@ class ExportActionBox(ActionBox):
         self.rules_engine.evaluate_rules()
 
     def remove_results(self):
-        self.accumulated_results.pop()
-        self.rules_engine.evaluate_rules()
+        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
+
+        if result:
+            self.accumulated_results.pop()
+            self.rules_engine.evaluate_rules()
 
     def clear_results(self):
-        result = gui_creator.create_confirm_clear_message_box(self)
+        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
 
         if result:
             self.accumulated_results = set()

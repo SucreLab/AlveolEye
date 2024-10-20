@@ -99,7 +99,9 @@
     "CLEAR_PROMPT": "Clear export data",
     "CLEAR_BUTTON_TEXT": "Clear",
     "NAME_LABEL_TEXT": "Name: ",
-    "NAME_DEFAULT_TEXT": "default.csv"
+    "NAME_DEFAULT_TEXT": "default.csv",
+    "CLEAR_CONFIRMATION_MESSAGE": "Are you sure you want to clear all results?",
+    "REMOVE_CONFIRMATION_MESSAGE": "Are you sure you want to remove last result?"
   },
   "ActionBox": {
     "ANIMATION_INTERVAL": 500,

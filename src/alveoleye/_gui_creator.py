@@ -177,11 +177,11 @@ def save_data_with_file_dialog():
     return file_path, selected_filter
 
 
-def create_confirm_clear_message_box(parent):
+def create_confirmation_message_box(parent, message):
     message_box = QMessageBox(parent)
     message_box.setIcon(QMessageBox.Warning)
     message_box.setText(
-        "<html><body style='font-weight: normal;'>Are you sure you want to clear your results?</body></html>")
+        f'<html><body style="font-weight: normal;">{message}</body></html>')
 
     buttons = {
         "Yes": QMessageBox.AcceptRole,
