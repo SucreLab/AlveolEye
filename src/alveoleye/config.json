@@ -18,7 +18,7 @@
     "CONFIDENCE_THRESHOLD_SPIN_BOX_SUFFIX": "%",
     "IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT": "Select a histologic lung image\nfor processing",
     "IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT": "Select a weights file to load\ninto the computer vision AI",
-    "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold\nthat pixel classifications\nmust exceed to appear in\noutput",
+    "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold\nthat pixel classifications\nmust exceed to appear in output",
     "ACTION_BUTTON_TOOLTIP_TEXT": "Process the provided image\nusing the provided weights in\na computer vision AI model"
   },
   "PostprocessingActionBox": {
@@ -52,7 +52,7 @@
     "MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT": "Toggle between using a\nuser-determined or\ndynamically-determined\nbinarization threshold",
     "MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT": "Set the binarization\nthreshold for distinguishing\nbetween tissue and airspace",
     "REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT": "Set the minimum component size\nto exclude small matter\n(e.g., immune cells)",
-    "REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum component\nsize to exclude small spaces\n(e.g. non-airspace gaps in\ntissue)",
+    "REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum component\nsize to exclude small spaces\n(e.g. non-airspace gaps in tissue)",
     "ACTION_BUTTON_TOOLTIP_TEXT": "Further process the image to\ncreate a complete label map\nwith filled lumens"
   },
   "AssessmentsActionBox": {
@@ -83,9 +83,9 @@
     "ASVD_RESULT_LINE_EDIT_DEFAULT": "None",
     "INFO_BUTTON_TEXT": " i ",
     "ASVD_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform\nASVD when \"Run Assessments\"\nis clicked",
-    "MLI_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform MLI\nwhen \"Run Assessments\" is\nclicked",
+    "MLI_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform MLI\nwhen \"Run Assessments\" is clicked",
     "NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT": "Set the number of test lines\nfor MLI",
-    "MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum chord length\nto exclude small chords from\nMLI",
+    "MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum chord length\nto exclude small chords from MLI",
     "SCALE_SPIN_BOX_TOOLTIP_TEXT": "Scale the pixel MLI result to\nconvert the value to physical\nunits (e.g., micrometers)",
     "ACTION_BUTTON_TOOLTIP_TEXT": "Run morphometry assessments\nwith given parameters and\ndisplay results"
   },
@@ -118,8 +118,8 @@
     "REMOVE_CONFIRMATION_MESSAGE": "Are you sure you want to remove last result?",
     "ADD_BUTTON_TOOLTIP_TEXT": "Stage the latest morphometry\nresults for export",
     "REMOVE_BUTTON_TOOLTIP_TEXT": "Remove the latest staged\nmorphometry result",
-    "CLEAR_BUTTON_TOOLTIP_TEXT": "Clear all staged morphometry\nresults",
-    "ACTION_BUTTON_TOOLTIP_TEXT": "Export all staged morphometry\nresults"
+    "CLEAR_BUTTON_TOOLTIP_TEXT": "Clear all staged morphometry results",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Export all staged morphometry results"
 
   },
   "ActionBox": {
