@@ -611,6 +611,7 @@ class ExportActionBox(ActionBox):
     def add_results(self):
         self.accumulated_results.add(tuple(ActionBox.current_results))
         self.rules_engine.evaluate_rules()
+        self.update_export_counter()
 
     def remove_results(self):
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
@@ -618,6 +619,7 @@ class ExportActionBox(ActionBox):
         if result:
             self.accumulated_results.pop()
             self.rules_engine.evaluate_rules()
+            self.update_export_counter()
 
     def clear_results(self):
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
@@ -625,6 +627,19 @@ class ExportActionBox(ActionBox):
         if result:
             self.accumulated_results = set()
             self.rules_engine.evaluate_rules()
+            self.update_export_counter()
+
+    def update_export_counter(self):
+        base_text = self.box_config_data["ACTION_BUTTON_TEXT"]
+        max_export_count_display_number = self.box_config_data["MAX_EXPORT_COUNT_DISPLAY_NUMBER"]
+        number_of_results = len(self.accumulated_results)
+
+        if number_of_results == 0:
+            self.action_button.setText(base_text)
+        elif number_of_results > max_export_count_display_number:
+            self.action_button.setText(f'{base_text} ({max_export_count_display_number}+)')
+        else:
+            self.action_button.setText(f'{base_text} ({number_of_results})')
 
     def on_results_ready(self, wrapped_data, extension):
         pass
