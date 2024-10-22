@@ -46,7 +46,7 @@ def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labe
     average_length = total_area * scale / counter if counter > 0 else 0
 
     chord_lengths = np.array(chord_lengths)
-    stdev_chord_lengths = np.std(chord_lengths)
+    stdev_chord_lengths = "NA" if len(chord_lengths) == 0 else np.std(chord_lengths)
 
     kernel = np.array([[0, 1, 0], [0, 1, 0], [0, 1, 0]], np.uint8)
     chords_highlighted_labelmap = cv2.dilate(chords_labelmap, kernel, iterations=6)
