@@ -118,7 +118,7 @@ class ProcessingActionBox(ActionBox):
         else:
             current_path = self._image_open_path
 
-        parent_directory = str(current_path.parent)
+        parent_directory = str(current_path.parent) + "/data"
 
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
 
