@@ -55,16 +55,19 @@ class ProcessingActionBox(ActionBox):
     def create_ui_elements(self):
         import_image_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_IMAGE_BUTTON_TEXT"],
+            self.box_config_data["IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT"],
             self.on_import_image_press,
             self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
         )
         import_weights_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
+            self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
             self.on_import_weights_press,
             self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
         )
         confidence_threshold_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CONFIDENCE_THRESHOLD_LABEL_TEXT"],
+            self.box_config_data["MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CONFIDENCE_THRESHOLD_SPIN_BOX_DEFAULT_VALUE"],
@@ -86,7 +89,7 @@ class ProcessingActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
@@ -157,7 +160,8 @@ class ProcessingActionBox(ActionBox):
             return
 
         layers_editor.remove_all_layers(self.napari_viewer)
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image, False)
+        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
+                                    self.colormap_config_data, False)
 
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
@@ -173,7 +177,7 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
-                                    inference_labelmap, True)
+                                    inference_labelmap, self.colormap_config_data, True)
 
         super().on_results_ready()
 
@@ -209,6 +213,8 @@ class PostprocessingActionBox(ActionBox):
     def create_ui_elements(self):
         thresholding_check_box_and_spin_box = gui_creator.create_check_box_and_spin_box_layout(
             self.box_config_data["THRESHOLDING_BOX_TEXT"],
+            self.box_config_data["MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT"],
+            self.box_config_data["MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["THRESHOLDING_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["THRESHOLDING_SPIN_BOX_MAX_VALUE"],
@@ -217,6 +223,7 @@ class PostprocessingActionBox(ActionBox):
         )
         clean_alveoli_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CLEAN_ALVEOLI_LABEL_TEXT"],
+            self.box_config_data["REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CLEAN_ALVEOLI_SPIN_BOX_DEFAULT_VALUE"],
@@ -225,6 +232,7 @@ class PostprocessingActionBox(ActionBox):
         )
         clean_parenchyma_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CLEAN_PARENCHYMA_LABEL_TEXT"],
+            self.box_config_data["REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["CLEAN_PARENCHYMA_SPIN_BOX_DEFAULT_VALUE"],
@@ -247,7 +255,7 @@ class PostprocessingActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
@@ -267,7 +275,8 @@ class PostprocessingActionBox(ActionBox):
 
     def on_results_ready(self, labelmap):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap, True)
+        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
+                                    self.colormap_config_data, True)
 
         super().on_results_ready()
 
@@ -316,6 +325,7 @@ class AssessmentsActionBox(ActionBox):
          self.asvd_check_box,
          self.asvd_line_edit) = gui_creator.create_check_box_and_line_edit_layout(
             self.box_config_data["ASVD_CHECK_BOX_TITLE"],
+            self.box_config_data["ASVD_CHECKBOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["ASVD_RESULT_LINE_EDIT_DEFAULT"])
 
@@ -325,10 +335,12 @@ class AssessmentsActionBox(ActionBox):
          self.mli_check_box,
          self.mli_line_edit) = gui_creator.create_check_box_and_line_edit_layout(
             self.box_config_data["MLI_CHECK_BOX_TITLE"],
+            self.box_config_data["MLI_CHECKBOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["MLI_RESULT_LINE_EDIT_DEFAULT"])
         lines_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["LINES_LABEL_TEXT"],
+            self.box_config_data["NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["LINES_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["LINES_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["LINES_SPIN_BOX_DEFAULT_VALUE"],
@@ -336,6 +348,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["LINES_SPIN_BOX_SUFFIX"])
         min_length_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["MIN_LENGTH_LABEL_TEXT"],
+            self.box_config_data["MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_DEFAULT_VALUE"],
@@ -343,6 +356,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["MIN_LENGTH_SPIN_BOX_SUFFIX"])
         scale_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["SCALE_LABEL_TEXT"],
+            self.box_config_data["SCALE_SPIN_BOX_TOOLTIP_TEXT"],
             self.box_config_data["SCALE_SPIN_BOX_MIN_VALUE"],
             self.box_config_data["SCALE_SPIN_BOX_MAX_VALUE"],
             self.box_config_data["SCALE_SPIN_BOX_DEFAULT_VALUE"],
@@ -367,7 +381,7 @@ class AssessmentsActionBox(ActionBox):
 
         self.create_action_box_layout(ui_elements,
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["TOOLTIP_TEXT"])
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
@@ -413,8 +427,8 @@ class AssessmentsActionBox(ActionBox):
 
         if assessments_layer is not None:
             layers_editor.update_layers(self.napari_viewer,
-                                        self.layers_config_data["ASSESSMENTS_LAYER_NAME"],
-                                        assessments_layer, True)
+                                        self.layers_config_data["ASSESSMENTS_LAYER_NAME"], assessments_layer,
+                                        self.colormap_config_data, True)
 
         ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
                                      os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
@@ -443,10 +457,11 @@ class ExportActionBox(ActionBox):
         self.asvd_metrics = None
 
         self.add_button = None
+        self.remove_button = None
         self.clear_button = None
         self.selected_filter = None
         self.file_path = None
-        self.accumulated_results = []
+        self.accumulated_results = set()
 
         self.name_line_edit = None
         self.box_id = 4
@@ -509,15 +524,28 @@ class ExportActionBox(ActionBox):
         horizontal_line_two = gui_creator.create_horizontal_line_widget()
 
         add_label_and_button_layout, label, self.add_button = gui_creator.create_label_and_button_layout(
-            self.box_config_data["ADD_PROMPT"], self.box_config_data["ADD_BUTTON_TEXT"], self.add_results)
+            self.box_config_data["ADD_PROMPT"],
+            self.box_config_data["ADD_BUTTON_TEXT"],
+            self.box_config_data["ADD_BUTTON_TOOLTIP_TEXT"],
+            self.add_results)
+
+        remove_label_and_button_layout, label, self.remove_button = gui_creator.create_label_and_button_layout(
+            self.box_config_data["REMOVE_PROMPT"],
+            self.box_config_data["REMOVE_BUTTON_TEXT"],
+            self.box_config_data["REMOVE_BUTTON_TOOLTIP_TEXT"],
+            self.remove_results)
 
         clear_label_and_button_layout, label, self.clear_button = gui_creator.create_label_and_button_layout(
-            self.box_config_data["CLEAR_PROMPT"], self.box_config_data["CLEAR_BUTTON_TEXT"], self.clear_results)
+            self.box_config_data["CLEAR_PROMPT"],
+            self.box_config_data["CLEAR_BUTTON_TEXT"],
+            self.box_config_data["CLEAR_BUTTON_TOOLTIP_TEXT"],
+            self.clear_results)
 
         self.create_action_box_layout([asvd_layout, asvd_airspace_pixels_layout, asvd_non_airspace_pixels_layout,
                                        horizontal_line_one, mli_layout, mli_stdev_layout, mli_chords_layout,
-                                       horizontal_line_two, add_label_and_button_layout, clear_label_and_button_layout],
-                                      self.box_config_data["ACTION_BUTTON_TEXT"], self.box_config_data["TOOLTIP_TEXT"])
+                                       horizontal_line_two, add_label_and_button_layout, remove_label_and_button_layout,
+                                       clear_label_and_button_layout], self.box_config_data["ACTION_BUTTON_TEXT"],
+                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
@@ -541,6 +569,13 @@ class ExportActionBox(ActionBox):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
                                     lambda: ActionBox.current_results],
                                    lambda: rules.toggle(True, self.add_button))
+
+        self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
+                                   lambda: rules.toggle(False, self.remove_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
+                                   lambda: rules.toggle(True, self.remove_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
+                                   lambda: rules.toggle(False, self.remove_button))
 
         self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
                                    lambda: rules.toggle(False, self.clear_button))
@@ -574,14 +609,21 @@ class ExportActionBox(ActionBox):
                                      self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
 
     def add_results(self):
-        self.accumulated_results.append(ActionBox.current_results)
+        self.accumulated_results.add(tuple(ActionBox.current_results))
         self.rules_engine.evaluate_rules()
 
-    def clear_results(self):
-        result = gui_creator.create_confirm_clear_message_box(self)
+    def remove_results(self):
+        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
 
         if result:
-            self.accumulated_results = []
+            self.accumulated_results.pop()
+            self.rules_engine.evaluate_rules()
+
+    def clear_results(self):
+        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
+
+        if result:
+            self.accumulated_results = set()
             self.rules_engine.evaluate_rules()
 
     def on_results_ready(self, wrapped_data, extension):
