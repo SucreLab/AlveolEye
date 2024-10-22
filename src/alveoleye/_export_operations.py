@@ -8,7 +8,7 @@ def format_results(result):
 
     asvd = float(asvd)
     mli = float(mli)
-    stdev = float(stdev)
+    stdev = stdev if stdev == "NA" else float(stdev)
     chords = int(chords)
     airspace_pixels = int(airspace_pixels)
     non_airspace_pixels = int(non_airspace_pixels)
