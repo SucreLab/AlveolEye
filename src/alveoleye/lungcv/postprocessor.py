@@ -61,17 +61,17 @@ def create_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels)
 
     airway_complete_labelmap = create_complete_class_labelmap(airway_epithelium_labelmap, thresholded_labelmap, labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"])
     vessel_complete_labelmap = create_complete_class_labelmap(vessel_epithelium_labelmap, thresholded_labelmap, labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"])
-    blocking_complete_labelmap = create_complete_class_labelmap(blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], 2, True)
+    blocking_complete_labelmap = create_complete_class_labelmap(blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], -1, True)
 
-    final_labelmap = np.zeros(masks_labelmap.shape, dtype="uint8")
+    final_labelmap = np.zeros(masks_labelmap.shape, dtype="int16")
     final_labelmap = np.where(parenchyma_labelmap, parenchyma_labelmap, final_labelmap)
     final_labelmap = np.where(airway_complete_labelmap, airway_complete_labelmap, final_labelmap)
     final_labelmap = np.where(vessel_complete_labelmap, vessel_complete_labelmap, final_labelmap)
-
     final_labelmap = np.where(blocking_complete_labelmap, blocking_complete_labelmap, final_labelmap)
-    final_labelmap[final_labelmap == 2] = 0
 
-    return final_labelmap
+    final_labelmap[final_labelmap == -1] = 0
+
+    return final_labelmap.astype("uint8")
 
 
 def create_complete_class_labelmap(class_epithelium_labelmap, thresholded_image, epithelium_label, lumen_label, blocking=False, edge_distance=10):
