@@ -462,7 +462,6 @@ class ExportActionBox(ActionBox):
         self.selected_filter = None
         self.file_path = None
 
-        self.last_results = None;
         self.accumulated_results = []
 
         self.name_line_edit = None
@@ -572,7 +571,7 @@ class ExportActionBox(ActionBox):
                                     lambda: ActionBox.current_results],
                                    lambda: rules.toggle(True, self.add_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
-                                    lambda: self.last_results == tuple(ActionBox.current_results)],
+                                    lambda: tuple(ActionBox.current_results) in self.accumulated_results],
                                    lambda: rules.toggle(False, self.add_button))
 
         self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
@@ -614,11 +613,7 @@ class ExportActionBox(ActionBox):
                                      self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
 
     def add_results(self):
-        results = tuple(ActionBox.current_results)
-        self.accumulated_results.append(results)
-
-        self.last_results = results
-
+        self.accumulated_results.append(tuple(ActionBox.current_results))
         self.rules_engine.evaluate_rules()
         self.update_export_counter()
 
@@ -626,7 +621,6 @@ class ExportActionBox(ActionBox):
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
 
         if result:
-            self.last_results = None
             self.accumulated_results.pop()
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
@@ -635,7 +629,6 @@ class ExportActionBox(ActionBox):
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
 
         if result:
-            self.last_results = None
             self.accumulated_results.clear()
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
