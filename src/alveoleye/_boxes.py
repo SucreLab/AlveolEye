@@ -581,8 +581,6 @@ class ExportActionBox(ActionBox):
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
                                    lambda: rules.toggle(False, self.remove_button))
 
-        self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
-                                   lambda: rules.toggle(False, self.clear_button))
         self.rules_engine.add_rule(lambda: not self.accumulated_results,
                                    lambda: rules.toggle(False, self.clear_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
