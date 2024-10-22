@@ -563,19 +563,13 @@ class ExportActionBox(ActionBox):
         self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
                                    lambda: rules.toggle(True, self.asvd_metrics))
 
-        self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
-                                   lambda: rules.toggle(False, self.add_button))
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
                                    lambda: rules.toggle(False, self.add_button))
-        self.rules_engine.add_rule([lambda: ActionBox.step == 3,
-                                    lambda: ActionBox.current_results],
+        self.rules_engine.add_rule([lambda: ActionBox.current_results],
                                    lambda: rules.toggle(True, self.add_button))
-        self.rules_engine.add_rule([lambda: ActionBox.step == 3,
-                                    lambda: tuple(ActionBox.current_results) in self.accumulated_results],
+        self.rules_engine.add_rule([lambda: tuple(ActionBox.current_results) in self.accumulated_results],
                                    lambda: rules.toggle(False, self.add_button))
 
-        self.rules_engine.add_rule(lambda: not ActionBox.step == 3,
-                                   lambda: rules.toggle(False, self.remove_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
                                    lambda: rules.toggle(True, self.remove_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
@@ -583,8 +577,7 @@ class ExportActionBox(ActionBox):
 
         self.rules_engine.add_rule(lambda: not self.accumulated_results,
                                    lambda: rules.toggle(False, self.clear_button))
-        self.rules_engine.add_rule([lambda: ActionBox.step == 3,
-                                    lambda: self.accumulated_results],
+        self.rules_engine.add_rule([lambda: self.accumulated_results],
                                    lambda: rules.toggle(True, self.clear_button))
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
