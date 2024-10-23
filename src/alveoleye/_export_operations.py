@@ -2,19 +2,20 @@ import csv
 import io
 import json
 
+
 def format_results(result):
     (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
      lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
 
-    asvd = float(asvd)
-    mli = float(mli)
-    stdev = stdev if stdev == "NA" else float(stdev)
-    chords = int(chords)
-    airspace_pixels = int(airspace_pixels)
-    non_airspace_pixels = int(non_airspace_pixels)
+    asvd = None if not asvd else float(asvd)
+    mli = None if not mli else float(mli)
+    stdev = None if stdev in ('', 'NA') else float(stdev)
+    chords = None if not chords else int(chords)
+    airspace_pixels = None if not airspace_pixels else int(airspace_pixels)
+    non_airspace_pixels = None if not non_airspace_pixels else int(non_airspace_pixels)
 
     return (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-           lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
+            lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
 
 
 def create_json_data(accumulated_results):
