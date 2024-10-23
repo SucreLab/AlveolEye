@@ -270,6 +270,8 @@ class PostprocessingActionBox(ActionBox):
                                    lambda: rules.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 2],
                                    lambda: rules.toggle(True, self.action_button))
+        self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 3],
+                                   lambda: rules.toggle(True, self.action_button))
 
         super().create_ui_rules()
 
