@@ -3,7 +3,7 @@ from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import QMessageBox
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
-                             QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
+                            QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
 
 
 def create_sub_layout(layout, elements):
@@ -12,12 +12,11 @@ def create_sub_layout(layout, elements):
             layout.addLayout(element)
         else:
             layout.addWidget(element)
-
     return layout
 
 
-def create_label_and_spin_box_layout(label_text, spin_box_min, spin_box_max, spin_box_default, spin_box_step,
-                                     spin_box_suffix, value_type="single", decimals=5):
+def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spin_box_max, spin_box_default,
+                                     spin_box_step, spin_box_suffix, value_type="single", decimals=5):
     label = QLineEdit(label_text)
     label.setReadOnly(True)
     label.setObjectName("labelLineEdit")
@@ -29,14 +28,13 @@ def create_label_and_spin_box_layout(label_text, spin_box_min, spin_box_max, spi
         "singleStep": spin_box_step,
         "suffix": spin_box_suffix
     }
-
     spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
-
     if value_type == "double":
         spin_box.setDecimals(decimals)
 
     label_and_spin_box_layout = create_sub_layout(QHBoxLayout(), [label, spin_box])
 
+    spin_box.setToolTip(tooltip_text)
     spin_box.setCursor(Qt.PointingHandCursor)
     spin_box.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -46,9 +44,9 @@ def create_label_and_spin_box_layout(label_text, spin_box_min, spin_box_max, spi
     return label_and_spin_box_layout, label, spin_box
 
 
-def create_check_box_and_spin_box_layout(check_box_text, on_check_box_checked, spin_box_min, spin_box_max,
-                                         spin_box_default, spin_box_step, spin_box_suffix="",
-                                         value_type="single", decimals=5):
+def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text, spin_box_tooltip_text,
+                                         on_check_box_checked, spin_box_min, spin_box_max, spin_box_default,
+                                         spin_box_step, spin_box_suffix="", value_type="single", decimals=5):
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
 
@@ -59,25 +57,29 @@ def create_check_box_and_spin_box_layout(check_box_text, on_check_box_checked, s
         "singleStep": spin_box_step,
         "suffix": spin_box_suffix
     }
-
     spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
-
     if value_type == "double":
         spin_box.setDecimals(decimals)
 
     check_box_and_spin_box_layout = create_sub_layout(QHBoxLayout(), [check_box, spin_box])
 
+    check_box.setToolTip(check_box_tooltip_text)
+    spin_box.setToolTip(spin_box_tooltip_text)
+
     spin_box.setCursor(Qt.PointingHandCursor)
     spin_box.setAlignment(QtCore.Qt.AlignCenter)
+
     check_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     return check_box_and_spin_box_layout, check_box, spin_box
 
 
-def create_check_box_and_line_edit_layout(check_box_text, on_check_box_checked, line_edit_text):
+def create_check_box_and_line_edit_layout(check_box_text, tooltip_text, on_check_box_checked, line_edit_text):
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
+    check_box.setToolTip(tooltip_text)
+    check_box.setChecked(True)
 
     line_edit = QLineEdit(line_edit_text)
     line_edit.setAlignment(QtCore.Qt.AlignCenter)
@@ -92,7 +94,7 @@ def create_check_box_and_line_edit_layout(check_box_text, on_check_box_checked, 
     return check_box_and_line_edit_layout, check_box, line_edit
 
 
-def create_button_and_line_edit_layout(button_text, on_button_pressed, line_edit_text):
+def create_button_and_line_edit_layout(button_text, tooltip_text, on_button_pressed, line_edit_text):
     button = QPushButton(button_text)
     button.clicked.connect(on_button_pressed)
 
@@ -101,22 +103,26 @@ def create_button_and_line_edit_layout(button_text, on_button_pressed, line_edit
 
     button_and_line_edit_layout = create_sub_layout(QHBoxLayout(), [button, line_edit])
 
+    button.setToolTip(tooltip_text)
     button.setCursor(Qt.PointingHandCursor)
+
     line_edit.setAlignment(QtCore.Qt.AlignCenter)
     line_edit.setCursorPosition(0)
+
     button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     return button_and_line_edit_layout, button, line_edit
 
 
-def create_label_and_button_layout(label_text, button_text, on_button_pressed):
+def create_label_and_button_layout(label_text, button_text, tooltip_text, on_button_pressed):
     label = QLineEdit(label_text)
     label.setObjectName("labelLineEdit")
     label.setReadOnly(True)
 
     button = QPushButton(button_text)
     button.clicked.connect(on_button_pressed)
+    button.setToolTip(tooltip_text)
 
     label_and_button_layout = create_sub_layout(QHBoxLayout(), [label, button])
 
@@ -156,7 +162,6 @@ def create_horizontal_line_widget():
     horizontal_line = QLabel()
     horizontal_line.setFixedHeight(1)
     horizontal_line.setObjectName("divider")
-
     return horizontal_line
 
 
@@ -170,18 +175,16 @@ def save_data_with_file_dialog():
     file_dialog.setDefaultSuffix("csv")
     file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
-    file_path, selected_filter = file_dialog.getSaveFileName(None, 'Save File',
-                                                             "",
+    file_path, selected_filter = file_dialog.getSaveFileName(None, 'Save File', "",
                                                              "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
-
     return file_path, selected_filter
 
 
-def create_confirm_clear_message_box(parent):
+def create_confirmation_message_box(parent, message):
     message_box = QMessageBox(parent)
     message_box.setIcon(QMessageBox.Warning)
     message_box.setText(
-        "<html><body style='font-weight: normal;'>Are you sure you want to clear your results?</body></html>")
+        f'<html><body style="font-weight: normal;">{message}</body></html>')
 
     buttons = {
         "Yes": QMessageBox.AcceptRole,
@@ -202,4 +205,3 @@ def create_confirm_clear_message_box(parent):
     clicked_button = message_box.clickedButton()
 
     return clicked_button == button_objects["Yes"]
-
