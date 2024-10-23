@@ -636,5 +636,12 @@ class ExportActionBox(ActionBox):
         else:
             self.action_button.setText(f'{base_text} ({number_of_results})')
 
+    def on_thread_completed(self):
+        super().on_thread_completed()
+        self.update_export_counter()
+
     def on_results_ready(self, wrapped_data, extension):
         pass
+
+
+
