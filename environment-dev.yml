@@ -14,7 +14,7 @@ dependencies:
   - tensorboard
   - pillow
   - gdown
-  - numpy
+  - numpy<2.0.0
   - pip
   - pip:
       - pycocotools

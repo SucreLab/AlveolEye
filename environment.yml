@@ -14,6 +14,7 @@ dependencies:
   - pillow>=10.2.0
   - pip
   - gdown
+  - numpy<2.0.0
   - pip:
       - opencv-python>=4.1.1.26
 
