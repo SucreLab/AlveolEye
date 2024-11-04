@@ -5,7 +5,6 @@
     "IMPORT_WEIGHTS_BUTTON_TEXT": "Import Weights",
     "EMPTY_PATH_LINE_EDIT_TEXT": "None",
     "ACTION_BUTTON_TEXT": "Run Processing",
-    "TOOLTIP_TEXT": "Process selected image in instance \nsegmentation network loaded with \nselected weights",
     "IMAGE_FILE_DIALOGUE_TEXT": "Select image",
     "WEIGHTS_FILE_DIALOGUE_TEXT": "Select weights",
     "IMAGE_ACCEPTED_FILE_FORMATS": "*.png *.jpg *.jpeg *.bmp *.tiff *.tif",
@@ -16,13 +15,16 @@
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MAX_VALUE": 100,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_DEFAULT_VALUE":  30,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_STEP": 1,
-    "CONFIDENCE_THRESHOLD_SPIN_BOX_SUFFIX": "%"
+    "CONFIDENCE_THRESHOLD_SPIN_BOX_SUFFIX": "%",
+    "IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT": "Select a histologic lung image\nfor processing",
+    "IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT": "Select a weights file to load\ninto the computer vision AI",
+    "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold\nthat pixel classifications\nmust exceed to appear in output",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Process the provided image\nusing the provided weights in\na computer vision AI model"
   },
   "PostprocessingActionBox": {
     "TITLE": "Postprocessing",
     "THRESHOLDING_BOX_TEXT": "Manual threshold",
     "ACTION_BUTTON_TEXT": "Run Postprocessing",
-    "TOOLTIP_TEXT": "Combines network output with classical \nsegmention/morphometry operations to \nconstruct complete labelmap",
     "CLEAN_ALVEOLI_LABEL_TEXT": "Remove small particles",
     "CLEAN_ALVEOLI_SPIN_BOX_MIN_VALUE": 0,
     "CLEAN_ALVEOLI_SPIN_BOX_MAX_VALUE": 10000,
@@ -46,7 +48,12 @@
       "VESSEL LUMEN": 3,
       "AIRWAY TISSUE": 4,
       "AIRWAY LUMEN": 5
-    }
+    },
+    "MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT": "Toggle between using a\nuser-determined or\ndynamically-determined\nbinarization threshold",
+    "MANUAL_THRESHOLD_SPIN_BOX_TOOLTIP_TEXT": "Set the binarization\nthreshold for distinguishing\nbetween tissue and airspace",
+    "REMOVE_SMALL_PARTICLES_TOOLTIP_TEXT": "Set the minimum component size\nto exclude small matter\n(e.g., immune cells)",
+    "REMOVE_SMALL_HOLES_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum component\nsize to exclude small spaces\n(e.g. non-airspace gaps in tissue)",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Further process the image to\ncreate a complete label map\nwith filled lumens"
   },
   "AssessmentsActionBox": {
     "TITLE": "Assessments",
@@ -74,7 +81,13 @@
     "MLI_RESULT_LINE_EDIT_DEFAULT": "None",
     "ASVD_CHECK_BOX_TITLE": "ASVD",
     "ASVD_RESULT_LINE_EDIT_DEFAULT": "None",
-    "INFO_BUTTON_TEXT": " i "
+    "INFO_BUTTON_TEXT": " i ",
+    "ASVD_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform\nASVD calculation when \"Run \nAssessments\"is clicked",
+    "MLI_CHECKBOX_TOOLTIP_TEXT": "Toggle whether to perform MLI\n calculation when \"Run \n Assessments\" is clicked",
+    "NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT": "Set the number of test lines\nfor MLI",
+    "MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT": "Set the minimum chord length\nto exclude small chords from MLI",
+    "SCALE_SPIN_BOX_TOOLTIP_TEXT": "Scale the pixel MLI result to\nconvert the value to physical\nunits (e.g., micrometers)",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Run morphometry assessments\nwith given parameters and\ndisplay results"
   },
   "ExportActionBox": {
     "ACTION_BUTTON_TEXT": "Export Results",
@@ -92,12 +105,22 @@
     "ASVD_METRIC_LINE_EDIT": "None",
     "ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
     "ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
-    "ADD_PROMPT": "Add last results",
+    "ADD_PROMPT": "Add results",
     "ADD_BUTTON_TEXT": "Add",
+    "REMOVE_PROMPT": "Remove last results",
+    "REMOVE_BUTTON_TEXT": "Remove",
     "CLEAR_PROMPT": "Clear export data",
     "CLEAR_BUTTON_TEXT": "Clear",
+    "MAX_EXPORT_COUNT_DISPLAY_NUMBER": 99,
     "NAME_LABEL_TEXT": "Name: ",
-    "NAME_DEFAULT_TEXT": "default.csv"
+    "NAME_DEFAULT_TEXT": "default.csv",
+    "CLEAR_CONFIRMATION_MESSAGE": "Are you sure you want to clear all results?",
+    "REMOVE_CONFIRMATION_MESSAGE": "Are you sure you want to remove last result?",
+    "ADD_BUTTON_TOOLTIP_TEXT": "Stage the latest morphometry\nresults for export",
+    "REMOVE_BUTTON_TOOLTIP_TEXT": "Remove the latest staged\nmorphometry result",
+    "CLEAR_BUTTON_TOOLTIP_TEXT": "Clear all staged morphometry results",
+    "ACTION_BUTTON_TOOLTIP_TEXT": "Export all staged morphometry results"
+
   },
   "ActionBox": {
     "ANIMATION_INTERVAL": 500,
@@ -110,14 +133,25 @@
     "ASSESSMENTS_LAYER_NAME": "Assessments"
   },
   "Labels": {
-    "AIRWAY_EPITHELIUM": 5,
-    "VESSEL_ENDOTHELIUM": 11,
-    "AIRWAY_LUMEN": 3,
-    "VESSEL_LUMEN": 17,
-    "PARENCHYMA": 18,
-    "ALVEOLI": 8,
-    "MLI_LINES_INSIDE": 9,
-    "MLI_LINES_OUTSIDE": 24,
-    "BLOCKER": 1
+    "BLOCKER": 1,
+    "AIRWAY_EPITHELIUM": 2,
+    "VESSEL_ENDOTHELIUM": 3,
+    "AIRWAY_LUMEN": 4,
+    "VESSEL_LUMEN": 5,
+    "PARENCHYMA": 6,
+    "ALVEOLI": 7,
+    "MLI_LINES_INSIDE": 8,
+    "MLI_LINES_OUTSIDE": 9
+  },
+  "Colormap": {
+    "BLOCKER": [0.749, 0.263, 0.259],
+    "AIRWAY_EPITHELIUM": [0.157, 0.212, 0.094],
+    "AIRWAY_LUMEN": [0.376, 0.424, 0.220],
+    "PARENCHYMA": [0.090,0.325,0.529],
+    "VESSEL_ENDOTHELIUM": [0.737, 0.424, 0.145],
+    "VESSEL_LUMEN": [0.867, 0.631, 0.369],
+    "ALVEOLI": [0.996, 0.980, 0.878],
+    "MLI_LINES_INSIDE": [0.145, 0.141, 0.133],
+    "MLI_LINES_OUTSIDE": [0.145, 0.141, 0.133]
   }
 }

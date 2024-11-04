@@ -54,6 +54,8 @@ def create_class_labelmap_from_model(model_output, class_id, confidence_threshol
 
 
 def create_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels):
+    intermediate_label = max(labels.values()) + 1
+
     parenchyma_labelmap = np.where(thresholded_labelmap, labels["ALVEOLI"], labels["PARENCHYMA"])
     airway_epithelium_labelmap = np.where(masks_labelmap == labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_EPITHELIUM"], 0)
     vessel_epithelium_labelmap = np.where(masks_labelmap == labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_ENDOTHELIUM"], 0)
@@ -61,7 +63,7 @@ def create_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels)
 
     airway_complete_labelmap = create_complete_class_labelmap(airway_epithelium_labelmap, thresholded_labelmap, labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"])
     vessel_complete_labelmap = create_complete_class_labelmap(vessel_epithelium_labelmap, thresholded_labelmap, labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"])
-    blocking_complete_labelmap = create_complete_class_labelmap(blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], 42, True)
+    blocking_complete_labelmap = create_complete_class_labelmap(blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], intermediate_label, True)
 
     final_labelmap = np.zeros(masks_labelmap.shape, dtype="uint8")
     final_labelmap = np.where(parenchyma_labelmap, parenchyma_labelmap, final_labelmap)
@@ -69,7 +71,7 @@ def create_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels)
     final_labelmap = np.where(vessel_complete_labelmap, vessel_complete_labelmap, final_labelmap)
 
     final_labelmap = np.where(blocking_complete_labelmap, blocking_complete_labelmap, final_labelmap)
-    final_labelmap[final_labelmap == 42] = 0
+    final_labelmap[final_labelmap == intermediate_label] = 0
 
     return final_labelmap
 
