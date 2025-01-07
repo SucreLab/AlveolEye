@@ -63,7 +63,7 @@ jobs:
           pip install pytest
       - name: build
         run: |
-          rm ./src/alveoleye/data/default.pth
+          rm -f ./src/alveoleye/data/default.pth
           pip install build
           python -m build
       - uses: actions/upload-artifact@v4
