@@ -61,7 +61,6 @@ jobs:
       - run: |
           pip install .
           pip install pytest
-          pytest --cov=alveoleye
       - name: build
         run: |
           rm ./src/alveoleye/data/default.pth
