@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 
-def main(model_path, image_path, output_path=None):
+def main(model_path, image_path, output_path=None, colorbar_orientation="vertical"):
     model = init_trained_model(model_path)
     prediction = run_prediction(image_path, model)
     masks = prediction["masks"]
@@ -25,8 +25,13 @@ def main(model_path, image_path, output_path=None):
         [mask.squeeze() for mask, label in zip(masks, labels) if label == 2]
     ).sum(dim=0).detach().numpy()
 
-    # Create the figure and axes with a vertical colorbar on the right
-    fig, axs = plt.subplots(1, 2, figsize=(8, 4), gridspec_kw={"wspace": 0.1, "right": 0.85})
+    # Create the figure and axes
+    if colorbar_orientation == "vertical":
+        fig, axs = plt.subplots(1, 2, figsize=(8, 4), gridspec_kw={"wspace": 0.1, "right": 0.85})
+        cbar_ax = fig.add_axes([0.88, 0.25, 0.02, 0.5])  # Balanced dimensions for vertical
+    elif colorbar_orientation == "horizontal":
+        fig, axs = plt.subplots(1, 2, figsize=(8, 4), gridspec_kw={"wspace": 0.1, "bottom": 0.2})
+        cbar_ax = fig.add_axes([0.3, 0.12, 0.4, 0.02])  # Balanced dimensions for horizontal
 
     # Class 1 heatmap
     axs[0].imshow(original_image, alpha=1.0)
@@ -40,11 +45,11 @@ def main(model_path, image_path, output_path=None):
     axs[1].set_title('Confidence Map: Class 2', fontsize=10)
     axs[1].axis('off')
 
-    # Single vertical colorbar on the right
-    cbar_ax = fig.add_axes([0.87, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
+    # Colorbar
     cbar = fig.colorbar(
         plt.cm.ScalarMappable(cmap='hot'),
-        cax=cbar_ax
+        cax=cbar_ax,
+        orientation=colorbar_orientation
     )
     cbar.set_label('Confidence Level', fontsize=10)
 
@@ -60,6 +65,8 @@ if __name__ == "__main__":
     parser.add_argument("model_path", type=str, help="Path to the trained model file")
     parser.add_argument("image_path", type=str, help="Path to the input image")
     parser.add_argument("--output_path", type=str, help="Path to save the output image (optional)")
+    parser.add_argument("--colorbar_orientation", type=str, choices=["vertical", "horizontal"],
+                        default="horizontal", help="Orientation of the colorbar (default: vertical)")
 
     args = parser.parse_args()
-    main(args.model_path, args.image_path, args.output_path)
+    main(args.model_path, args.image_path, args.output_path, args.colorbar_orientation)
