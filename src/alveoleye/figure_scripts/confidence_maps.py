@@ -1,7 +1,7 @@
 import argparse
 import os
 import torch
-from model_operations import init_trained_model, run_prediction
+from alveoleye.lungcv.model_operations import init_trained_model, run_prediction
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
