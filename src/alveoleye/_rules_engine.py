@@ -1,6 +1,3 @@
-from qtpy.QtWidgets import QLayout
-
-
 class RulesEngine:
     def __init__(self):
         self.rules = []
@@ -23,16 +20,3 @@ class RulesEngine:
                     action()
 
 
-def toggle(state, elements):
-    if not isinstance(elements, list):
-        elements = [elements]
-
-    for item in elements:
-        stack = [item]
-        while stack:
-            current = stack.pop()
-            if isinstance(current, QLayout):
-                for i in range(current.count()):
-                    stack.append(current.itemAt(i).widget())
-            else:
-                current.setEnabled(state)
