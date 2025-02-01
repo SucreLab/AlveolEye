@@ -2,7 +2,7 @@ import argparse
 import os
 from alveoleye.figure_scripts.utils import get_image_paths
 from alveoleye.figure_scripts.combined_workers import CombinedWorker
-from alveoleye._export_operations import create_csv_data, export_from_combined_worker
+from alveoleye._export_operations import export_from_combined_worker
 
 
 def validate_arguments(input_dir, iterations, output_dir):
@@ -35,22 +35,6 @@ def run_determinism_test(combined_worker, image_paths, iterations):
     return True
 
 
-def export_results(output_dir, combined_worker):
-    if not output_dir:
-        return
-
-    accumulated_results = combined_worker.get_accumulated_results()
-    csv_data = create_csv_data(accumulated_results)
-
-    os.makedirs(output_dir, exist_ok=True)  # Ensure output directory exists
-    complete_export_path = os.path.join(output_dir, "determinism_test_results.csv")
-
-    with open(complete_export_path, "w", newline="") as results_file:
-        results_file.write(csv_data)
-
-    print(f"[+] CSV file saved to: {complete_export_path}")
-
-
 def main(input_dir, iterations, output_dir):
     combined_worker = CombinedWorker()
     image_paths = get_image_paths(input_dir)
@@ -66,13 +50,13 @@ def main(input_dir, iterations, output_dir):
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_input_dir = os.path.abspath(os.path.join(script_dir, "../data"))
+    default_input_dir = os.path.abspath(os.path.join(script_dir, "../example_images"))
 
     parser = argparse.ArgumentParser(description="Verify that AlveolEye is deterministic")
     parser.add_argument("--input_dir", type=str, required=False, default=default_input_dir,
-                        help="Path to the directory containing images (default: ../../data)")
-    parser.add_argument("--iterations", type=int, required=False, default=100,
-                        help="The number of iterations that the program runs the complete pipeline on each image (default: 100)")
+                        help="Path to the directory containing images (default: ../../example_images)")
+    parser.add_argument("--iterations", type=int, required=False, default=15,
+                        help="The number of iterations that the program runs the complete pipeline on each image (default: 15)")
     parser.add_argument("--output_dir", type=str, required=False,
                         help="The export location if you intend to export results (optional)")
 

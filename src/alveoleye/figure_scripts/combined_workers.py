@@ -23,7 +23,7 @@ class CombinedWorker:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.abspath(os.path.join(script_dir, "../config.json"))
 
-        self.image_path = os.path.abspath(os.path.join(script_dir, "../data"))
+        self.image_path = os.path.abspath(os.path.join(script_dir, "../example_images"))
         self.weights_path = os.path.abspath(os.path.join(script_dir, "../../../data/default.pth"))
 
         with open(config_path, 'r') as config_file:
