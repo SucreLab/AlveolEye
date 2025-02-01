@@ -159,7 +159,7 @@ class PostprocessingWorker(WorkerParent):
                 self.results_ready.emit(labelmap)
 
         except Exception as e:
-            print(f"Processing run failed: {e}")
+            print(f"Error in post-processing: {e}")
         finally:
             self.finished.emit()
 
@@ -221,7 +221,7 @@ class AssessmentsWorker(WorkerParent):
                                         {"assessments_layer": assessments_layer})
 
         except Exception as e:
-            print(f"Metrics calculation failed: {e}")
+            print(f"Error in metrics calculation: {e}")
         finally:
             self.finished.emit()
 

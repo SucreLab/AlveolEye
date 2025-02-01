@@ -8,6 +8,17 @@ from PIL import Image
 import time
 
 
+def validate_arguments(input_dir, model_path, output_dir):
+    if not os.path.isdir(input_dir):
+        raise ValueError(f"Input directory does not exist: {input_dir}")
+
+    if not os.path.isfile(model_path):
+        raise ValueError(f"Model file does not exist: {model_path}")
+
+    if not os.access(os.path.dirname(output_dir) or '.', os.W_OK):
+        raise ValueError(f"Output directory is not writable: {output_dir}")
+
+
 def create_heatmaps(model_path, image_path, output_dir, colorbar_orientation="vertical"):
     model = init_trained_model(model_path)
     prediction = run_prediction(image_path, model)
@@ -94,12 +105,12 @@ def main(input_dir, model_path, output_dir, colorbar_orientation="vertical"):
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    default_input_dir = os.path.abspath(os.path.join(script_dir, "../data"))
+    default_input_dir = os.path.abspath(os.path.join(script_dir, "../example_images"))
     default_model_path = os.path.abspath(os.path.join(script_dir, "../../../data/default.pth"))
 
     parser = argparse.ArgumentParser(description="Generate heatmaps for each image in a directory")
     parser.add_argument("--input_dir", type=str, default=default_input_dir,
-                        help="Path to the directory containing images (default: ../../data)")
+                        help="Path to the directory containing images (default: ../../example_images)")
     parser.add_argument("--model_path", type=str, default=default_model_path,
                         help="Path to the trained model file (default: ../../../../data/default.pth)")
     parser.add_argument("--output_dir", type=str, required=True,
@@ -108,6 +119,12 @@ if __name__ == "__main__":
                         default="vertical", help="Orientation of the colorbar (default: vertical)")
 
     args = parser.parse_args()
+
+    try:
+        validate_arguments(args.input_dir, args.model_path, args.output_dir)
+    except ValueError as e:
+        print(e)
+        exit(1)
 
     print(f"Running with the following arguments:\n"
           f"Input Directory: {args.input_dir}\n"

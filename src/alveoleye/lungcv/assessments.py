@@ -1,3 +1,5 @@
+import random
+
 import cv2
 import numpy as np
 from scipy import ndimage
@@ -14,11 +16,14 @@ def calculate_airspace_volume_density(labelmap, labels):
     return alveolar_density, alveoli_pixels, total_non_lumen_or_epithelium_pixels
 
 
-def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels):
+def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False):
     labelmap = np.squeeze(labelmap)
     labelmap_shape = labelmap.shape
 
-    line_y_coordinates = np.linspace(0, labelmap_shape[0] - 1, num_lines + 2, dtype=int)[1:-1]
+    if randomized_distribution:
+        line_y_coordinates = np.array([random.sample(range(1, labelmap.shape[0] - 1), num_lines)])
+    else:
+        line_y_coordinates = np.linspace(0, labelmap_shape[0] - 1, num_lines + 2, dtype=int)[1:-1]
 
     test_lines_labelmap = np.zeros(labelmap_shape, dtype=np.uint8)
     test_lines_labelmap[line_y_coordinates, :] = labels["MLI_LINES_OUTSIDE"]
