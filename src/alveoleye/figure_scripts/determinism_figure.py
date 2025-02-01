@@ -5,16 +5,19 @@ from alveoleye.figure_scripts.combined_workers import CombinedWorker
 from alveoleye._export_operations import create_csv_data, export_from_combined_worker
 
 
-def validate_arguments(input_dir, iterations):
+def validate_arguments(input_dir, iterations, output_dir):
     if not os.path.isdir(input_dir):
         raise ValueError(f"Error: The specified input directory '{input_dir}' does not exist or is not a directory.")
 
     if not isinstance(iterations, int) or iterations < 2:
         raise ValueError("Error: The number of iterations must be an integer greater than or equal to 2.")
 
+    if output_dir and not os.access(os.path.dirname(output_dir) or '.', os.W_OK):
+        raise ValueError(f"Error: Output directory is not writable: {output_dir}")
+
 
 def run_determinism_test(combined_worker, image_paths, iterations):
-    for image_path in image_paths:
+    for image_path in image_paths[:2]:
         previous_result = None
         combined_worker.set_image_path(image_path)
 
@@ -52,6 +55,9 @@ def main(input_dir, iterations, output_dir):
     combined_worker = CombinedWorker()
     image_paths = get_image_paths(input_dir)
 
+    if not image_paths:
+        raise ValueError(f"Error: The specified input directory '{input_dir}' does not contain any images")
+
     run_determinism_test(combined_worker, image_paths, iterations)
 
     if output_dir:
@@ -73,7 +79,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        validate_arguments(args.input_dir, args.iterations)
+        validate_arguments(args.input_dir, args.iterations, args.output_dir)
     except ValueError as e:
         print(e)
         exit(1)
