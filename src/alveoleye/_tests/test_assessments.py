@@ -11,6 +11,7 @@ class TestCalculateAirspaceVolumeDensity(unittest.TestCase):
             "AIRWAY_EPITHELIUM": 3,
             "VESSEL_ENDOTHELIUM": 4,
             "ALVEOLI": 5,
+            "PARENCHYMA": 6,
             "BLOCKER": 9
         }
 
@@ -34,11 +35,8 @@ class TestCalculateAirspaceVolumeDensity(unittest.TestCase):
             [4, 4, 4, 4]
         ])
 
-        if np.sum(labelmap == self.labels["ALVEOLI"]) == 0:
-            with self.assertRaises(ZeroDivisionError):
-                calculate_airspace_volume_density(labelmap, self.labels)
-        else:
-            self.assertAlmostEqual(calculate_airspace_volume_density(labelmap, self.labels)[0], 0.0)
+        expected_density = 0.0
+        self.assertEqual(calculate_airspace_volume_density(labelmap, self.labels)[0], expected_density)
 
     def test_all_alveoli(self):
         # Test case with all alveoli pixels
