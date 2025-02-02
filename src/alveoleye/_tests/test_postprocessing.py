@@ -82,8 +82,8 @@ class TestCleanMethodOne(unittest.TestCase):
 
     def test_clean(self):
         # Call the clean function
-        result_one = clean(self.binary_image.copy(), 4)
-        result_two = clean(self.binary_image.copy(), 2)
+        result_one = filter_small_components(self.binary_image.copy(), 4)
+        result_two = filter_small_components(self.binary_image.copy(), 2)
 
         # Checks that binary_image is actually binary
         unique_values_one = np.unique(result_one)
@@ -117,18 +117,18 @@ class TestCleanMethodOne(unittest.TestCase):
 class TestCleanMethodTwo(unittest.TestCase):
     def test_empty_image(self):
         binary_image = np.zeros((5, 5), dtype=np.uint8)
-        result = clean(binary_image, 1)
+        result = filter_small_components(binary_image, 1)
         np.testing.assert_array_equal(result, binary_image)
 
     def test_full_image(self):
         binary_image = np.ones((5, 5), dtype=np.uint8)
-        result = clean(binary_image, 1)
+        result = filter_small_components(binary_image, 1)
         np.testing.assert_array_equal(result, binary_image)
 
     def test_minimum_size_edge(self):
         binary_image = np.zeros((5, 5), dtype=np.uint8)
         binary_image[2, 2] = 1
-        result = clean(binary_image, 1)
+        result = filter_small_components(binary_image, 1)
         # The single pixel should be removed, resulting in an all-zero image
         expected_output = np.zeros((5, 5), dtype=np.uint8)
         np.testing.assert_array_equal(result, expected_output)
@@ -137,7 +137,7 @@ class TestCleanMethodTwo(unittest.TestCase):
         binary_image = np.zeros((5, 5), dtype=np.uint8)
         binary_image[1, 1] = 1
         binary_image[3, 3] = 1
-        result = clean(binary_image, 1)
+        result = filter_small_components(binary_image, 1)
 
         # Expect both single pixel components be removed
         expected_output = np.zeros((5, 5), dtype=np.uint8)
@@ -146,7 +146,7 @@ class TestCleanMethodTwo(unittest.TestCase):
     def test_large_minimum_size(self):
         # Test case where the minimum size is larger than the entire image
         binary_image = np.ones((5, 5), dtype=np.uint8)
-        result = clean(binary_image, 25)
+        result = filter_small_components(binary_image, 25)
 
         # Expect all pixels to be removed, resulting in an all-zero image
         expected_output = np.zeros((5, 5), dtype=np.uint8)
@@ -154,7 +154,7 @@ class TestCleanMethodTwo(unittest.TestCase):
 
     def test_negative_minimum_size(self):
         binary_image = np.ones((5, 5), dtype=np.uint8)
-        result = clean(binary_image, -1)
+        result = filter_small_components(binary_image, -1)
         np.testing.assert_array_equal(result, binary_image)
 
 
@@ -354,7 +354,6 @@ class TestCreateCompleteClassLabelmap(unittest.TestCase):
 
 
 class TestPostprocessingLabelmapOne(unittest.TestCase):
-
     def setUp(self):
         # Define labels
         self.labels = {

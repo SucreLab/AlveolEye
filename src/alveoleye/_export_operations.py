@@ -92,7 +92,7 @@ def append_csv_data(accumulated_results, export_file):
             file.write(csv_data)
 
 
-def export_from_combined_worker(output_dir, combined_worker):
+def export_from_combined_worker(combined_worker, output_dir, file_name="test_results.csv"):
     if not output_dir:
         return
 
@@ -100,7 +100,7 @@ def export_from_combined_worker(output_dir, combined_worker):
     csv_data = create_csv_data(accumulated_results)
 
     os.makedirs(output_dir, exist_ok=True)
-    complete_export_path = os.path.join(output_dir, "determinism_test_results.csv")
+    complete_export_path = os.path.join(output_dir, file_name)
 
     with open(complete_export_path, "w", newline="") as results_file:
         results_file.write(csv_data)

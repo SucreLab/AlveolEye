@@ -3,8 +3,8 @@ from qtpy.QtCore import QObject, Signal
 
 from alveoleye.lungcv import model_operations
 from alveoleye.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
-                                            create_postprocessing_labelmap, clean, grayscale,
-                                            invert_binary, create_processing_labelmap)
+                                            create_postprocessing_labelmap, filter_small_components, grayscale,
+                                            invert_binary_image, create_processing_labelmap)
 from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
                                                            calculate_airspace_volume_density)
 import pathlib
@@ -137,16 +137,16 @@ class PostprocessingWorker(WorkerParent):
                 thresholded = self.threshold_according_to_method(grayscaled)
 
             if not self.terminate:
-                parenchyma_cleaned = clean(thresholded, self.parenchyma_minimum_size)
+                parenchyma_cleaned = filter_small_components(thresholded, self.parenchyma_minimum_size)
 
             if not self.terminate:
-                inverted = invert_binary(parenchyma_cleaned)
+                inverted = invert_binary_image(parenchyma_cleaned)
 
             if not self.terminate:
-                alveoli_cleaned = clean(inverted, self.alveoli_minimum_size)
+                alveoli_cleaned = filter_small_components(inverted, self.alveoli_minimum_size)
 
             if not self.terminate:
-                inverted_back = invert_binary(alveoli_cleaned)
+                inverted_back = invert_binary_image(alveoli_cleaned)
 
             if not self.terminate:
                 masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,

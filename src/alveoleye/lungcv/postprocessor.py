@@ -15,11 +15,11 @@ def manual_threshold(grayscale_image, threshold_value):
     return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
 
-def invert_binary(binary_image):
+def invert_binary_image(binary_image):
     return cv2.bitwise_not(binary_image)
 
 
-def clean(binary_image, minimum_size):
+def filter_small_components(binary_image, minimum_size):
     connected_components = cv2.connectedComponentsWithStats(binary_image)
     quantity, image, stats = connected_components[:3]
     sizes = stats[:, -1][1:]

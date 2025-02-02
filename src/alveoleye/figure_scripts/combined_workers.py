@@ -9,12 +9,12 @@ from alveoleye.lungcv.assessments import (
     calculate_mean_linear_intercept,
 )
 from alveoleye.lungcv.postprocessor import (
-    clean,
+    filter_small_components,
     create_postprocessing_labelmap,
     create_processing_labelmap,
     dynamic_threshold,
     grayscale,
-    invert_binary,
+    invert_binary_image,
 )
 
 
@@ -33,7 +33,7 @@ class CombinedWorker:
         self.manual_threshold = 180
         self.alveoli_minimum_size = 250
         self.parenchyma_minimum_size = 250
-        self.lines = 3
+        self.number_of_lines = 3
         self.minimum_length = 20
         self.scale = 0.18872
         self.randomized_distribution = False
@@ -75,8 +75,8 @@ class CombinedWorker:
     def set_parenchyma_minimum_size(self, parenchyma_minimum_size):
         self.parenchyma_minimum_size = parenchyma_minimum_size
 
-    def set_lines(self, lines):
-        self.lines = lines
+    def set_number_of_lines(self, lines):
+        self.number_of_lines = lines
 
     def set_minimum_length(self, length):
         self.minimum_length = length
@@ -123,10 +123,10 @@ class CombinedWorker:
         try:
             grayscaled = grayscale(self.rgb_image)
             thresholded = dynamic_threshold(grayscaled)
-            parenchyma_cleaned = clean(thresholded, self.parenchyma_minimum_size)
-            inverted = invert_binary(parenchyma_cleaned)
-            alveoli_cleaned = clean(inverted, self.alveoli_minimum_size)
-            inverted_back = invert_binary(alveoli_cleaned)
+            parenchyma_cleaned = filter_small_components(thresholded, self.parenchyma_minimum_size)
+            inverted = invert_binary_image(parenchyma_cleaned)
+            alveoli_cleaned = filter_small_components(inverted, self.alveoli_minimum_size)
+            inverted_back = invert_binary_image(alveoli_cleaned)
 
             self.labelmap = create_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
         except Exception as e:
@@ -136,7 +136,7 @@ class CombinedWorker:
         if self.labelmap is None:
             raise ValueError("Run postprocessing first")
 
-        if not self.lines:
+        if not self.number_of_lines:
             raise ValueError("Lines is not set")
 
         if not self.minimum_length:
@@ -150,7 +150,7 @@ class CombinedWorker:
 
         try:
             self.mli, self.assessments_layer, self.number_of_chords, self.stdev_chord_lengths = calculate_mean_linear_intercept(
-                self.labelmap, self.lines, self.minimum_length, self.scale, self.labels, self.randomized_distribution)
+                self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels, self.randomized_distribution)
             self.asvd, self.airspace_pixels, self.non_airspace_pixels = calculate_airspace_volume_density(self.labelmap,
                                                                                                           self.labels)
             self.shortened_image_path = os.path.join(os.path.basename(os.path.dirname(self.image_path)),
@@ -158,7 +158,7 @@ class CombinedWorker:
 
             self.current_results = (
                 self.shortened_image_path, self.weights_path, self.asvd, self.mli, self.stdev_chord_lengths,
-                self.number_of_chords, self.airspace_pixels, self.non_airspace_pixels, self.lines, self.minimum_length,
+                self.number_of_chords, self.airspace_pixels, self.non_airspace_pixels, self.number_of_lines, self.minimum_length,
                 self.scale)
 
             self.accumulated_results.append(self.current_results)
@@ -223,10 +223,10 @@ class CombinedWorker:
         return self.non_airspace_pixels
 
     def get_lines(self):
-        if not self.lines:
+        if not self.number_of_lines:
             raise ValueError("Lines is None")
 
-        return self.lines
+        return self.number_of_lines
 
     def get_length(self):
         if not self.minimum_length:
