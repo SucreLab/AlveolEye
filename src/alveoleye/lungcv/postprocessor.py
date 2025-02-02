@@ -2,17 +2,17 @@ import cv2
 import numpy as np
 
 
-def greyscale(image):
+def grayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
-def dynamic_threshold(greyscale_image):
-    threshold_value = cv2.threshold(greyscale_image, 0, 255, cv2.THRESH_OTSU)[0] + 20
-    return cv2.threshold(greyscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+def dynamic_threshold(grayscale_image):
+    threshold_value = cv2.threshold(grayscale_image, 0, 255, cv2.THRESH_OTSU)[0] + 20
+    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
 
-def manual_threshold(greyscale_image, threshold_value):
-    return cv2.threshold(greyscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+def manual_threshold(grayscale_image, threshold_value):
+    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
 
 def invert_binary(binary_image):

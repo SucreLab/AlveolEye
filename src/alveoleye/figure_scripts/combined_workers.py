@@ -13,7 +13,7 @@ from alveoleye.lungcv.postprocessor import (
     create_postprocessing_labelmap,
     create_processing_labelmap,
     dynamic_threshold,
-    greyscale,
+    grayscale,
     invert_binary,
 )
 
@@ -121,8 +121,8 @@ class CombinedWorker:
             raise ValueError("Run processing first")
 
         try:
-            greyscaled = greyscale(self.rgb_image)
-            thresholded = dynamic_threshold(greyscaled)
+            grayscaled = grayscale(self.rgb_image)
+            thresholded = dynamic_threshold(grayscaled)
             parenchyma_cleaned = clean(thresholded, self.parenchyma_minimum_size)
             inverted = invert_binary(parenchyma_cleaned)
             alveoli_cleaned = clean(inverted, self.alveoli_minimum_size)
