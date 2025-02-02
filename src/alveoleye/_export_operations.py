@@ -47,9 +47,10 @@ def create_json_data(accumulated_results):
     return json.dumps(data, indent=2)
 
 
-def create_csv_data(accumulated_results,  field_names=("Image", "Weights", "ASVD", "Airspace Pixels", "Non-Airspace Pixels", "MLI", "Standard Deviation",
-                   "Number of Chords", "Lines", "Minimum Length", "Scale")):
-
+def create_csv_data(accumulated_results, field_names=("Image", "Weights", "ASVD", "Airspace Pixels",
+                                                      "Non-Airspace Pixels", "MLI", "Standard Deviation",
+                                                      "Number of Chords", "Number of Lines", "Minimum Length",
+                                                      "Scale")):
     csv_buffer = io.StringIO()
     writer = csv.DictWriter(csv_buffer, fieldnames=field_names)
     writer.writeheader()
@@ -67,7 +68,7 @@ def create_csv_data(accumulated_results,  field_names=("Image", "Weights", "ASVD
             "MLI": mli,
             "Standard Deviation": stdev,
             "Number of Chords": chords,
-            "Lines": lines_spin_box_value,
+            "Number of Lines": lines_spin_box_value,
             "Minimum Length": min_length_spin_box_value,
             "Scale": scale_spin_box_value
         })
@@ -92,11 +93,10 @@ def append_csv_data(accumulated_results, export_file):
             file.write(csv_data)
 
 
-def export_from_combined_worker(combined_worker, output_dir, file_name="test_results.csv"):
+def export_accumulated_results(accumulated_results, output_dir, file_name="test_results.csv"):
     if not output_dir:
         return
 
-    accumulated_results = combined_worker.get_accumulated_results()
     csv_data = create_csv_data(accumulated_results)
 
     os.makedirs(output_dir, exist_ok=True)
@@ -104,5 +104,3 @@ def export_from_combined_worker(combined_worker, output_dir, file_name="test_res
 
     with open(complete_export_path, "w", newline="") as results_file:
         results_file.write(csv_data)
-
-    print(f"[+] CSV file saved to: {complete_export_path}")

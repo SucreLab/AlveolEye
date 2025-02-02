@@ -94,7 +94,7 @@ class CombinedWorker:
         if not self.weights_path:
             raise ValueError("Weights path is not set.")
 
-        if not self.confidence:
+        if self.confidence is None:
             raise ValueError("Confidence is not set.")
 
         try:
@@ -111,10 +111,10 @@ class CombinedWorker:
         if self.rgb_image is None:
             raise ValueError("Run processing first")
 
-        if not self.parenchyma_minimum_size:
+        if self.parenchyma_minimum_size is None:
             raise ValueError("Parenchyma minimum size is not set")
 
-        if not self.alveoli_minimum_size:
+        if self.alveoli_minimum_size is None:
             raise ValueError("Alveoli minimum size is not set")
 
         if self.inference_labelmap is None:
@@ -136,13 +136,13 @@ class CombinedWorker:
         if self.labelmap is None:
             raise ValueError("Run postprocessing first")
 
-        if not self.number_of_lines:
+        if self.number_of_lines is None:
             raise ValueError("Lines is not set")
 
-        if not self.minimum_length:
+        if self.minimum_length is None:
             raise ValueError("Length is not set")
 
-        if not self.scale:
+        if self.scale is None:
             raise ValueError("Scale is not set")
 
         if not self.image_path:
@@ -187,55 +187,55 @@ class CombinedWorker:
             raise ValueError("Shortened image path is None")
 
     def get_asvd(self):
-        if not self.asvd:
+        if self.asvd is None:
             raise ValueError("ASVD is None")
 
         return self.asvd
 
     def get_mli(self):
-        if not self.mli:
+        if self.mli is None:
             raise ValueError("MLI is None")
 
         return self.mli
 
     def get_stdev_chord_lengths(self):
-        if not self.stdev_chord_lengths:
+        if self.stdev_chord_lengths is None:
             raise ValueError("Standard deviation of chord lengths is None")
 
         return self.stdev_chord_lengths
 
     def get_number_of_chords(self):
-        if not self.number_of_chords:
+        if self.number_of_chords is None:
             raise ValueError("Chords is None")
 
         return self.number_of_chords
 
     def get_airspace_pixels(self):
-        if not self.airspace_pixels:
+        if self.airspace_pixels is None:
             raise ValueError("Airspace pixels is None")
 
         return self.airspace_pixels
 
     def get_non_airspace_pixels(self):
-        if not self.non_airspace_pixels:
+        if self.non_airspace_pixels is None:
             raise ValueError("Non-airspace pixels is None")
 
         return self.non_airspace_pixels
 
     def get_lines(self):
-        if not self.number_of_lines:
+        if self.number_of_lines is None:
             raise ValueError("Lines is None")
 
         return self.number_of_lines
 
     def get_length(self):
-        if not self.minimum_length:
+        if self.minimum_length is None:
             raise ValueError("Length is None")
 
         return self.minimum_length
 
     def get_scale(self):
-        if not self.scale:
+        if self.scale is None:
             raise ValueError("Scale is None")
 
         return self.scale

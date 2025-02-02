@@ -5,7 +5,7 @@ from pathlib import Path
 def get_image_paths(directory_path, extensions=('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif')):
     return [
         str(file)
-        for file in Path(directory_path).rglob('*')
+        for file in Path(directory_path).glob('*')
         if file.suffix.lower() in extensions
     ]
 
