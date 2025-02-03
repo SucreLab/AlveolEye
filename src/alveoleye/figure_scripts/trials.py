@@ -10,8 +10,12 @@ from alveoleye._export_operations import export_accumulated_results
 
 
 def validate_arguments(args):
-    if args.trial not in ["determinism", "random_line_location", "variable_line_quantity"]:
+    if args.trial not in ["determinism_trial", "random_line_location_trial", "variable_line_quantity_trial", "1", "2", "3"]:
         raise ValueError(f"[-] Error: The specified trial type '{args.trial}' is unrecognized")
+
+    if args.trial in ["1", "2", "3"]:
+        trial_map = {"1": "determinism_trial", "2": "random_line_location_trial", "3": "variable_line_quantity_trial"}
+        args.trial = trial_map.get(args.trial, "determinism_trial")  # Default to "determinism_trial" if something goes wrong
 
     if not os.path.isdir(args.input_dir):
         raise ValueError(
@@ -20,7 +24,7 @@ def validate_arguments(args):
     if not isinstance(args.iterations, int) or args.iterations < 2:
         raise ValueError("[-] Error: The number of iterations must be an integer greater than or equal to 2.")
 
-    if args.trial != "determinism" and not args.output_dir:
+    if args.trial != "determinism_trial" and not args.output_dir:
         raise ValueError("[-] Error: You must enter an output directory for this trial")
 
     if args.output_dir and not os.access(os.path.dirname(args.output_dir) or '.', os.W_OK):
@@ -100,15 +104,15 @@ def run_trial(args):
     combined_worker = CombinedWorker()
     combined_worker.set_weights_path(args.weights_path if args.weights_path else None)
 
-    if args.trial == "determinism":
+    if args.trial == "determinism_trial":
         run_determinism_trial(combined_worker, image_paths, args.iterations)
-    elif args.trial == "random_line_location":
+    elif args.trial == "random_line_location_trial":
         run_randomized_line_location_trial(combined_worker, image_paths, args.iterations)
-    elif args.trial == "variable_line_quantity":
+    elif args.trial == "variable_line_quantity_trial":
         run_variable_number_of_lines_trial(combined_worker, image_paths, args.iterations)
     else:
         raise ValueError(
-            "[-] Error: Invalid trial type specified. Choose from: determinism, random_lines, variable_lines")
+            "[-] Error: Invalid trial type specified. Choose from: determinism_trial, random_lines, variable_lines")
 
     if args.output_dir:
         accumulated_results = combined_worker.get_accumulated_results()
@@ -132,8 +136,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run specific trials for AlveolEye")
     parser.add_argument("trial", type=str,
-                        choices=["determinism", "random_line_location", "variable_line_quantity"],
-                        help="specify which trial to run")
+                        choices=["determinism_trial", "random_line_location_trial", "variable_line_quantity_trial", "1", "2", "3"],
+                        help="specify which trial to run (or use numbers 1, 2, 3 as shortcuts)")
     parser.add_argument("--input-dir", type=str, required=False, default=default_input_dir,
                         help="path to the directory containing images (default: ../example_images)")
     parser.add_argument("--iterations", type=int, required=False, default=15,
