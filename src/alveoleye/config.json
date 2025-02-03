@@ -9,7 +9,7 @@
     "WEIGHTS_FILE_DIALOGUE_TEXT": "Select weights",
     "IMAGE_ACCEPTED_FILE_FORMATS": "*.png *.jpg *.jpeg *.bmp *.tiff *.tif",
     "WEIGHTS_ACCEPTED_FILE_FORMATS": "*.pth *.pth.gz",
-    "DEFAULT_WEIGHTS_PATH": "data/default.pth",
+    "DEFAULT_WEIGHTS_PATH": "default.pth",
     "CONFIDENCE_THRESHOLD_LABEL_TEXT":  "Minimum confidence",
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MIN_VALUE": 0,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MAX_VALUE": 100,

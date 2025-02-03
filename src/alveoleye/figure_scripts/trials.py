@@ -4,8 +4,8 @@ import time
 
 from PIL import Image
 
-from alveoleye.figure_scripts.utils import get_image_paths
-from alveoleye.figure_scripts.combined_workers import CombinedWorker
+from alveoleye.figure_scripts._utils import get_image_paths
+from alveoleye.figure_scripts._combined_workers import CombinedWorker
 from alveoleye._export_operations import export_accumulated_results
 
 

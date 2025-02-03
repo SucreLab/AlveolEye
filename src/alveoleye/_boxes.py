@@ -34,12 +34,7 @@ class ProcessingActionBox(ActionBox):
         self.set_default_weights()
 
     def set_default_weights(self):
-        default_file_name = self.box_config_data["DEFAULT_WEIGHTS_PATH"]
-        default_weights_path = Path(__file__).resolve().parent.parent / default_file_name
-        self.import_weights_line_edit.setText(Path(default_weights_path).name)
-        ActionBox.import_paths["weights"] = default_weights_path
-
-        self.rules_engine.evaluate_rules()
+        ActionBox.import_paths["weights"] = Path(__file__).resolve().parent.parent / "data" / "default.pth"
 
     def thread_worker(self):
         self.worker = ProcessingWorker()
@@ -64,7 +59,7 @@ class ProcessingActionBox(ActionBox):
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
             self.on_import_weights_press,
-            self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
+            self.box_config_data["DEFAULT_WEIGHTS_PATH"]
         )
         confidence_threshold_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CONFIDENCE_THRESHOLD_LABEL_TEXT"],
@@ -97,19 +92,14 @@ class ProcessingActionBox(ActionBox):
                                     lambda: ActionBox.import_paths["weights"] is None,
                                     lambda: not self.state == 2],
                                    lambda: alveoleye._gui_creator.toggle(False, self.action_button))
-        self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is not None,
-                                    lambda: ActionBox.import_paths["weights"] is not None],
+
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
                                    lambda: alveoleye._gui_creator.toggle(True, self.action_button))
 
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is None,
                                    lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit))
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
                                    lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
-
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is None,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.import_weights_line_edit))
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is not None,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.import_weights_line_edit))
 
         super().create_ui_rules()
 
@@ -155,7 +145,7 @@ class ProcessingActionBox(ActionBox):
         try:
             self.image = cv2.imread(ActionBox.import_paths["image"])
         except Exception as e:
-            print(f"Failed reading image {e}")
+            print(f"[-] Failed reading image {e}")
             self.broadcast_cancel_message()
             self.broadcast_step_change_message(0)
             return

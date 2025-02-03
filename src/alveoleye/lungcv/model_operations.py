@@ -9,7 +9,6 @@ from torchvision.transforms import v2 as T
 from torchvision.models.detection import MaskRCNN
 from PIL import Image
 
-
 def get_transform(train=True):
     transform_list = [
         T.PILToTensor(),
@@ -69,7 +68,7 @@ def download_file(url, out_file):
     return out_file
 
 
-def init_trained_model(model_path: Path):
+def init_trained_model(model_path=None):
     if torch.cuda.is_available():
         device = torch.device('cuda')
     # elif torch.backends.mps.is_available():
@@ -79,14 +78,14 @@ def init_trained_model(model_path: Path):
 
     model = init_untrained_model(3)
 
-    if Path(model_path).name == "default.pth":
-        if not Path(model_path).exists():
+    if model_path is None or not Path(model_path).exists():
+        model_path = Path(__file__).resolve().parent.parent.parent / "data" / "default.pth"
+
+        if not os.path.exists(str(Path(model_path))):
             if not os.path.exists(str(Path(model_path).parent)):
                 os.makedirs(str(Path(model_path).parent), exist_ok=True)
 
             import gdown
-            # Download
-            print("Downloading pytorch model")
             url = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
             gdown.download(url=url, output=str(model_path), fuzzy=True)
 

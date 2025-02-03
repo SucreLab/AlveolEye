@@ -24,7 +24,7 @@ class CombinedWorker:
         config_path = os.path.abspath(os.path.join(script_dir, "../config.json"))
 
         self.image_path = os.path.abspath(os.path.join(script_dir, "../example_images"))
-        self.weights_path = os.path.abspath(os.path.join(script_dir, "../../../data/default.pth"))
+        self.weights_path = os.path.abspath(os.path.join(script_dir, Path(__file__).resolve().parent.parent.parent / "data" / "default.pth"))
 
         with open(config_path, 'r') as config_file:
             self.labels = json.load(config_file)["Labels"]
@@ -99,7 +99,7 @@ class CombinedWorker:
 
         try:
             self.rgb_image = cv2.imread(self.image_path, cv2.IMREAD_COLOR)[:, :, ::-1]
-            model = model_operations.init_trained_model(Path(self.weights_path))
+            model = model_operations.init_trained_model(self.weights_path)
 
             model_output = model_operations.run_prediction(self.image_path, model)
             self.inference_labelmap = create_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,

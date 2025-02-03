@@ -12,7 +12,6 @@ import json
 import alveoleye._layers_editor as layers_editor
 import alveoleye._export_operations as export_operations
 
-
 class WorkerParent(QObject):
     finished = Signal()
     layers_config_data = None
@@ -67,16 +66,6 @@ class ProcessingWorker(WorkerParent):
 
     def run(self):
         try:
-            if self.model is None:
-                # Try to load.. then fail
-                try:
-                    print("Loading default weights")
-                    default_weights = self.config_data["ProcessingActionBox"]["DEFAULT_WEIGHTS_PATH"]
-                    self.model = model_operations.init_trained_model(default_weights)
-                except Exception as e:
-                    print(f"Model has not been loaded, aborting prediction: {e}")
-                    self.terminate = True
-
             if not self.terminate:
                 model_output = model_operations.run_prediction(self.image_path, self.model)
 
@@ -86,6 +75,7 @@ class ProcessingWorker(WorkerParent):
 
             if not self.terminate:
                 self.results_ready.emit(model_output, inference_labelmap)
+
         except Exception as e:
             print(f"Error in processing: {e}")
         finally:
