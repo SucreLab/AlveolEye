@@ -12,11 +12,11 @@ def validate_arguments(args):
     if not os.path.isdir(args.input_dir):
         raise ValueError(f"Input directory does not exist: {args.input_dir}")
 
-    if not os.path.isfile(args.weights_path):
-        raise ValueError(f"Model file does not exist: {args.weights_path}")
-
     if not os.access(os.path.dirname(args.output_dir) or '.', os.W_OK):
         raise ValueError(f"Output directory is not writable: {args.output_dir}")
+
+    if not os.path.isfile(args.weights_path):
+        raise ValueError(f"Model file does not exist: {args.weights_path}")
 
 
 def print_arguments(args):
@@ -119,12 +119,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate heatmaps for each image in a directory")
     parser.add_argument("--input-dir", type=str, default=default_input_dir,
                         help="Path to the directory containing images (default: ../../example_images)")
-    parser.add_argument("--weights-path", type=str, default=default_weights_path,
-                        help="Path to the trained model file (default: ../../../../data/default.pth)")
     parser.add_argument("--output-dir", type=str, required=True,
                         help="Directory to save the output images (required)")
     parser.add_argument("--colorbar-orientation", type=str, choices=["vertical", "horizontal"],
                         default="vertical", help="Orientation of the colorbar (default: vertical)")
+    parser.add_argument("--weights-path", type=str, default=default_weights_path,
+                        help="Path to the model weights file (optional)")
 
     args = parser.parse_args()
 

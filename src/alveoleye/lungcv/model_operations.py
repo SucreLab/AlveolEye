@@ -79,7 +79,7 @@ def init_trained_model(model_path=None):
     model = init_untrained_model(3)
 
     if model_path is None or not Path(model_path).exists():
-        model_path = Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"
+        model_path = Path(__file__).resolve().parent.parent.parent / "weights" / "default.pth"
 
         if not os.path.exists(str(Path(model_path))):
             if not os.path.exists(str(Path(model_path).parent)):

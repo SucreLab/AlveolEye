@@ -26,12 +26,21 @@ def validate_arguments(args):
     if args.output_dir and not os.access(os.path.dirname(args.output_dir) or '.', os.W_OK):
         raise ValueError(f"[-] Error: Output directory is not writable: {args.output_dir}")
 
+    if args.weights_path and not os.path.isfile(args.weights_path):
+        raise ValueError(f"[-] Error: The specified weights path '{args.weights_path}' does not exist or is not a file.")
+
 
 def print_arguments(args):
+    if args.weights_path:
+        weights_path = args.weights_path
+    else:
+        weights_path = "default.pth"
+
     print(f"[+] Running {args.trial} trial with the following arguments:\n\n"
           f"    Input Directory: {args.input_dir}\n"
           f"    Iterations: {args.iterations}\n"
-          f"    Output Directory: {args.output_dir}\n")
+          f"    Output Directory: {args.output_dir}\n"
+          f"    Weights File: {weights_path}\n")
 
 
 def run_determinism_trial(combined_worker, image_paths, iterations):
@@ -89,6 +98,7 @@ def run_trial(args):
         raise ValueError(f"[-] Error: The specified input directory '{args.input_dir}' does not contain any images")
 
     combined_worker = CombinedWorker()
+    combined_worker.set_weights_path(args.weights_path if args.weights_path else None)
 
     if args.trial == "determinism":
         run_determinism_trial(combined_worker, image_paths, args.iterations)
@@ -130,6 +140,8 @@ if __name__ == "__main__":
                         help="number of iterations per image as well as the range of number of lines for the variable_line_quantity trial (default: 15)")
     parser.add_argument("--output-dir", type=str, required=False,
                         help="export location for results (optional for determinism trial; required otherwise)")
+    parser.add_argument("--weights-path", type=str, required=False, default=None,
+                        help="path to the model weights file (optional)")
 
     args = parser.parse_args()
 

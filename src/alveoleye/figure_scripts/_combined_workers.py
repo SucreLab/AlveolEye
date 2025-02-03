@@ -24,7 +24,7 @@ class CombinedWorker:
         config_path = os.path.abspath(os.path.join(script_dir, "../config.json"))
 
         self.image_path = os.path.abspath(os.path.join(script_dir, "../example_images"))
-        self.weights_path = os.path.abspath(os.path.join(script_dir, Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"))
+        self.weights_path = os.path.abspath(os.path.join(script_dir, Path(__file__).resolve().parent.parent.parent / "weights" / "default.pth"))
 
         with open(config_path, 'r') as config_file:
             self.labels = json.load(config_file)["Labels"]
@@ -60,7 +60,7 @@ class CombinedWorker:
     def set_image_path(self, image_path):
         self.image_path = image_path
 
-    def set_weights(self, weights):
+    def set_weights_path(self, weights):
         self.weights_path = weights
 
     def set_confidence(self, confidence):
@@ -90,9 +90,6 @@ class CombinedWorker:
     def run_processing(self):
         if not self.image_path:
             raise ValueError("Image path is not set.")
-
-        if not self.weights_path:
-            raise ValueError("Weights path is not set.")
 
         if self.confidence is None:
             raise ValueError("Confidence is not set.")

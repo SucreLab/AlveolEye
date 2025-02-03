@@ -34,7 +34,7 @@ class ProcessingActionBox(ActionBox):
         self.set_default_weights()
 
     def set_default_weights(self):
-        ActionBox.import_paths["weights"] = Path(__file__).resolve().parent.parent / "default_weights" / "default.pth"
+        ActionBox.import_paths["weights"] = Path(__file__).resolve().parent.parent / "weights" / "default.pth"
 
     def thread_worker(self):
         self.worker = ProcessingWorker()
