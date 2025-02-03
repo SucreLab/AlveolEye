@@ -36,7 +36,6 @@ def print_arguments(args):
 
 def run_determinism_trial(combined_worker, image_paths, iterations):
     for image_path in image_paths:
-        print(image_path)
         previous_result = None
         combined_worker.set_image_path(image_path)
 
