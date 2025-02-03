@@ -114,7 +114,7 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     default_input_dir = os.path.abspath(os.path.join(script_dir, "../example_images"))
-    default_weights_path = os.path.abspath(os.path.join(script_dir, "../../data/default.pth"))
+    default_weights_path = os.path.abspath(os.path.join(script_dir, "../../default_weights/default.pth"))
 
     parser = argparse.ArgumentParser(description="Generate heatmaps for each image in a directory")
     parser.add_argument("--input-dir", type=str, default=default_input_dir,

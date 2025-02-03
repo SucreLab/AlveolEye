@@ -24,7 +24,7 @@ class CombinedWorker:
         config_path = os.path.abspath(os.path.join(script_dir, "../config.json"))
 
         self.image_path = os.path.abspath(os.path.join(script_dir, "../example_images"))
-        self.weights_path = os.path.abspath(os.path.join(script_dir, Path(__file__).resolve().parent.parent.parent / "data" / "default.pth"))
+        self.weights_path = os.path.abspath(os.path.join(script_dir, Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"))
 
         with open(config_path, 'r') as config_file:
             self.labels = json.load(config_file)["Labels"]
