@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import re
 
 
 def format_results(result):
@@ -93,6 +94,22 @@ def append_csv_data(accumulated_results, export_file):
             file.write(csv_data)
 
 
+def get_unique_filename(output_dir, file_name):
+    base_name, ext = os.path.splitext(file_name)
+    pattern = re.compile(rf"{re.escape(base_name)}\((\d+)\){re.escape(ext)}")
+
+    existing_files = os.listdir(output_dir)
+    matching_numbers = [int(match.group(1)) for f in existing_files if (match := pattern.match(f))]
+
+    if os.path.exists(os.path.join(output_dir, file_name)):
+        if not matching_numbers:
+            return f"{base_name}(1){ext}"
+        else:
+            return f"{base_name}({max(matching_numbers) + 1}){ext}"
+
+    return file_name
+
+
 def export_accumulated_results(accumulated_results, output_dir, file_name="test_results.csv"):
     if not output_dir:
         return
@@ -100,7 +117,10 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
     csv_data = create_csv_data(accumulated_results)
 
     os.makedirs(output_dir, exist_ok=True)
-    complete_export_path = os.path.join(output_dir, file_name)
+    unique_file_name = get_unique_filename(output_dir, file_name)
+    complete_export_path = os.path.join(output_dir, unique_file_name)
 
     with open(complete_export_path, "w", newline="") as results_file:
         results_file.write(csv_data)
+
+    return unique_file_name

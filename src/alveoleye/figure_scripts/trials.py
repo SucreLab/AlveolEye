@@ -38,7 +38,7 @@ def print_arguments(args):
     if args.weights_path:
         weights_path = args.weights_path
     else:
-        weights_path = None  # runs default
+        weights_path = "using default weights"
 
     print(f"[+] Running {args.trial} trial with the following arguments:\n\n"
           f"    Input Directory: {args.input_dir}\n"
@@ -116,10 +116,10 @@ def run_trial(args):
 
     if args.output_dir:
         accumulated_results = combined_worker.get_accumulated_results()
-        complete_export_path = f"{args.trial}_results.csv"
-        export_accumulated_results(accumulated_results, args.output_dir, complete_export_path)
+        base_file_name = f"{args.trial}_results.csv"
+        export_file_name = export_accumulated_results(accumulated_results, args.output_dir, base_file_name)
 
-        print(f"[+] CSV file saved to: {complete_export_path}")
+        print(f"[+] Saved trial results as {export_file_name}")
 
 
 def main(args):

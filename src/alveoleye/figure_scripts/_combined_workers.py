@@ -89,10 +89,10 @@ class CombinedWorker:
 
     def run_processing(self):
         if not self.image_path:
-            raise ValueError("Image path is not set.")
+            raise ValueError("[-] Error: Image path is not set.")
 
         if self.confidence is None:
-            raise ValueError("Confidence is not set.")
+            raise ValueError("[-] Error: Confidence is not set.")
 
         try:
             self.rgb_image = cv2.imread(self.image_path, cv2.IMREAD_COLOR)[:, :, ::-1]
@@ -102,20 +102,20 @@ class CombinedWorker:
             self.inference_labelmap = generate_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,
                                                                    self.labels)
         except Exception as e:
-            print(f"Error in processing: {e}")
+            print(f"[-] Error in processing: {e}")
 
     def run_postprocessing(self):
         if self.rgb_image is None:
-            raise ValueError("Run processing first")
+            raise ValueError("[-] Error: Run processing first")
 
         if self.parenchyma_minimum_size is None:
-            raise ValueError("Parenchyma minimum size is not set")
+            raise ValueError("[-] Error: Parenchyma minimum size is not set")
 
         if self.alveoli_minimum_size is None:
-            raise ValueError("Alveoli minimum size is not set")
+            raise ValueError("[-] Error: Alveoli minimum size is not set")
 
         if self.inference_labelmap is None:
-            raise ValueError("Run processing first")
+            raise ValueError("[-] Error: Run processing first")
 
         try:
             grayscaled = convert_to_grayscale(self.rgb_image)
@@ -127,23 +127,23 @@ class CombinedWorker:
 
             self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
         except Exception as e:
-            print(f"Error in post-processing: {e}")
+            print(f"[-] Error: Error in post-processing: {e}")
 
     def run_assessments(self):
         if self.labelmap is None:
-            raise ValueError("Run postprocessing first")
+            raise ValueError("[-] Error: Run postprocessing first")
 
         if self.number_of_lines is None:
-            raise ValueError("Lines is not set")
+            raise ValueError("[-] Error: Lines is not set")
 
         if self.minimum_length is None:
-            raise ValueError("Length is not set")
+            raise ValueError("[-] Error: Length is not set")
 
         if self.scale is None:
-            raise ValueError("Scale is not set")
+            raise ValueError("[-] Error: Scale is not set")
 
         if not self.image_path:
-            raise ValueError("Image path is not set")
+            raise ValueError("[-] Error: Image path is not set")
 
         try:
             self.mli, self.assessments_layer, self.number_of_chords, self.stdev_chord_lengths = calculate_mean_linear_intercept(
@@ -160,7 +160,7 @@ class CombinedWorker:
 
             self.accumulated_results.append(self.current_results)
         except Exception as e:
-            print(f"Error in metrics calculation: {e}")
+            print(f"[-] Error in metrics calculation: {e}")
 
     def run_complete_pipline(self):
         self.run_processing()
@@ -169,70 +169,72 @@ class CombinedWorker:
 
     def get_current_results(self):
         if not self.current_results:
-            raise ValueError("Current results is None")
+            print("[!] Warning: Current results is None")
 
         return self.current_results
 
     def get_accumulated_results(self):
         if not self.accumulated_results:
-            raise ValueError("Accumulated results is None")
+            print("[!] Warning: Accumulated results is None")
 
         return self.accumulated_results
 
     def get_shortened_image_path(self):
         if not self.shortened_image_path:
-            raise ValueError("Shortened image path is None")
+            print("[!] Warning: Shortened image path is None")
+
+        return self.shortened_image_path
 
     def get_asvd(self):
         if self.asvd is None:
-            raise ValueError("ASVD is None")
+            print("[!] Warning: ASVD is None")
 
         return self.asvd
 
     def get_mli(self):
         if self.mli is None:
-            raise ValueError("MLI is None")
+            print("[!] Warning: MLI is None")
 
         return self.mli
 
     def get_stdev_chord_lengths(self):
         if self.stdev_chord_lengths is None:
-            raise ValueError("Standard deviation of chord lengths is None")
+            print("[!] Warning: Standard deviation of chord lengths is None")
 
         return self.stdev_chord_lengths
 
     def get_number_of_chords(self):
         if self.number_of_chords is None:
-            raise ValueError("Chords is None")
+            print("[!] Warning: Chords is None")
 
         return self.number_of_chords
 
     def get_airspace_pixels(self):
         if self.airspace_pixels is None:
-            raise ValueError("Airspace pixels is None")
+            print("[!] Warning: Airspace pixels is None")
 
         return self.airspace_pixels
 
     def get_non_airspace_pixels(self):
         if self.non_airspace_pixels is None:
-            raise ValueError("Non-airspace pixels is None")
+            print("[!] Warning: Non-airspace pixels is None")
 
         return self.non_airspace_pixels
 
     def get_lines(self):
         if self.number_of_lines is None:
-            raise ValueError("Lines is None")
+            print("[!] Warning: Lines is None")
 
         return self.number_of_lines
 
     def get_length(self):
         if self.minimum_length is None:
-            raise ValueError("Length is None")
+            print("[!] Warning: Length is None")
 
         return self.minimum_length
 
     def get_scale(self):
         if self.scale is None:
-            raise ValueError("Scale is None")
+            print("[!] Warning: Scale is None")
 
         return self.scale
