@@ -2,9 +2,9 @@ import numpy as np
 from qtpy.QtCore import QObject, Signal
 
 from alveoleye.lungcv import model_operations
-from alveoleye.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
-                                            create_postprocessing_labelmap, filter_small_components, grayscale,
-                                            invert_binary_image, create_processing_labelmap)
+from alveoleye.lungcv.postprocessor import (apply_manual_threshold, apply_dynamic_threshold,
+                                            generate_postprocessing_labelmap, remove_small_components, convert_to_grayscale,
+                                            invert_image_binary, generate_processing_labelmap)
 from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
                                                            calculate_airspace_volume_density)
 import pathlib
@@ -70,8 +70,8 @@ class ProcessingWorker(WorkerParent):
                 model_output = model_operations.run_prediction(self.image_path, model)
 
             if not self.terminate:
-                inference_labelmap = create_processing_labelmap(model_output, self.image_shape,
-                                                                self.confidence_threshold_value, self.labels)
+                inference_labelmap = generate_processing_labelmap(model_output, self.image_shape,
+                                                                  self.confidence_threshold_value, self.labels)
 
             if not self.terminate:
                 self.results_ready.emit(model_output, inference_labelmap)
@@ -111,9 +111,9 @@ class PostprocessingWorker(WorkerParent):
 
     def threshold_according_to_method(self, image):
         if self.thresholding_check_box_value:
-            return manual_threshold(image, self.manual_threshold_value)
+            return apply_manual_threshold(image, self.manual_threshold_value)
 
-        return dynamic_threshold(image)
+        return apply_dynamic_threshold(image)
 
     def run(self):
         try:
@@ -121,29 +121,29 @@ class PostprocessingWorker(WorkerParent):
                 image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"])
 
             if not self.terminate:
-                grayscaled = grayscale(image)
+                grayscaled = convert_to_grayscale(image)
 
             if not self.terminate:
                 thresholded = self.threshold_according_to_method(grayscaled)
 
             if not self.terminate:
-                parenchyma_cleaned = filter_small_components(thresholded, self.parenchyma_minimum_size)
+                parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
 
             if not self.terminate:
-                inverted = invert_binary_image(parenchyma_cleaned)
+                inverted = invert_image_binary(parenchyma_cleaned)
 
             if not self.terminate:
-                alveoli_cleaned = filter_small_components(inverted, self.alveoli_minimum_size)
+                alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
 
             if not self.terminate:
-                inverted_back = invert_binary_image(alveoli_cleaned)
+                inverted_back = invert_image_binary(alveoli_cleaned)
 
             if not self.terminate:
                 masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
                                                                  self.layer_names["PROCESSING_LAYER"])
 
             if not self.terminate:
-                labelmap = create_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels)
+                labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels)
 
             if not self.terminate:
                 self.results_ready.emit(labelmap)

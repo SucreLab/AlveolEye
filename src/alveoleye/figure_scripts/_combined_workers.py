@@ -9,12 +9,12 @@ from alveoleye.lungcv.assessments import (
     calculate_mean_linear_intercept,
 )
 from alveoleye.lungcv.postprocessor import (
-    filter_small_components,
-    create_postprocessing_labelmap,
-    create_processing_labelmap,
-    dynamic_threshold,
-    grayscale,
-    invert_binary_image,
+    remove_small_components,
+    generate_postprocessing_labelmap,
+    generate_processing_labelmap,
+    apply_dynamic_threshold,
+    convert_to_grayscale,
+    invert_image_binary,
 )
 
 
@@ -99,8 +99,8 @@ class CombinedWorker:
             model = model_operations.init_trained_model(self.weights_path)
 
             model_output = model_operations.run_prediction(self.image_path, model)
-            self.inference_labelmap = create_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,
-                                                                 self.labels)
+            self.inference_labelmap = generate_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,
+                                                                   self.labels)
         except Exception as e:
             print(f"Error in processing: {e}")
 
@@ -118,14 +118,14 @@ class CombinedWorker:
             raise ValueError("Run processing first")
 
         try:
-            grayscaled = grayscale(self.rgb_image)
-            thresholded = dynamic_threshold(grayscaled)
-            parenchyma_cleaned = filter_small_components(thresholded, self.parenchyma_minimum_size)
-            inverted = invert_binary_image(parenchyma_cleaned)
-            alveoli_cleaned = filter_small_components(inverted, self.alveoli_minimum_size)
-            inverted_back = invert_binary_image(alveoli_cleaned)
+            grayscaled = convert_to_grayscale(self.rgb_image)
+            thresholded = apply_dynamic_threshold(grayscaled)
+            parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
+            inverted = invert_image_binary(parenchyma_cleaned)
+            alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
+            inverted_back = invert_image_binary(alveoli_cleaned)
 
-            self.labelmap = create_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
+            self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
         except Exception as e:
             print(f"Error in post-processing: {e}")
 
