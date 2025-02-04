@@ -132,7 +132,7 @@ def main(args):
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_input_dir = os.path.abspath(os.path.join(script_dir, "../example_images"))
+    default_input_dir = os.path.abspath(os.path.join(script_dir, "../../../example_images"))
 
     parser = argparse.ArgumentParser(description="Run specific trials for AlveolEye")
     parser.add_argument("trial", type=str,

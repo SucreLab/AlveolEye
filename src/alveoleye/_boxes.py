@@ -25,7 +25,6 @@ class ProcessingActionBox(ActionBox):
         self.import_image_line_edit = None
         self.import_weights_line_edit = None
         self.confidence_threshold_spin_box = None
-        self._image_open_path = None
 
         self.box_id = 1
 
@@ -59,7 +58,7 @@ class ProcessingActionBox(ActionBox):
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
             self.on_import_weights_press,
-            self.box_config_data["DEFAULT_WEIGHTS_PATH"]
+            self.box_config_data["DEFAULT_WEIGHTS_NAME"]
         )
         confidence_threshold_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CONFIDENCE_THRESHOLD_LABEL_TEXT"],
@@ -103,26 +102,14 @@ class ProcessingActionBox(ActionBox):
 
         super().create_ui_rules()
 
-    def open_file_dialogue(self, title, accepted_extensions):
-        if self._image_open_path is None:
-            current_path = Path(__file__).resolve()
-        else:
-            current_path = self._image_open_path
-
-        parent_directory = str(current_path.parent) + "/data"
-
+    def open_file_dialogue(self, title, accepted_extensions, parent_directory):
+        parent_directory = str(Path(__file__).resolve().parent.parent / parent_directory)
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
 
-        if file_path:
-            file_name = Path(file_path).name
-            self._image_open_path = Path(file_path)
-        else:
-            file_name = None
+        return file_path, Path(file_path).name if file_path else (None, None)
 
-        return file_path, file_name
-
-    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats):
-        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats)
+    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats, parent_directory):
+        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats, parent_directory)
 
         if not file_path:
             return False
@@ -132,15 +119,14 @@ class ProcessingActionBox(ActionBox):
 
         ActionBox.import_paths[file_type] = file_path
         file_line_edit.setText(file_name)
-
         self.rules_engine.evaluate_rules()
-
         return True
 
     def on_import_image_press(self):
         if not self.on_import_press("image", self.import_image_line_edit,
                                     self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
-                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"]):
+                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
+                                    self.box_config_data["IMAGES_FOLDER_PATH"]):
             return
         try:
             self.image = cv2.imread(ActionBox.import_paths["image"])
@@ -153,14 +139,14 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
                                     self.colormap_config_data, False)
-
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
 
     def on_import_weights_press(self):
         self.on_import_press("weights", self.import_weights_line_edit,
                              self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
-                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"])
+                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
+                             self.box_config_data["WEIGHTS_FOLDER_PATH"])
 
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
