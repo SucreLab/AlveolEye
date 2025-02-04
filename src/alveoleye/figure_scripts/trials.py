@@ -38,7 +38,7 @@ def print_arguments(args):
     if args.weights_path:
         weights_path = args.weights_path
     else:
-        weights_path = "default.pth"
+        weights_path = None  # runs default
 
     print(f"[+] Running {args.trial} trial with the following arguments:\n\n"
           f"    Input Directory: {args.input_dir}\n"

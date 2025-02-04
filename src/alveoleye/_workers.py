@@ -22,7 +22,7 @@ class WorkerParent(QObject):
         self.layer_names = None
         self.labels = None
         self.terminate = False
-        self.model = None
+
         with open(pathlib.Path(__file__).resolve().parent / "config.json", 'r') as config_file:
             self.config_data = json.load(config_file)
 
@@ -56,10 +56,7 @@ class ProcessingWorker(WorkerParent):
         self.image_shape = image_shape
 
     def set_weights(self, weights):
-        try:
-            self.model = model_operations.init_trained_model(weights)
-        except Exception as e:
-            print(f"Error initializing model: {e}")
+        self.weights = weights
 
     def set_confidence_threshold_value(self, confidence_threshold_value):
         self.confidence_threshold_value = confidence_threshold_value
@@ -67,7 +64,10 @@ class ProcessingWorker(WorkerParent):
     def run(self):
         try:
             if not self.terminate:
-                model_output = model_operations.run_prediction(self.image_path, self.model)
+                model = model_operations.init_trained_model(self.weights)
+
+            if not self.terminate:
+                model_output = model_operations.run_prediction(self.image_path, model)
 
             if not self.terminate:
                 inference_labelmap = create_processing_labelmap(model_output, self.image_shape,
