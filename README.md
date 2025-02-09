@@ -126,13 +126,13 @@ napari
 ![annotated diagram](./docs/Napari_annotated_diagram.png)
 
 - **Labels**
-  - **Airway Epithelium**: 5
-  - **Vessel Endothelium**: 11
-  - **Airway Lumen**: 3
-  - **Vessel Lumen**: 17
-  - **Parenchyma**: 18
-  - **Alveoli**: 8
-  - **Blocking**: 1
+  - **Blocker**: 1
+  - **Airway Epithelium**: 2
+  - **Vessel Endothelium**: 3
+  - **Airway Lumen**: 4
+  - **Vessel Lumen**: 5
+  - **Parenchyma**: 6
+  - **Alveoli**: 7
 - **Annotation Tips**
   - ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Eyedropper Tool**: Quickly identify and switch to the correct label by using the eyedropper tool. Click on a part of the image to switch to the label of the pixel you clicked.
   - ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Select the Correct Layer**: Before making annotations, ensure you're working on the proper layer. Select the appropriate layer under "layer list."

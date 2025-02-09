@@ -16,6 +16,7 @@ dependencies:
   - gdown
   - numpy<2.0.0
   - pip
+  - matplotlib
   - pip:
       - pycocotools
       - opencv-python-headless
