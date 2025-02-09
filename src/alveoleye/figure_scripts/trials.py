@@ -78,7 +78,7 @@ def run_randomized_line_location_trial(combined_worker, image_paths, iterations)
 
 
 def run_variable_number_of_lines_trial(combined_worker, image_paths, iterations):
-    for image_path in image_paths[:2]:
+    for image_path in image_paths:
         combined_worker.set_image_path(image_path)
         combined_worker.run_processing()
         combined_worker.run_postprocessing()
