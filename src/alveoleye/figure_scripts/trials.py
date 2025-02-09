@@ -132,14 +132,14 @@ def main(args):
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_input_dir = os.path.abspath(os.path.join(script_dir, "../../../example_images"))
+    default_input_dir = os.path.abspath(os.path.join(script_dir, "../../example_images"))
 
     parser = argparse.ArgumentParser(description="Run specific trials for AlveolEye")
     parser.add_argument("trial", type=str,
                         choices=["determinism_trial", "random_line_location_trial", "variable_line_quantity_trial", "1", "2", "3"],
                         help="specify which trial to run (or use numbers 1, 2, 3 as shortcuts)")
     parser.add_argument("--input-dir", type=str, required=False, default=default_input_dir,
-                        help="path to the directory containing images (default: ../example_images)")
+                        help="path to the directory containing images (default: ../../example_images")
     parser.add_argument("--iterations", type=int, required=False, default=15,
                         help="number of iterations per image as well as the range of number of lines for the variable_line_quantity trial (default: 15)")
     parser.add_argument("--output-dir", type=str, required=False,
