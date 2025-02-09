@@ -1,4 +1,6 @@
 from alveoleye._workers import ProcessingWorker
+
+
 # tmp_path is a pytest fixture
 
 def process_image_completely():
@@ -6,6 +8,7 @@ def process_image_completely():
     from torchvision.models.detection.mask_rcnn import MaskRCNN
     worker = ProcessingWorker()
     model = init_trained_model("src/alveoleye/data/default.pth")
+
 
 def load_proxy_viewer(make_napari_viewer_proxy):
     import napari
