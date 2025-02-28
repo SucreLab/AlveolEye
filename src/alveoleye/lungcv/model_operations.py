@@ -9,6 +9,7 @@ from torchvision.transforms import v2 as T
 from torchvision.models.detection import MaskRCNN
 from PIL import Image
 
+
 def get_transform(train=True):
     transform_list = [
         T.PILToTensor(),
