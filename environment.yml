@@ -15,6 +15,7 @@ dependencies:
   - pip
   - gdown
   - numpy<2.0.0
+  - matplotlib
   - pip:
       - opencv-python>=4.1.1.26
 
