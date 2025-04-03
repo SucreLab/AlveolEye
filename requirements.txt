@@ -1,5 +1,6 @@
 napari
 qtpy
+pyqt<5.16.0
 pytorch
 torchvision>=0.16.2,<=0.17.2
 opencv-python>=4.1.1.26
