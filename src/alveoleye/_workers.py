@@ -2,16 +2,15 @@ import numpy as np
 from qtpy.QtCore import QObject, Signal
 
 from alveoleye.lungcv import model_operations
-from alveoleye.lungcv.postprocessor import (manual_threshold, dynamic_threshold,
-                                                             create_postprocessing_labelmap, clean, greyscale,
-                                                             invert_binary, create_processing_labelmap)
+from alveoleye.lungcv.postprocessor import (apply_manual_threshold, apply_dynamic_threshold,
+                                            generate_postprocessing_labelmap, remove_small_components, convert_to_grayscale,
+                                            invert_image_binary, generate_processing_labelmap)
 from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
                                                            calculate_airspace_volume_density)
 import pathlib
 import json
 import alveoleye._layers_editor as layers_editor
 import alveoleye._export_operations as export_operations
-
 
 class WorkerParent(QObject):
     finished = Signal()
@@ -23,7 +22,7 @@ class WorkerParent(QObject):
         self.layer_names = None
         self.labels = None
         self.terminate = False
-        self.model = None
+
         with open(pathlib.Path(__file__).resolve().parent / "config.json", 'r') as config_file:
             self.config_data = json.load(config_file)
 
@@ -57,35 +56,26 @@ class ProcessingWorker(WorkerParent):
         self.image_shape = image_shape
 
     def set_weights(self, weights):
-        try:
-            self.model = model_operations.init_trained_model(weights)
-        except Exception as e:
-            print(f"Error initializing model: {e}")
+        self.weights = weights
 
     def set_confidence_threshold_value(self, confidence_threshold_value):
         self.confidence_threshold_value = confidence_threshold_value
 
     def run(self):
         try:
-            if self.model is None:
-                # Try to load.. then fail
-                try:
-                    print("Loading default weights")
-                    default_weights = self.config_data["ProcessingActionBox"]["DEFAULT_WEIGHTS_PATH"]
-                    self.model = model_operations.init_trained_model(default_weights)
-                except Exception as e:
-                    print(f"Model has not been loaded, aborting prediction: {e}")
-                    self.terminate = True
+            if not self.terminate:
+                model = model_operations.init_trained_model(self.weights)
 
             if not self.terminate:
-                model_output = model_operations.run_prediction(self.image_path, self.model)
+                model_output = model_operations.run_prediction(self.image_path, model)
 
             if not self.terminate:
-                inference_labelmap = create_processing_labelmap(model_output, self.image_shape,
-                                                                self.confidence_threshold_value, self.labels)
+                inference_labelmap = generate_processing_labelmap(model_output, self.image_shape,
+                                                                  self.confidence_threshold_value, self.labels)
 
             if not self.terminate:
                 self.results_ready.emit(model_output, inference_labelmap)
+
         except Exception as e:
             print(f"Error in processing: {e}")
         finally:
@@ -121,9 +111,9 @@ class PostprocessingWorker(WorkerParent):
 
     def threshold_according_to_method(self, image):
         if self.thresholding_check_box_value:
-            return manual_threshold(image, self.manual_threshold_value)
+            return apply_manual_threshold(image, self.manual_threshold_value)
 
-        return dynamic_threshold(image)
+        return apply_dynamic_threshold(image)
 
     def run(self):
         try:
@@ -131,35 +121,35 @@ class PostprocessingWorker(WorkerParent):
                 image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"])
 
             if not self.terminate:
-                greyscaled = greyscale(image)
+                grayscaled = convert_to_grayscale(image)
 
             if not self.terminate:
-                thresholded = self.threshold_according_to_method(greyscaled)
+                thresholded = self.threshold_according_to_method(grayscaled)
 
             if not self.terminate:
-                parenchyma_cleaned = clean(thresholded, self.parenchyma_minimum_size)
+                parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
 
             if not self.terminate:
-                inverted = invert_binary(parenchyma_cleaned)
+                inverted = invert_image_binary(parenchyma_cleaned)
 
             if not self.terminate:
-                alveoli_cleaned = clean(inverted, self.alveoli_minimum_size)
+                alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
 
             if not self.terminate:
-                inverted_back = invert_binary(alveoli_cleaned)
+                inverted_back = invert_image_binary(alveoli_cleaned)
 
             if not self.terminate:
                 masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
                                                                  self.layer_names["PROCESSING_LAYER"])
 
             if not self.terminate:
-                labelmap = create_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels)
+                labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels)
 
             if not self.terminate:
                 self.results_ready.emit(labelmap)
 
         except Exception as e:
-            print(f"Processing run failed: {e}")
+            print(f"Error in post-processing: {e}")
         finally:
             self.finished.emit()
 
@@ -221,7 +211,7 @@ class AssessmentsWorker(WorkerParent):
                                         {"assessments_layer": assessments_layer})
 
         except Exception as e:
-            print(f"Metrics calculation failed: {e}")
+            print(f"Error in metrics calculation: {e}")
         finally:
             self.finished.emit()
 

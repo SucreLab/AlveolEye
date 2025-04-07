@@ -205,3 +205,17 @@ def create_confirmation_message_box(parent, message):
     clicked_button = message_box.clickedButton()
 
     return clicked_button == button_objects["Yes"]
+
+def toggle(state, elements):
+    if not isinstance(elements, list):
+        elements = [elements]
+
+    for item in elements:
+        stack = [item]
+        while stack:
+            current = stack.pop()
+            if isinstance(current, QLayout):
+                for i in range(current.count()):
+                    stack.append(current.itemAt(i).widget())
+            else:
+                current.setEnabled(state)

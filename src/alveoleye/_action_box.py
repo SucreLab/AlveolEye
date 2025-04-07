@@ -1,6 +1,7 @@
 from qtpy.QtCore import Qt, QTimer, QThread
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 
+import alveoleye._gui_creator
 import alveoleye._rules as rules
 import alveoleye._gui_creator as gui_creator
 from alveoleye._workers import WorkerParent
@@ -139,6 +140,6 @@ class ActionBox(QGroupBox):
         self.set_state(0)
 
     def create_ui_rules(self):
-        self.rules_engine.add_rule(lambda: self.state == 2, lambda: rules.toggle(False, self.action_button))
+        self.rules_engine.add_rule(lambda: self.state == 2, lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.evaluate_rules()

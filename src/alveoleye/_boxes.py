@@ -4,6 +4,7 @@ from pathlib import Path
 
 from qtpy.QtWidgets import QFileDialog
 
+import alveoleye._gui_creator
 from alveoleye._action_box import ActionBox
 
 from alveoleye._workers import ProcessingWorker, PostprocessingWorker, AssessmentsWorker, ExportWorker
@@ -24,7 +25,6 @@ class ProcessingActionBox(ActionBox):
         self.import_image_line_edit = None
         self.import_weights_line_edit = None
         self.confidence_threshold_spin_box = None
-        self._image_open_path = None
 
         self.box_id = 1
 
@@ -33,12 +33,7 @@ class ProcessingActionBox(ActionBox):
         self.set_default_weights()
 
     def set_default_weights(self):
-        default_file_name = self.box_config_data["DEFAULT_WEIGHTS_PATH"]
-        default_weights_path = Path(__file__).resolve().parent.parent / default_file_name
-        self.import_weights_line_edit.setText(Path(default_weights_path).name)
-        ActionBox.import_paths["weights"] = default_weights_path
-
-        self.rules_engine.evaluate_rules()
+        ActionBox.import_paths["weights"] = Path(__file__).resolve().parent.parent / "weights" / "default.pth"
 
     def thread_worker(self):
         self.worker = ProcessingWorker()
@@ -63,7 +58,7 @@ class ProcessingActionBox(ActionBox):
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
             self.on_import_weights_press,
-            self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
+            self.box_config_data["DEFAULT_WEIGHTS_NAME"]
         )
         confidence_threshold_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["CONFIDENCE_THRESHOLD_LABEL_TEXT"],
@@ -95,43 +90,26 @@ class ProcessingActionBox(ActionBox):
         self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
                                     lambda: ActionBox.import_paths["weights"] is None,
                                     lambda: not self.state == 2],
-                                   lambda: rules.toggle(False, self.action_button))
-        self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is not None,
-                                    lambda: ActionBox.import_paths["weights"] is not None],
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+
+        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
 
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is None,
-                                   lambda: rules.toggle(False, self.import_image_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit))
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
-                                   lambda: rules.toggle(True, self.import_image_line_edit))
-
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is None,
-                                   lambda: rules.toggle(False, self.import_weights_line_edit))
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["weights"] is not None,
-                                   lambda: rules.toggle(True, self.import_weights_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
 
         super().create_ui_rules()
 
-    def open_file_dialogue(self, title, accepted_extensions):
-        if self._image_open_path is None:
-            current_path = Path(__file__).resolve()
-        else:
-            current_path = self._image_open_path
-
-        parent_directory = str(current_path.parent) + "/data"
-
+    def open_file_dialogue(self, title, accepted_extensions, parent_directory):
+        parent_directory = str(Path(__file__).resolve().parent.parent / parent_directory)
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
 
-        if file_path:
-            file_name = Path(file_path).name
-            self._image_open_path = Path(file_path)
-        else:
-            file_name = None
+        return file_path, Path(file_path).name if file_path else (None, None)
 
-        return file_path, file_name
-
-    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats):
-        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats)
+    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats, parent_directory):
+        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats, parent_directory)
 
         if not file_path:
             return False
@@ -141,20 +119,19 @@ class ProcessingActionBox(ActionBox):
 
         ActionBox.import_paths[file_type] = file_path
         file_line_edit.setText(file_name)
-
         self.rules_engine.evaluate_rules()
-
         return True
 
     def on_import_image_press(self):
         if not self.on_import_press("image", self.import_image_line_edit,
                                     self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
-                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"]):
+                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
+                                    self.box_config_data["IMAGES_FOLDER_PATH"]):
             return
         try:
             self.image = cv2.imread(ActionBox.import_paths["image"])
         except Exception as e:
-            print(f"Failed reading image {e}")
+            print(f"[-] Failed reading image {e}")
             self.broadcast_cancel_message()
             self.broadcast_step_change_message(0)
             return
@@ -162,14 +139,14 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
                                     self.colormap_config_data, False)
-
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
 
     def on_import_weights_press(self):
         self.on_import_press("weights", self.import_weights_line_edit,
                              self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
-                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"])
+                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
+                             self.box_config_data["WEIGHTS_FOLDER_PATH"])
 
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
@@ -259,19 +236,19 @@ class PostprocessingActionBox(ActionBox):
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
-                                   lambda: rules.toggle(True, self.thresholding_spin_box))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.thresholding_spin_box))
         self.rules_engine.add_rule(lambda: not self.thresholding_check_box.isChecked(),
-                                   lambda: rules.toggle(False, self.thresholding_spin_box))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.thresholding_spin_box))
 
         self.rules_engine.add_rule(lambda: ActionBox.step == 0,
-                                   lambda: rules.toggle(False, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 1],
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 2],
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 3],
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
 
         super().create_ui_rules()
 
@@ -387,34 +364,34 @@ class AssessmentsActionBox(ActionBox):
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
-                                   lambda: rules.toggle(True, self.mli_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.mli_line_edit))
         self.rules_engine.add_rule(lambda: self.asvd_check_box.isChecked(),
-                                   lambda: rules.toggle(True, self.asvd_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.asvd_line_edit))
 
         self.rules_engine.add_rule(lambda: not self.mli_check_box.isChecked(),
-                                   lambda: rules.toggle(False, self.mli_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.mli_line_edit))
         self.rules_engine.add_rule(lambda: not self.asvd_check_box.isChecked(),
-                                   lambda: rules.toggle(False, self.asvd_line_edit))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.asvd_line_edit))
 
         self.rules_engine.add_rule(lambda: not ActionBox.step == 2,
-                                   lambda: rules.toggle(False, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
         self.rules_engine.add_rule(lambda: ActionBox.step == 3,
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 2,
                                     lambda: self.mli_check_box.isChecked() or self.asvd_check_box.isChecked()],
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 2,
                                     lambda: not self.mli_check_box.isChecked() and not self.asvd_check_box.isChecked()],
-                                   lambda: rules.toggle(False, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
-                                   lambda: rules.toggle(True, [self.lines_spin_box,
-                                                               self.min_length_spin_box,
-                                                               self.scale_spin_box]))
+                                   lambda: alveoleye._gui_creator.toggle(True, [self.lines_spin_box,
+                                                                                self.min_length_spin_box,
+                                                                                self.scale_spin_box]))
         self.rules_engine.add_rule(lambda: not self.mli_check_box.isChecked(),
-                                   lambda: rules.toggle(False, [self.lines_spin_box,
-                                                                self.min_length_spin_box,
-                                                                self.scale_spin_box]))
+                                   lambda: alveoleye._gui_creator.toggle(False, [self.lines_spin_box,
+                                                                                 self.min_length_spin_box,
+                                                                                 self.scale_spin_box]))
 
         super().create_ui_rules()
 
@@ -553,39 +530,39 @@ class ExportActionBox(ActionBox):
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
                                     lambda: ActionBox.current_results],
-                                   [lambda: rules.toggle(True, self.add_button),
+                                   [lambda: alveoleye._gui_creator.toggle(True, self.add_button),
                                     lambda: self.set_results()])
 
         self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: rules.toggle(False, self.mli_metrics))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.mli_metrics))
         self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() == self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: rules.toggle(False, self.asvd_metrics))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.asvd_metrics))
         self.rules_engine.add_rule(lambda: self.mli_line_edit.text() != self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: rules.toggle(True, self.mli_metrics))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.mli_metrics))
         self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: rules.toggle(True, self.asvd_metrics))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.asvd_metrics))
 
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
-                                   lambda: rules.toggle(False, self.add_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.add_button))
         self.rules_engine.add_rule([lambda: ActionBox.current_results],
-                                   lambda: rules.toggle(True, self.add_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.add_button))
         self.rules_engine.add_rule([lambda: tuple(ActionBox.current_results) in self.accumulated_results],
-                                   lambda: rules.toggle(False, self.add_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.add_button))
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
-                                   lambda: rules.toggle(True, self.remove_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.remove_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
-                                   lambda: rules.toggle(False, self.remove_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.remove_button))
 
         self.rules_engine.add_rule(lambda: not self.accumulated_results,
-                                   lambda: rules.toggle(False, self.clear_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.clear_button))
         self.rules_engine.add_rule([lambda: self.accumulated_results],
-                                   lambda: rules.toggle(True, self.clear_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.clear_button))
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
-                                   lambda: rules.toggle(True, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
-                                   lambda: rules.toggle(False, self.action_button))
+                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
         super().create_ui_rules()
 

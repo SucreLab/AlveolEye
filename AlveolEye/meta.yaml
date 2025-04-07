@@ -1,0 +1,44 @@
+{% set name = "AlveolEye" %}
+{% set version = "0.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/alveoleye-{{ version }}.tar.gz
+  sha256: 07d40f65e42148c196a5554f0f8e34ab27da06dc9f18c17029935778b494a4a7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=42.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - numpy
+    - magicgui
+    - qtpy
+
+test:
+  imports:
+    - alveoleye
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Reads lung slides with AI-driven and classical methods
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - AddYourGitHubIdHere

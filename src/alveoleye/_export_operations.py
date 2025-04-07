@@ -1,6 +1,8 @@
 import csv
 import io
 import json
+import os
+import re
 
 
 def format_results(result):
@@ -46,10 +48,10 @@ def create_json_data(accumulated_results):
     return json.dumps(data, indent=2)
 
 
-def create_csv_data(accumulated_results):
-    field_names = ["Image", "Weights", "ASVD", "Airspace Pixels", "Non-Airspace Pixels", "MLI", "Standard Deviation",
-                   "Number of Chords", "Lines", "Minimum Length", "Scale"]
-
+def create_csv_data(accumulated_results, field_names=("Image", "Weights", "ASVD", "Airspace Pixels",
+                                                      "Non-Airspace Pixels", "MLI", "Standard Deviation",
+                                                      "Number of Chords", "Number of Lines", "Minimum Length",
+                                                      "Scale")):
     csv_buffer = io.StringIO()
     writer = csv.DictWriter(csv_buffer, fieldnames=field_names)
     writer.writeheader()
@@ -67,7 +69,7 @@ def create_csv_data(accumulated_results):
             "MLI": mli,
             "Standard Deviation": stdev,
             "Number of Chords": chords,
-            "Lines": lines_spin_box_value,
+            "Number of Lines": lines_spin_box_value,
             "Minimum Length": min_length_spin_box_value,
             "Scale": scale_spin_box_value
         })
@@ -76,3 +78,49 @@ def create_csv_data(accumulated_results):
     csv_buffer.close()
 
     return csv_data
+
+
+def append_csv_data(accumulated_results, export_file):
+    csv_data = create_csv_data(accumulated_results)
+
+    file_exists = os.path.exists(export_file)
+    mode = 'a' if file_exists else 'w'
+
+    with open(export_file, mode) as file:
+        if file_exists:
+            csv_lines = csv_data.splitlines()[1:]
+            file.write('\n'.join(csv_lines) + '\n')
+        else:
+            file.write(csv_data)
+
+
+def get_unique_filename(output_dir, file_name):
+    base_name, ext = os.path.splitext(file_name)
+    pattern = re.compile(rf"{re.escape(base_name)}\((\d+)\){re.escape(ext)}")
+
+    existing_files = os.listdir(output_dir)
+    matching_numbers = [int(match.group(1)) for f in existing_files if (match := pattern.match(f))]
+
+    if os.path.exists(os.path.join(output_dir, file_name)):
+        if not matching_numbers:
+            return f"{base_name}(1){ext}"
+        else:
+            return f"{base_name}({max(matching_numbers) + 1}){ext}"
+
+    return file_name
+
+
+def export_accumulated_results(accumulated_results, output_dir, file_name="test_results.csv"):
+    if not output_dir:
+        return
+
+    csv_data = create_csv_data(accumulated_results)
+
+    os.makedirs(output_dir, exist_ok=True)
+    unique_file_name = get_unique_filename(output_dir, file_name)
+    complete_export_path = os.path.join(output_dir, unique_file_name)
+
+    with open(complete_export_path, "w", newline="") as results_file:
+        results_file.write(csv_data)
+
+    return unique_file_name

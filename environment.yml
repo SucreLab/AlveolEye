@@ -8,13 +8,14 @@ dependencies:
   - pydantic>=2.7.4
   - torchvision>=0.16.2, <=0.17.2
   - napari>=0.4.17
-  - pyqt
+  - pyqt<5.16.0
   - qtpy
   - pytorch
   - pillow>=10.2.0
   - pip
   - gdown
   - numpy<2.0.0
+  - matplotlib
   - pip:
       - opencv-python>=4.1.1.26
 

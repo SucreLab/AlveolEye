@@ -8,7 +8,7 @@ dependencies:
   - pydantic>=2.7.4
   - torchvision>=0.16.2, <=0.17.2
   - napari>=0.4.17
-  - pyqt
+  - pyqt<5.16.0
   - qtpy
   - pytorch
   - tensorboard
@@ -16,6 +16,7 @@ dependencies:
   - gdown
   - numpy<2.0.0
   - pip
+  - matplotlib
   - pip:
       - pycocotools
       - opencv-python-headless
