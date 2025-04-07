@@ -17,7 +17,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment-dev.yml
-          environment-name: AlveolEye_${{ matrix.python-version }}
+          environment-name: AlveolEye_${{ matrix.python-version }}-${{ matrix.os }}
           condarc: |
             channels:
               - conda-forge
@@ -42,13 +42,13 @@ jobs:
         name: Install AlveolEye - Windows
         shell: powershell
         run: |
-          micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pip install .
+          micromamba run -n AlveolEye_${{ matrix.python-version }}-${{ matrix.os }} python -m pip install .
 
       - if: runner.os == 'Windows'
         name: Run Pytest - Windows
         shell: powershell
         run: |
-          micromamba run -n AlveolEye_${{ matrix.python-version }} python -m pytest --cov=alveoleye
+          micromamba run -n AlveolEye_${{ matrix.python-version }}-${{ matrix.os }} python -m pytest --cov=alveoleye
 
   build-pip:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -61,10 +61,9 @@ jobs:
       - run: |
           pip install .
           pip install pytest
-          pytest --cov=alveoleye
       - name: build
         run: |
-          rm ./src/alveoleye/data/default.pth
+          rm -f ./src/alveoleye/data/default.pth
           pip install build
           python -m build
       - uses: actions/upload-artifact@v4
