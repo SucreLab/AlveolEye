@@ -206,7 +206,6 @@ def create_confirmation_message_box(parent, message):
 
     return clicked_button == button_objects["Yes"]
 
-
 def toggle(state, elements):
     if not isinstance(elements, list):
         elements = [elements]
