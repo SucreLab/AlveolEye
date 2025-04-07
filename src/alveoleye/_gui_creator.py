@@ -1,6 +1,6 @@
 from IPython.external.qt_for_kernel import QtCore
-from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import QMessageBox, QLayout
+from qtpy.QtGui import QCursor
+from qtpy.QtWidgets import QMessageBox
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
                             QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
