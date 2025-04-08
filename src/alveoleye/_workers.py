@@ -65,7 +65,7 @@ class ProcessingWorker(WorkerParent):
         try:
             if not self.terminate:
                 if self.confidence_threshold_value == 100:
-                    inference_labelmap = np.zeros(self.image_shape, dtype=np.uint8)
+                    inference_labelmap = np.zeros(self.image_shape[:2], dtype=np.uint8)
                     model_output = {}
 
                     self.results_ready.emit(model_output, inference_labelmap)

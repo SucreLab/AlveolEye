@@ -153,10 +153,8 @@ class ProcessingActionBox(ActionBox):
 
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
-        print("a")
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
                                     inference_labelmap, self.colormap_config_data, True)
-        print("b")
 
         super().on_results_ready()
 
