@@ -153,8 +153,10 @@ class ProcessingActionBox(ActionBox):
 
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
+        print("a")
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
                                     inference_labelmap, self.colormap_config_data, True)
+        print("b")
 
         super().on_results_ready()
 
@@ -179,7 +181,6 @@ class PostprocessingActionBox(ActionBox):
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_layer_names(self.layers_config_data)
         self.worker.set_labels(self.labels_config_data)
-        self.worker.set_model_output(ProcessingActionBox.model_output)
         self.worker.set_thresholding_check_box_value(self.thresholding_check_box.isChecked())
         self.worker.set_manual_threshold_value(self.thresholding_spin_box.value())
         self.worker.set_alveoli_minimum_size(self.clean_alveoli_spin_box.value())

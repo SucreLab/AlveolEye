@@ -64,6 +64,13 @@ class ProcessingWorker(WorkerParent):
     def run(self):
         try:
             if not self.terminate:
+                if self.confidence_threshold_value == 100:
+                    inference_labelmap = np.zeros(self.image_shape, dtype=np.uint8)
+                    model_output = {}
+
+                    self.results_ready.emit(model_output, inference_labelmap)
+
+            if not self.terminate:
                 model = model_operations.init_trained_model(self.weights)
 
             if not self.terminate:
@@ -87,15 +94,11 @@ class PostprocessingWorker(WorkerParent):
 
     def __init__(self):
         super().__init__()
-        self.model_output = None
         self.thresholding_check_box_value = None
         self.manual_threshold_value = None
         self.alveoli_minimum_size = None
         self.parenchyma_minimum_size = None
         self.confidence_threshold = None
-
-    def set_model_output(self, model_output):
-        self.model_output = model_output
 
     def set_thresholding_check_box_value(self, thresholding_check_box_value):
         self.thresholding_check_box_value = thresholding_check_box_value
@@ -149,6 +152,8 @@ class PostprocessingWorker(WorkerParent):
                 self.results_ready.emit(labelmap)
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Error in post-processing: {e}")
         finally:
             self.finished.emit()
