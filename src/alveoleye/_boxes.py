@@ -42,6 +42,7 @@ class ProcessingActionBox(ActionBox):
 
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_image_path(ActionBox.import_paths["image"])
+        self.worker.set_use_ai(self.use_ai_check_box.isChecked())
         self.worker.set_weights(ActionBox.import_paths["weights"])
         self.worker.set_labels(self.labels_config_data)
         self.worker.set_image_shape(self.image.shape)
