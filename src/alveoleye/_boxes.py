@@ -63,7 +63,9 @@ class ProcessingActionBox(ActionBox):
         use_ai_check_box = gui_creator.create_check_box_widget(
             self.box_config_data["USE_AI_CHECK_BOX_TEXT"],
             self.rules_engine.evaluate_rules,
-            self.box_config_data["USE_AI_CHECK_BOX_TOOLTIP_TEXT"])
+            self.box_config_data["USE_AI_CHECK_BOX_TOOLTIP_TEXT"],
+            self.box_config_data["USE_AI_CHECK_BOX_DEFAULT_VALUE"]
+        )
 
         import_weights_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
