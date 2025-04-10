@@ -1,152 +1,222 @@
-<!--
-[![License MIT](https://img.shields.io/pypi/l/automated-lung-morphometry.svg?color=green)](https://github.com/Quooooooookka/automated-lung-morphometry/raw/main/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/automated-lung-morphometry.svg?color=green)](https://pypi.org/project/automated-lung-morphometry)
-[![Python Version](https://img.shields.io/pypi/pyversions/automated-lung-morphometry.svg?color=green)](https://python.org)
-[![tests](https://github.com/Quooooooookka/automated-lung-morphometry/workflows/tests/badge.svg)](https://github.com/Quooooooookka/automated-lung-morphometry/actions)
-[![codecov](https://codecov.io/gh/Quooooooookka/automated-lung-morphometry/branch/main/graph/badge.svg)](https://codecov.io/gh/Quooooooookka/automated-lung-morphometry)
-[![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/automated-lung-morphometry)](https://napari-hub.org/plugins/automated-lung-morphometry)
--->
+# AlveolEye: Automated Lung Morphometry Made Easy
 
-# AlveolEye: Automated lung morphometry made easy
+[![Napari Plugin](https://img.shields.io/badge/Napari-Plugin-1157c4?logo=napari)](https://www.napari-hub.org/plugins/AlveolEye)
+![Piwheels](https://img.shields.io/pypi/format/AlveolEye?label=piwheels&color=blue)
+[![PyPI Version](https://img.shields.io/pypi/v/AlveolEye)](https://pypi.org/project/AlveolEye/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/AlveolEye)](https://pypi.org/project/AlveolEye/)
+![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
+![Python Version](https://img.shields.io/badge/Python-3.9%20|%203.10%20|%203.11-blue)
+![OS Support](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+![Maintenance](https://img.shields.io/maintenance/yes/2025)
+![Last Commit](https://img.shields.io/github/last-commit/SucreLab/AlveolEye)
+![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
+![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
+![Pull Requests](https://img.shields.io/github/issues-pr/SucreLab/AlveolEye)
+![Code Size](https://img.shields.io/github/languages/code-size/SucreLab/AlveolEye)
 
-This repository contains the beta version of AlveolEye, which is created by the Sucre lab.
-This code is authored by Joseph Hirsh, Samuel Hirsh, Nick Negretti, and Shawyon Shirazi.
+---
 
-This project is a Napari plugin that uses computer vision tools and classical image processing
+
+# AlveolEye: Automated Lung Morphometry Made Easy
+
+This repository contains the beta version of AlveolEye, created by the Sucre lab.  
+Code authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
+
+AlveolEye is a Napari plugin that uses computer vision tools and classical image processing  
 to calculate mean linear intercept (MLI) and airspace volume density (ASVD) from histological images.
 
-A primary goal of this tool is to be an aid to the researcher, and not be a complete automated annotation solution.
+The primary goal of this tool is to aid researchers, not to provide a complete automated annotation solution.
+
+We welcome issues, feedback, and pull requests!
 
 ## Installation
 
-The target of this process is to create a conda environment that has both napari, and all of the AlveolEye requirements.
+The goal of this process is to create a conda environment containing both Napari and all AlveolEye requirements.
 
-If you already have conda setup, you can skip step 1
+*If you already have conda set up, you can skip step 1.*
 
-1. Install miniconda by downlading the appropriate version from [here](https://docs.anaconda.com/free/miniconda/)
+1. **Install Miniconda** by downloading the appropriate version from [here](https://docs.anaconda.com/free/miniconda/):  
+   - Choose the version that matches your processor.  
+   - Download the `.pkg` version for easy installation.
 
-   a. Choose the version that matches your processor
+2. **Clone the repository** by opening a terminal or Miniconda prompt and running:
+   ```bash
+   git clone https://github.com/SucreLab/AlveolEye
+   ```
 
-   b. Download the "pkg" version for easy install
-2. Open a terminal, or miniconda prompt, and clone this git repository by running:
+3. **Navigate to the directory**:
+   ```bash
+   cd AlveolEye
+   ```
 
-    ```git clone https://github.com/SucreLab/AlveolEye```
-3. Go to the AlveolEye directory
+4. **Create the conda environment**:
+   ```bash
+   conda env create -f ./environment.yml
+   ```
 
-    ```cd AlveolEye```
-4. Create the conda environment
+5. **Activate the environment**:
+   ```bash
+   conda activate AlveolEye
+   ```
 
-    ```conda env create -f ./environment.yml```
-5. Activate the new environment
+6. **Install the plugin**:
+   ```bash
+   pip install .
+   ```
 
-    ```conda activate AlveolEye```
-6. Install the plugin
+7. **Launch Napari** and locate the plugin in the plugin menu:
+   ```bash
+   napari
+   ```
 
-    ```pip install .```
-7. Launch napari, followed by locating the plugin in the plugin menu
+## Running Post-Installation
 
-    ```napari```
-
-## Running post-installation
-
-1. Open a terminal, or miniconda prompt, activate the environment and run napari
-
-```
+1. Open a terminal or Miniconda prompt, activate the environment, and run Napari:
+```bash
 conda activate AlveolEye
 napari
 ```
 
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
 
-# AlveolEye Usage Tutorial
 
-## Annotated Diagram
-![annotated diagram](./docs/AlveolEye_annotated_diagram.png)
-
-## Processing: Identify and segment vessel and airway epithelium with an AI computer vision model.
-1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Select an image**: The remaining steps will concern this image.
-
-   a. Click the “Import Image” button.
-
-   b. Use operating system default file dialogue to select an image (*.jpg, *.png, or *.tiff).
-
-   c. Check the image in the “Image” layer (of the Napari Viewer) and the file name (displayed to the right of the “Import Image” button) to confirm that the image loaded correctly.
-2. ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Select a model**</span>: The selected model will run on the image and predict (segment) vessel and airway epithelium.
-
-   a. To use the default model, skip to step 3; otherwise, proceed to step 2b. Use the provided default model unless you have a specific reason not to.
-
-   b. Click the “Import Weights” button.
-
-   c. Use operating system file dialogue to select a model (*.pth).
-
-   d. Check the file name (displayed to the right of the “Import Weights” button) to confirm that the model loaded correctly.
-3. ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Select a confidence level**: Type a percentage and/or click the “-” and “+” buttons in the “Minimum confidence” input box to set the confidence level. Predictions with lower confidence then the set confidence level will not appear.
-4. ![#f03c15](https://placehold.co/15x15/33FF33/33FF33.png) **Run processing**: Click the “Run Processing” button to run the model and segment vessel and airway epithelium filtered by confidence level. Once completed, manually edit the prediction as necessary with the built-in napari tools to the left of the displayed image layer. See Napari documentation for more information about how to use these tools.
+## Usage
 
 ---
 
-## Postprocessing: Identify alveolar tissue, and airwary and vessel lumens with “classical” (non-AI) methods; remove small particles and holes to prepare for assessments.
-1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Toggle manual thresholding**: To manually set a threshold value, toggle manual threshold; otherwise, a threshold value will be determined with Otsu's method.
+### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
 
-   a. To use manual thresholding, check the “Manual thresholding” box and proceed; to use automatic thresholding, leave the box unchecked and skip to step 2.
+1. **Select an image**  
+   - Click the "Import Image" button.  
+   - Use the file dialog to select an image (`.jpg`, `.png`, or `.tiff`).  
+   - Verify the image is correctly loaded in the "Image" layer and check the file name displayed.
 
-   b. Type a percentage and/or click the “-” and “+” buttons in the “Manual thresholding” input box to set the threshold level.
-2. ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Remove small particles**: Type a percentage and/or click the “-” and “+” buttons in the “Remove small particles” input box to set the maximum size cutoff for particles to remove. Particles with fewer pixels than the set number will be removed.
-3. ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Remove small holes**: Type a percentage and/or click the “-” and “+” buttons in the “Remove small holes” input box to set the maximum size cutoff for holes to remove. Holes with fewer pixels than the set number will be removed.
-4. ![#f03c15](https://placehold.co/15x15/33FF33/33FF33.png) **Run postprocessing**: Click “Run Postprocessing” button to identify alveolar tissue, airwary lumens, and vessel lumens, and to remove small particles and holes. Once completed, manually edit the post-processing layer as necessary with the built-in napari tools to the left of the displayed image layer. See Napari documentation for more information about how to use these tools.
+2. **Toggle computer vision processing**  
+   - Keep the checkbox selected to process the image with AI (continue to step 3).  
+   - Unselect to skip AI processing (skip to step 5).
 
----
+3. **Select a model**  
+   - For the default model, proceed to step 4.  
+   - To use a custom model:  
+     - Click the "Import Weights" button.  
+     - Select a model file (`.pth`).  
+     - Verify the model name is displayed correctly.
 
-## Assessments: Calculate morphometry assessments—mean linear intercept (MLI) and airspace volume density (ASVD) on the fully classified image.
-1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Select ASVD**: To include ASVD calculations in results, check the “ASVD” checkbox; otherwise, leave the box unchecked. Leave the box unchecked to increase the speed of the assessments calculation or to exclude unnecessary data from the final export file.
-2. ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Select MLI**: To include MLI calculations in results, check the “MLI” checkbox; otherwise, leave the box unchecked. Leave the box unchecked to increase the speed of the assessments calculation or to exclude unnecessary data from the final export file.
-3. ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Set number of lines**: Type a number and/or click the “-” and “+” buttons in the “number of lines” input box to set the number of MLI lines.
-4. ![#f03c15](https://placehold.co/15x15/33FF33/33FF33.png) **Set minimum length**: Type a number and/or click the “-” and “+” buttons in the “minimum length” input box to set the minimum length required for a chord to be included in the mean calculation.
-5. ![#f03c15](https://placehold.co/15x15/3359FF/3359FF.png) **Set scale**: Type a number and/or click the “-” and “+” buttons in the “scale” input box to set the scale factor (i.e. a pixel to physical space multiplier).
-6. ![#f03c15](https://placehold.co/15x15/C433FF/C433FF.png) **Run Assessments**: Click the “Run Assessments” button to calculate the selected assessments. The ASVD and MLI calculation results will display to the right of the assessment checkboxes.
+4. **Set confidence level**  
+   - Adjust the percentage using the input box or "-/+" buttons.  
+   - Predictions with lower confidence than this threshold will not appear.
 
----
+5. **Run processing**  
+   - Click the "Run Processing" button.  
+   - Once completed, manually edit the prediction as needed using Napari's built-in tools.
 
-## Export Results: Collect assessment results for each image and export all the data into a file when done (*.csv or *.json).
-- **Interpreting Results**
-    - **MLI:** Mean Linear Intercept for the given image
-    - **Standard deviation:** The standard deviation of the lengths of the chord used to calculate MLI
-    - **Number of chords:** The number of chords used to calculate MLI
-    - **ASVD:** Airspace Volume Density calculation for the given image
-    - **Airspace pixels:** The total number of airspace pixels
-    - **Non airspace pixels:** The total number non-airspace pixels
-1. ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Add last result**: Click the “Add” button to add the assessment data to the final export file. Once the results are added, you can return to the "Processing" step and do another image.
-2. ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Remove last result**: Click the “Remove” button to remove the last results added to the export file.
-3. ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Clear export data**: Click the “Clear” button to clear the export data file.
-4. ![#f03c15](https://placehold.co/15x15/33FF33/33FF33.png) **Export Results**: Click the “Export Results” button to open a file dialogue for saving the assessments results. Note that the plugin supports two export result file types, *.csv and *.json that you can choose between.
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
 
 ---
 
-## Manual Annotation Help: Information and tips to help you manually annotate your images
-### Annotated Diagram
-![annotated diagram](./docs/Napari_annotated_diagram.png)
+### Postprocessing: Segment Alveolar Tissue, Find Lumens, and Prepare Image for Assessment
 
-- **Labels**
-  - **Blocker**: 1
-  - **Airway Epithelium**: 2
-  - **Vessel Endothelium**: 3
-  - **Airway Lumen**: 4
-  - **Vessel Lumen**: 5
-  - **Parenchyma**: 6
-  - **Alveoli**: 7
-- **Annotation Tips**
-  - ![#FF3333](https://placehold.co/15x15/FF3333/FF3333.png) **Eyedropper Tool**: Quickly identify and switch to the correct label by using the eyedropper tool. Click on a part of the image to switch to the label of the pixel you clicked.
-  - ![#FF9933](https://placehold.co/15x15/FF9933/FF9933.png) **Select the Correct Layer**: Before making annotations, ensure you're working on the proper layer. Select the appropriate layer under "layer list."
-  - ![#FFFF33](https://placehold.co/15x15/FFFF33/FFFF33.png) **Optimize Your View**: Hide unnecessary layers to make annotation easier. Toggle a layer's visibility by clicking the eye icon next to its name.
+1. **Configure thresholding**  
+   - For manual thresholding: Check the box and set the threshold level.  
+   - For automatic thresholding (Otsu's method): Leave the box unchecked.
+
+2. **Remove small particles**  
+   - Set the maximum size cutoff for particles to remove.  
+   - Particles with fewer pixels than this value will be removed.
+
+3. **Remove small holes**  
+   - Set the maximum size cutoff for holes to remove.  
+   - Holes with fewer pixels than this value will be removed.
+
+4. **Run postprocessing**  
+   - Click the "Run Postprocessing" button.  
+   - Manually edit the results if necessary using Napari's tools.
+
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
 
 ---
 
-## More
-- **Light/Dark Mode**: Change application appearance to a lighter or darker aesthetic according to personal preference.
-  - **On Windows/Linux**: Ctrl + Shift + T
-  - **On macOS**: Cmd + Shift + T
-  - **Switch theme through napari preferences**
-    - In the menu bar at the top of the screen, select "napari."
-    - In the dropdown, select "Preferences."
-    - In the menu on the left, click "Appearance."
-    - Under the theme dropdown, select "dark," "light," or "system," according to personal preference.
+### Assessments: Calculate Morphometry Measurements
+
+1. **Configure assessments**  
+   - **ASVD**: Select the checkbox to include Airspace Volume Density calculations.  
+   - **MLI**: Select the checkbox to include Mean Linear Intercept calculations.  
+   - Uncheck either option to exclude data from export or increase processing speed.
+
+2. **Configure MLI parameters**  
+   - **Number of lines**: Set the number of MLI lines.  
+   - **Minimum length**: Set the minimum chord length for inclusion in calculations.  
+   - **Scale**: Set the pixel-to-physical space multiplier.
+
+3. **Run assessments**  
+   - Click the "Run Assessments" button.  
+   - View results displayed beside assessment checkboxes.
+
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
+
+---
+
+### Export Results
+
+### Results Explanation
+
+- **MLI**: Mean Linear Intercept for the tissue image  
+- **Standard deviation**: Standard deviation of chord lengths used in MLI calculation  
+- **Number of chords**: Number of chords used in MLI calculation  
+- **ASVD**: Airspace Volume Density for the image  
+- **Airspace pixels**: Total number of airspace pixels  
+- **Non-airspace pixels**: Total number of non-airspace pixels
+
+### Export Process
+
+1. **Add results**: Click "Add" to include current assessment data in the export file.  
+2. **Remove results**: Click "Remove" to delete the last added results.  
+3. **Clear data**: Click "Clear" to empty the export data file.  
+4. **Export**: Click "Export Results" to save the data (`.csv` or `.json` format).
+
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
+
+---
+
+## Manual Annotation Guide
+
+### Label Reference
+
+| Structure           | Label Number |
+|--------------------|--------------|
+| Blocker            | 1            |
+| Airway Epithelium  | 2            |
+| Vessel Endothelium | 3            |
+| Airway Lumen       | 4            |
+| Vessel Lumen       | 5            |
+| Parenchyma         | 6            |
+| Alveoli            | 7            |
+
+### Annotation Tips
+
+- **Eyedropper tool**: Click the eyedropper tool, then click a pixel in the image to set its label as your active label for drawing and editing.  
+- **Layer selection**: Ensure you're working on the correct layer before annotating.  
+- **Visibility control**: Hide unnecessary layers using the eye icon for clearer viewing.
+
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
+
+---
+
+## Additional Information
+
+### Theme Settings
+
+Change the application appearance using:
+
+- **Windows/Linux**: `Ctrl + Shift + T`  
+- **macOS**: `Cmd + Shift + T`
+
+Or through Napari preferences:
+
+1. Select "napari" in the menu bar.  
+2. Choose "Preferences".  
+3. Click "Appearance" in the left menu.  
+4. Select "dark," "light," or "system" in the theme dropdown.
+
+[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
 
