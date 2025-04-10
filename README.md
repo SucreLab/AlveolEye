@@ -138,12 +138,17 @@ napari
 1. **ASVD**
    - Select the checkbox to include Airspace Volume Density calculations.
    - Unselect the checkbox to exclude data from export and increase processing speed.
+
 2. **MLI**
    - Select the checkbox to include Mean Linear Intercept calculations.
    - Unselect the checkbox to exclude data from export and increase processing speed.
-3. **Number of lines**: Set the number of MLI lines.  
-4. **Minimum length**: Set the minimum chord length for inclusion in calculations.  
+
+3. **Number of lines**: Set the number of MLI lines.
+
+4. **Minimum length**: Set the minimum chord length for inclusion in calculations.
+
 5. **Scale**: Set the pixel-to-physical space multiplier.
+
 6. **Run assessments**
    - Click the "Run Assessments" button.
    - View results displayed beside assessment checkboxes and in the export box.
@@ -158,18 +163,26 @@ napari
 
 **Results Explanation**
 
-1. **MLI**: Mean Linear Intercept for the tissue image  
-2. **Standard deviation**: Standard deviation of chord lengths used in MLI calculation  
+1. **MLI**: Mean Linear Intercept for the tissue image
+ 
+2. **Standard deviation**: Standard deviation of chord lengths used in MLI calculation
+  
 3. **Number of chords**: Number of chords used in MLI calculation
-4. **ASVD**: Airspace Volume Density for the image  
-5. **Airspace pixels**: Total number of airspace pixels  
+
+4. **ASVD**: Airspace Volume Density for the image
+ 
+5. **Airspace pixels**: Total number of airspace pixels
+   
 6. **Non-airspace pixels**: Total number of non-airspace pixels
 
 **Export Process**
 
-1. **Add results**: Click "Add" to include current assessment data in the export file.  
-2. **Remove results**: Click "Remove" to delete the last added results.  
-3. **Clear data**: Click "Clear" to empty the export data file.  
+1. **Add results**: Click "Add" to include current assessment data in the export file.
+
+2. **Remove results**: Click "Remove" to delete the last added results.
+
+3. **Clear data**: Click "Clear" to empty the export data file.
+
 4. **Export**: Click "Export Results" to save the data (`.csv` or `.json` format).
 
 <div align="right">
@@ -211,9 +224,12 @@ Change the application appearance using:
 
 Or through Napari preferences:
 
-1. Select "napari" in the menu bar.  
-2. Choose "Preferences".  
-3. Click "Appearance" in the left menu.  
+1. Select "napari" in the menu bar.
+   
+2. Choose "Preferences".
+   
+3. Click "Appearance" in the left menu.
+     
 4. Select "dark," "light," or "system" in the theme dropdown.
 
 <div align="right">
