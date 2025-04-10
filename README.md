@@ -154,14 +154,16 @@ napari
 
 ### Export Results
 
+![export diagram](./docs/export_diagram.svg)
+
 **Results Explanation**
 
-- **MLI**: Mean Linear Intercept for the tissue image  
-- **Standard deviation**: Standard deviation of chord lengths used in MLI calculation  
-- **Number of chords**: Number of chords used in MLI calculation  
-- **ASVD**: Airspace Volume Density for the image  
-- **Airspace pixels**: Total number of airspace pixels  
-- **Non-airspace pixels**: Total number of non-airspace pixels
+1. **MLI**: Mean Linear Intercept for the tissue image  
+2. **Standard deviation**: Standard deviation of chord lengths used in MLI calculation  
+3. **Number of chords**: Number of chords used in MLI calculation
+4. **ASVD**: Airspace Volume Density for the image  
+5. **Airspace pixels**: Total number of airspace pixels  
+6. **Non-airspace pixels**: Total number of non-airspace pixels
 
 **Export Process**
 
