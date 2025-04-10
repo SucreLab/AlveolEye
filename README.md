@@ -36,45 +36,46 @@ The goal of this process is to create a conda environment containing both Napari
    - Download the `.pkg` version for easy installation.
 
 2. **Clone the repository** by opening a terminal or Miniconda prompt and running:
-   ```bash
+   ```
    git clone https://github.com/SucreLab/AlveolEye
    ```
 
 3. **Navigate to the directory**:
-   ```bash
+   ```
    cd AlveolEye
    ```
 
 4. **Create the conda environment**:
-   ```bash
+   ```
    conda env create -f ./environment.yml
    ```
 
 5. **Activate the environment**:
-   ```bash
+   ```
    conda activate AlveolEye
    ```
 
 6. **Install the plugin**:
-   ```bash
+   ```
    pip install .
    ```
 
 7. **Launch Napari** and locate the plugin in the plugin menu:
-   ```bash
+   ```
    napari
    ```
 
 ## Running Post-Installation
 
 1. Open a terminal or Miniconda prompt, activate the environment, and run Napari:
-```bash
+```
 conda activate AlveolEye
 napari
 ```
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ## Usage
 
@@ -104,9 +105,9 @@ napari
    - Click the "Run Processing" button.  
    - Once completed, manually edit the prediction as needed using Napari's built-in tools.
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
----
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ### Postprocessing: Segment Alveolar Tissue, Find Lumens, and Prepare Image for Assessment
 
@@ -126,9 +127,9 @@ napari
    - Click the "Run Postprocessing" button.  
    - Manually edit the results if necessary using Napari's tools.
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
----
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ### Assessments: Calculate Morphometry Measurements
 
@@ -146,13 +147,13 @@ napari
    - Click the "Run Assessments" button.  
    - View results displayed beside assessment checkboxes.
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
----
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ### Export Results
 
-### Results Explanation
+**Results Explanation**
 
 - **MLI**: Mean Linear Intercept for the tissue image  
 - **Standard deviation**: Standard deviation of chord lengths used in MLI calculation  
@@ -161,16 +162,16 @@ napari
 - **Airspace pixels**: Total number of airspace pixels  
 - **Non-airspace pixels**: Total number of non-airspace pixels
 
-### Export Process
+**Export Process**
 
 1. **Add results**: Click "Add" to include current assessment data in the export file.  
 2. **Remove results**: Click "Remove" to delete the last added results.  
 3. **Clear data**: Click "Clear" to empty the export data file.  
 4. **Export**: Click "Export Results" to save the data (`.csv` or `.json` format).
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
----
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ## Manual Annotation Guide
 
@@ -192,9 +193,9 @@ napari
 - **Layer selection**: Ensure you're working on the correct layer before annotating.  
 - **Visibility control**: Hide unnecessary layers using the eye icon for clearer viewing.
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
----
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
 
 ## Additional Information
 
@@ -212,5 +213,6 @@ Or through Napari preferences:
 3. Click "Appearance" in the left menu.  
 4. Select "dark," "light," or "system" in the theme dropdown.
 
-[Back to Top](#alveoleye-automated-lung-morphometry-made-easy)
-
+<div align="right">
+  <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
+</div>
