@@ -11,11 +11,7 @@
 ![Last Commit](https://img.shields.io/github/last-commit/SucreLab/AlveolEye)
 ![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
-![Pull Requests](https://img.shields.io/github/issues-pr/SucreLab/AlveolEye)
 ![Code Size](https://img.shields.io/github/languages/code-size/SucreLab/AlveolEye)
-
----
-
 
 # AlveolEye: Automated Lung Morphometry Made Easy
 
@@ -81,8 +77,6 @@ napari
 
 
 ## Usage
-
----
 
 ### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
 
