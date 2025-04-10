@@ -77,7 +77,7 @@ napari
 
 ### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
 
-![annotated diagram](./docs/processing_v2.svg)
+![processing diagram](./docs/processing_diagram.svg)
 
 1. **Select an image**  
    - Click the "Import Image" button.  
@@ -108,6 +108,8 @@ napari
 </div>
 
 ### Postprocessing: Segment Alveolar Tissue, Find Lumens, and Prepare Image for Assessment
+
+![postprocessing diagram](./docs/postprocessing_diagram.svg)
 
 1. **Configure thresholding**  
    - For manual thresholding: Check the box and set the threshold level.  
