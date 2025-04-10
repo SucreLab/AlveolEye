@@ -133,19 +133,20 @@ napari
 
 ### Assessments: Calculate Morphometry Measurements
 
-1. **Configure assessments**  
-   - **ASVD**: Select the checkbox to include Airspace Volume Density calculations.  
-   - **MLI**: Select the checkbox to include Mean Linear Intercept calculations.  
-   - Uncheck either option to exclude data from export or increase processing speed.
+![assessments diagram](./docs/assessments_diagram.svg)
 
-2. **Configure MLI parameters**  
-   - **Number of lines**: Set the number of MLI lines.  
-   - **Minimum length**: Set the minimum chord length for inclusion in calculations.  
-   - **Scale**: Set the pixel-to-physical space multiplier.
-
-3. **Run assessments**  
-   - Click the "Run Assessments" button.  
-   - View results displayed beside assessment checkboxes.
+1. **ASVD**
+   - Select the checkbox to include Airspace Volume Density calculations.
+   - Unselect the checkbox to exclude data from export and increase processing speed.
+2. **MLI**
+   - Select the checkbox to include Mean Linear Intercept calculations.
+   - Unselect the checkbox to exclude data from export and increase processing speed.
+3. **Number of lines**: Set the number of MLI lines.  
+4. **Minimum length**: Set the minimum chord length for inclusion in calculations.  
+5. **Scale**: Set the pixel-to-physical space multiplier.
+6. **Run assessments**
+   - Click the "Run Assessments" button.
+   - View results displayed beside assessment checkboxes and in the export box.
 
 <div align="right">
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
