@@ -1,19 +1,17 @@
 # AlveolEye: Automated Lung Morphometry Made Easy
 
 [![Napari Plugin](https://img.shields.io/badge/Napari-Plugin-1157c4?logo=napari)](https://www.napari-hub.org/plugins/AlveolEye)
-![Piwheels](https://img.shields.io/pypi/format/AlveolEye?label=piwheels&color=blue)
 [![PyPI Version](https://img.shields.io/pypi/v/AlveolEye)](https://pypi.org/project/AlveolEye/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/AlveolEye)](https://pypi.org/project/AlveolEye/)
-![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
 ![Python Version](https://img.shields.io/badge/Python-3.9%20|%203.10%20|%203.11-blue)
 ![OS Support](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
+![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/AlveolEye)](https://pypi.org/project/AlveolEye/)
 ![Maintenance](https://img.shields.io/maintenance/yes/2025)
 ![Last Commit](https://img.shields.io/github/last-commit/SucreLab/AlveolEye)
-![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
-![Code Size](https://img.shields.io/github/languages/code-size/SucreLab/AlveolEye)
 
-This repository contains the beta version of AlveolEye, created by the Sucre lab.  
+This repository contains the beta version of AlveolEye, created by the [Sucre lab](https://www.sucrelab.org/).  
 Code authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
 
 AlveolEye is a Napari plugin that uses computer vision tools and classical image processing  
