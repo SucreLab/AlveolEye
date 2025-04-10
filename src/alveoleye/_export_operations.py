@@ -4,6 +4,10 @@ import json
 import os
 import re
 
+import numpy as np
+from PIL import Image
+import torch
+
 
 def format_results(result):
     (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
@@ -124,3 +128,46 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
         results_file.write(csv_data)
 
     return unique_file_name
+
+
+def save_image(data, name, save_dir):
+    os.makedirs(save_dir, exist_ok=True)
+
+    base_name, ext = os.path.splitext(name)
+    candidate_name = name
+    counter = 1
+
+    existing_files = set(os.listdir(save_dir))
+
+    while candidate_name in existing_files:
+        candidate_name = f"{base_name}({counter}){ext}"
+        counter += 1
+
+    save_path = os.path.join(save_dir, candidate_name)
+
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
+
+    if isinstance(data, np.ndarray):
+        if data.dtype != np.uint8:
+            data = (255 * (data - data.min()) / (data.ptp() + 1e-8)).astype(np.uint8)
+
+        if data.ndim == 2:
+            image = Image.fromarray(data, mode='L')
+        elif data.ndim == 3 and data.shape[2] in {1, 3, 4}:
+            image = Image.fromarray(data.squeeze())
+        else:
+            raise ValueError(f"Unsupported image shape: {data.shape}")
+    else:
+        raise ValueError(f"Unsupported data type: {type(data)}")
+
+    image.save(save_path)
+
+
+def make_save_image_callback(save_dir):
+    snapshots_dir = os.path.join(save_dir, "snapshots")
+
+    def save_image_callback(data, name):
+        save_image(data, name, snapshots_dir)
+
+    return save_image_callback

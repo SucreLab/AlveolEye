@@ -37,6 +37,7 @@ class CombinedWorker:
         self.minimum_length = 20
         self.scale = 0.18872
         self.randomized_distribution = False
+        self.callback = None
 
         self.shortened_image_path = None
         self.asvd = None
@@ -87,6 +88,9 @@ class CombinedWorker:
     def set_randomized_distribution(self, randomized_distribution):
         self.randomized_distribution = randomized_distribution
 
+    def set_callback(self, callback):
+        self.callback = callback
+
     def run_processing(self):
         if not self.image_path:
             raise ValueError("[-] Error: Image path is not set.")
@@ -118,12 +122,12 @@ class CombinedWorker:
             raise ValueError("[-] Error: Run processing first")
 
         try:
-            grayscaled = convert_to_grayscale(self.rgb_image)
-            thresholded = apply_dynamic_threshold(grayscaled)
-            parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
-            inverted = invert_image_binary(parenchyma_cleaned)
-            alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
-            inverted_back = invert_image_binary(alveoli_cleaned)
+            grayscaled = convert_to_grayscale(self.rgb_image, self.callback)
+            thresholded = apply_dynamic_threshold(grayscaled, self.callback)
+            parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size, self.callback)
+            inverted = invert_image_binary(parenchyma_cleaned, self.callback)
+            alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size, self.callback)
+            inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
             self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
         except Exception as e:

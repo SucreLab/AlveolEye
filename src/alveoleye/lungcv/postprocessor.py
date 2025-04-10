@@ -2,30 +2,53 @@ import cv2
 import numpy as np
 
 
-def convert_to_grayscale(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def convert_to_grayscale(image, callback=None):
+    grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    if callback:
+        callback(grayscaled, "grayscaled.png")
+
+    return grayscaled
 
 
-def apply_dynamic_threshold(grayscale_image):
+def apply_dynamic_threshold(grayscale_image, callback=None):
     threshold_value = cv2.threshold(grayscale_image, 0, 255, cv2.THRESH_OTSU)[0] + 20
-    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+    thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+
+    if callback:
+        callback(thresholded, "dynamic_thresholded.png")
+
+    return thresholded
 
 
-def apply_manual_threshold(grayscale_image, threshold_value):
-    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+def apply_manual_threshold(grayscale_image, threshold_value, callback=None):
+    thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+
+    if callback:
+        callback(thresholded, "manual_thresholded.png")
+
+    return thresholded
 
 
-def invert_image_binary(binary_image):
-    return cv2.bitwise_not(binary_image)
+def invert_image_binary(binary_image, callback=None):
+    inverted = cv2.bitwise_not(binary_image)
+
+    if callback:
+        callback(inverted, "inverted.png")
+
+    return inverted
 
 
-def remove_small_components(binary_image, minimum_size):
+def remove_small_components(binary_image, minimum_size, callback=None):
     connected_components = cv2.connectedComponentsWithStats(binary_image)
     quantity, image, stats = connected_components[:3]
     sizes = stats[:, -1][1:]
 
     small_blobs = np.where(sizes <= minimum_size)[0] + 1
     binary_image[np.isin(image, small_blobs)] = 0
+
+    if callback:
+        callback(binary_image, "small_components_removed.png")
 
     return binary_image
 

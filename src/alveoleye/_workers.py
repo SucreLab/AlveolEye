@@ -12,6 +12,7 @@ import json
 import alveoleye._layers_editor as layers_editor
 import alveoleye._export_operations as export_operations
 
+
 class WorkerParent(QObject):
     finished = Signal()
     layers_config_data = None
