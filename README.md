@@ -13,8 +13,6 @@
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
 ![Code Size](https://img.shields.io/github/languages/code-size/SucreLab/AlveolEye)
 
-# AlveolEye: Automated Lung Morphometry Made Easy
-
 This repository contains the beta version of AlveolEye, created by the Sucre lab.  
 Code authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
 
