@@ -53,7 +53,7 @@ def remove_small_components(binary_image, minimum_size, callback=None):
     return binary_image
 
 
-def generate_processing_labelmap(model_output, shape, confidence_threshold, labels):
+def generate_processing_labelmap(model_output, shape, confidence_threshold, labels, callback=None):
     confidence_threshold = confidence_threshold / 100
 
     if len(shape) == 3:
@@ -66,6 +66,11 @@ def generate_processing_labelmap(model_output, shape, confidence_threshold, labe
     final_labelmap = np.where(airway_epithelium_labelmap, labels["AIRWAY_EPITHELIUM"], final_labelmap)
     final_labelmap = np.where(vessel_epithelium_labelmap, labels["VESSEL_ENDOTHELIUM"], final_labelmap)
 
+    if callback:
+        callback(airway_epithelium_labelmap, "airway_epithelium_labelmap.png")
+        callback(vessel_epithelium_labelmap, "vessel_epithelium_labelmap.png")
+        callback(final_labelmap, "combined_labelmap.png")
+
     return final_labelmap
 
 
@@ -76,7 +81,7 @@ def extract_class_labelmap_from_model(model_output, class_id, confidence_thresho
     return mask_with_confidence
 
 
-def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels):
+def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels, callback=None):
     intermediate_label = max(labels.values()) + 1
 
     parenchyma_labelmap = np.where(thresholded_labelmap, labels["ALVEOLI"], labels["PARENCHYMA"])
@@ -95,6 +100,11 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
 
     final_labelmap = np.where(blocking_complete_labelmap, blocking_complete_labelmap, final_labelmap)
     final_labelmap[final_labelmap == intermediate_label] = 0
+
+    if callback:
+        callback(airway_complete_labelmap, "airway_complete_labelmap.png")
+        callback(vessel_complete_labelmap, "vessel_complete_labelmap.png")
+        callback(final_labelmap, "combined_postprocessed_labelmap.png")
 
     return final_labelmap
 

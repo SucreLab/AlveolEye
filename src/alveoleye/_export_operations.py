@@ -145,19 +145,26 @@ def save_image(data, name, save_dir):
 
     save_path = os.path.join(save_dir, candidate_name)
 
+    # Convert tensor to numpy
     if isinstance(data, torch.Tensor):
         data = data.detach().cpu().numpy()
 
+    # Process numpy array
     if isinstance(data, np.ndarray):
+        # Squeeze out singleton dimensions
+        data = np.squeeze(data)
+
+        # Ensure it's in uint8 format
         if data.dtype != np.uint8:
             data = (255 * (data - data.min()) / (data.ptp() + 1e-8)).astype(np.uint8)
 
+        # Create image based on number of dimensions
         if data.ndim == 2:
             image = Image.fromarray(data, mode='L')
         elif data.ndim == 3 and data.shape[2] in {1, 3, 4}:
-            image = Image.fromarray(data.squeeze())
+            image = Image.fromarray(data)
         else:
-            raise ValueError(f"Unsupported image shape: {data.shape}")
+            raise ValueError(f"Unsupported image shape after squeeze: {data.shape}")
     else:
         raise ValueError(f"Unsupported data type: {type(data)}")
 

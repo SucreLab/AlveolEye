@@ -5,7 +5,7 @@ import numpy as np
 from scipy import ndimage
 
 
-def calculate_airspace_volume_density(labelmap, labels):
+def calculate_airspace_volume_density(labelmap, labels, callback=None):
     alveoli_pixels = np.count_nonzero(labelmap == labels["ALVEOLI"])
     parenchyma_pixels = np.count_nonzero(labelmap == labels["PARENCHYMA"])
     alveoli_and_parenchyma_pixels = alveoli_pixels + parenchyma_pixels
@@ -18,7 +18,7 @@ def calculate_airspace_volume_density(labelmap, labels):
     return alveolar_density, alveoli_pixels, alveoli_and_parenchyma_pixels
 
 
-def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False):
+def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False, callback=None):
     labelmap = np.squeeze(labelmap)
     labelmap_shape = labelmap.shape
 
@@ -58,5 +58,10 @@ def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labe
     kernel = np.array([[0, 1, 0], [0, 1, 0], [0, 1, 0]], np.uint8)
     chords_highlighted_labelmap = cv2.dilate(chords_labelmap, kernel, iterations=5)
     chords_highlighted_labelmap = np.where(chords_labelmap, labels["MLI_LINES_INSIDE"], chords_highlighted_labelmap)
+
+    if callback:
+        callback(chords_labelmap, "chords_labelmap.png")
+        callback(test_lines_labelmap, "test_lines_labelmap.png")
+        callback(chords_highlighted_labelmap, "chords_highlighted_labelmap.png")
 
     return average_length, chords_highlighted_labelmap.astype(int), counter, stdev_chord_lengths

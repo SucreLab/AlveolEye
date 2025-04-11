@@ -100,11 +100,13 @@ class CombinedWorker:
 
         try:
             self.rgb_image = cv2.imread(self.image_path, cv2.IMREAD_COLOR)[:, :, ::-1]
+
             model = model_operations.init_trained_model(self.weights_path)
 
             model_output = model_operations.run_prediction(self.image_path, model)
             self.inference_labelmap = generate_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,
-                                                                   self.labels)
+                                                                   self.labels, self.callback)
+
         except Exception as e:
             print(f"[-] Error in processing: {e}")
 
@@ -129,7 +131,7 @@ class CombinedWorker:
             alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size, self.callback)
             inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
-            self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
+            self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels, self.callback)
         except Exception as e:
             print(f"[-] Error: Error in post-processing: {e}")
 
@@ -151,9 +153,11 @@ class CombinedWorker:
 
         try:
             self.mli, self.assessments_layer, self.number_of_chords, self.stdev_chord_lengths = calculate_mean_linear_intercept(
-                self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels, self.randomized_distribution)
+                self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels,
+                self.randomized_distribution, self.callback)
             self.asvd, self.airspace_pixels, self.non_airspace_pixels = calculate_airspace_volume_density(self.labelmap,
-                                                                                                          self.labels)
+                                                                                                          self.labels,
+                                                                                                          self.callback)
             self.shortened_image_path = os.path.join(os.path.basename(os.path.dirname(self.image_path)),
                                                      os.path.basename(self.image_path))
 
