@@ -215,7 +215,7 @@ napari
 
 ### Theme Settings
 
-Change the application appearance using:
+Toggle between dark and light mode using:
 
 - **Windows/Linux**: `Ctrl + Shift + T`  
 - **macOS**: `Cmd + Shift + T`
