@@ -77,7 +77,7 @@ napari
 
 ### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
 
-![processing diagram](./docs/processing_v3.svg)
+![processing diagram](./docs/PROCESSING_FINAL.svg)
 
 1. **Select an image**  
    - Click the "Import Image" button.  
@@ -109,7 +109,7 @@ napari
 
 ### Postprocessing: Segment Alveolar Tissue, Find Lumens, and Prepare Image for Assessment
 
-![postprocessing diagram](./docs/postprocessing_diagram.svg)
+![postprocessing diagram](./docs/POSTPROCESSING_FINAL.svg)
 
 1. **Configure thresholding**  
    - For manual thresholding: Check the box and set the threshold level.  
@@ -133,7 +133,7 @@ napari
 
 ### Assessments: Calculate Morphometry Measurements
 
-![assessments diagram](./docs/assessments_diagram.svg)
+![assessments diagram](./docs/ASSESSMENTS_FINAL.svg)
 
 1. **ASVD**
    - Select the checkbox to include Airspace Volume Density calculations.
@@ -159,7 +159,7 @@ napari
 
 ### Export Results
 
-![export diagram](./docs/export_diagram.svg)
+![export diagram](./docs/EXPORT_FINAL.svg)
 
 **Results Explanation**
 
