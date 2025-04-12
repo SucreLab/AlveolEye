@@ -77,7 +77,7 @@ napari
 
 ### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
 
-![processing diagram](./docs/processing_v2.svg)
+![processing diagram](./docs/processing_v3.svg)
 
 1. **Select an image**  
    - Click the "Import Image" button.  
