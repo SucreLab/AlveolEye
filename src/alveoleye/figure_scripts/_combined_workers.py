@@ -156,8 +156,7 @@ class CombinedWorker:
                 self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels,
                 self.randomized_distribution, self.callback)
             self.asvd, self.airspace_pixels, self.non_airspace_pixels = calculate_airspace_volume_density(self.labelmap,
-                                                                                                          self.labels,
-                                                                                                          self.callback)
+                                                                                                          self.labels)
             self.shortened_image_path = os.path.join(os.path.basename(os.path.dirname(self.image_path)),
                                                      os.path.basename(self.image_path))
 

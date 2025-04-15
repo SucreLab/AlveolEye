@@ -5,7 +5,7 @@ import numpy as np
 from scipy import ndimage
 
 
-def calculate_airspace_volume_density(labelmap, labels, callback=None):
+def calculate_airspace_volume_density(labelmap, labels):
     alveoli_pixels = np.count_nonzero(labelmap == labels["ALVEOLI"])
     parenchyma_pixels = np.count_nonzero(labelmap == labels["PARENCHYMA"])
     alveoli_and_parenchyma_pixels = alveoli_pixels + parenchyma_pixels

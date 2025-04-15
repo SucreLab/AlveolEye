@@ -130,39 +130,40 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
     return unique_file_name
 
 
-def save_image(data, name, save_dir):
+def save_image(data, name, save_dir, get_colormap=None):
     os.makedirs(save_dir, exist_ok=True)
+
+    if get_colormap:
+        colormap = get_colormap(name)
 
     base_name, ext = os.path.splitext(name)
     candidate_name = name
     counter = 1
 
     existing_files = set(os.listdir(save_dir))
-
     while candidate_name in existing_files:
         candidate_name = f"{base_name}({counter}){ext}"
         counter += 1
 
     save_path = os.path.join(save_dir, candidate_name)
 
-    # Convert tensor to numpy
     if isinstance(data, torch.Tensor):
         data = data.detach().cpu().numpy()
 
-    # Process numpy array
     if isinstance(data, np.ndarray):
-        # Squeeze out singleton dimensions
         data = np.squeeze(data)
 
-        # Ensure it's in uint8 format
-        if data.dtype != np.uint8:
-            data = (255 * (data - data.min()) / (data.ptp() + 1e-8)).astype(np.uint8)
-
-        # Create image based on number of dimensions
-        if data.ndim == 2:
-            image = Image.fromarray(data, mode='L')
-        elif data.ndim == 3 and data.shape[2] in {1, 3, 4}:
-            image = Image.fromarray(data)
+        if data.ndim == 3 and data.shape[2] in {3, 4}:
+            image = Image.fromarray(data.astype(np.uint8))
+        elif data.ndim == 2:
+            if colormap:
+                h, w = data.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[data == label] = color
+                image = Image.fromarray(rgb_image)
+            else:
+                image = Image.fromarray(data.astype(np.uint8), mode='L')
         else:
             raise ValueError(f"Unsupported image shape after squeeze: {data.shape}")
     else:
@@ -171,10 +172,10 @@ def save_image(data, name, save_dir):
     image.save(save_path)
 
 
-def make_save_image_callback(save_dir):
+def make_save_image_callback(save_dir, get_colormap):
     snapshots_dir = os.path.join(save_dir, "snapshots")
 
     def save_image_callback(data, name):
-        save_image(data, name, snapshots_dir)
+        save_image(data, name, snapshots_dir, get_colormap)
 
     return save_image_callback
