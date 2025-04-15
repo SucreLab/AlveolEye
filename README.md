@@ -12,18 +12,18 @@
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
 
 This repository contains the beta version of AlveolEye, created by the [Sucre lab](https://www.sucrelab.org/).  
-Code authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
+The code is authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
 
-AlveolEye is a Napari plugin that uses computer vision tools and classical image processing  
-to calculate mean linear intercept (MLI) and airspace volume density (ASVD) from histological images.
+AlveolEye is a Napari plugin that uses computer vision and classical image processing  
+to calculate mean linear intercept (MLI) and airspace volume density (ASVD) of histologic images.
 
-The primary goal of this tool is to aid researchers, not to provide a complete automated annotation solution.
+The goal of this tool is to aid researchers, not provide a complete automated annotation solution.
 
-We welcome issues, feedback, and pull requests!
+We welcome Git issues and feedback!
 
 ## Installation
 
-The goal of this process is to create a conda environment containing both Napari and all AlveolEye requirements.
+The goal of this process is to create a conda environment containing Napari and all AlveolEye requirements.
 
 *If you already have conda set up, you can skip step 1.*
 
@@ -63,11 +63,15 @@ The goal of this process is to create a conda environment containing both Napari
 
 ## Running Post-Installation
 
-1. Open a terminal or Miniconda prompt, activate the environment, and run Napari:
-```
-conda activate AlveolEye
-napari
-```
+1. **Activate the environment** in the terminal or Miniconda prompt:
+   ```
+   conda activate AlveolEye
+   ```
+
+2. **Run Napari** in the terminal:
+   ```
+   napari
+   ```
 
 <div align="right">
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
@@ -79,25 +83,25 @@ napari
 
 ![processing diagram](./docs/PROCESSING_FINAL.svg)
 
-1. **Select an image**  
+1. **Import image**  
    - Click the "Import Image" button.  
    - Use the file dialog to select an image (`.jpg`, `.png`, or `.tiff`).  
-   - Verify the image is correctly loaded in the "Image" layer and check the file name displayed.
+   - Verify that the image correctly loaded. The file name should appear to the right of the button.
 
-2. **Toggle computer vision processing**  
-   - Keep the checkbox selected to process the image with AI (continue to step 3).  
-   - Unselect to skip AI processing (skip to step 5).
+2. **Toggle processing with computer vision**  
+   - Keep the checkbox selected to process the image with computer vision (continue to step 3).  
+   - Deselect to skip computer vision processing (skip to step 5).
 
-3. **Select a model**  
-   - For the default model, proceed to step 4.  
+3. **Import weights**  
+   - To use the default model, proceed to step 4.  
    - To use a custom model:  
      - Click the "Import Weights" button.  
      - Select a model file (`.pth`).  
-     - Verify the model name is displayed correctly.
+     - Verify that the weights correctly loaded. The file name should appear to the right of the button.
 
-4. **Set confidence level**  
-   - Adjust the percentage using the input box or "-/+" buttons.  
-   - Predictions with lower confidence than this threshold will not appear.
+4. **Set minimum confidence**  
+   - Adjust the minimum confidence using the input box or the "-/+" buttons.  
+   - Predictions from the computer vision model with lower confidence than this threshold will not appear.
 
 5. **Run processing**  
    - Click the "Run Processing" button.  
@@ -107,13 +111,13 @@ napari
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
 </div>
 
-### Postprocessing: Segment Alveolar Tissue, Find Lumens, and Prepare Image for Assessment
+### Postprocessing: Segment Alveolar Tissue and Find Vessel and Aireway Lumens
 
 ![postprocessing diagram](./docs/POSTPROCESSING_FINAL.svg)
 
 1. **Configure thresholding**  
-   - For manual thresholding: Check the box and set the threshold level.  
-   - For automatic thresholding (Otsu's method): Leave the box unchecked.
+   - For manual thresholding: Select the "Manual threshold" checkbox and use the spinbox to set the threshold level.  
+   - For automatic thresholding ([Otsu's method](https://learnopencv.com/otsu-thresholding-with-opencv/)): Leave the box unchecked.
 
 2. **Remove small particles**  
    - Set the maximum size cutoff for particles to remove.  
@@ -125,7 +129,7 @@ napari
 
 4. **Run postprocessing**  
    - Click the "Run Postprocessing" button.  
-   - Manually edit the results if necessary using Napari's tools.
+   - Once completed, manually edit the results as needed using Napari's built-in tools.
 
 <div align="right">
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
@@ -136,20 +140,20 @@ napari
 ![assessments diagram](./docs/ASSESSMENTS_FINAL.svg)
 
 1. **ASVD**
-   - Select the checkbox to include Airspace Volume Density calculations.
-   - Unselect the checkbox to exclude data from export and increase processing speed.
+   - Select the checkbox to include **A**ir**s**pace **V**olume **D**ensity calculations.
+   - Deselect the checkbox to exclude data from export and increase processing speed.
 
 2. **MLI**
-   - Select the checkbox to include Mean Linear Intercept calculations.
-   - Unselect the checkbox to exclude data from export and increase processing speed.
+   - Select the checkbox to include **M**ean **L**inear **I**ntercept calculations.
+   - Deselect the checkbox to exclude data from export and increase processing speed.
 
-3. **Number of lines**: Set the number of MLI lines.
+3. **Number of lines**: Set the number of lines used for MLI calculation.
 
-4. **Minimum length**: Set the minimum chord length for inclusion in calculations.
+4. **Minimum length**: Set the minimum chord length for inclusion in MLI calculations. (Chords are the line segments that span across an airspace between two alveolar tissue boundaries when performing MLI calculation.)
 
-5. **Scale**: Set the pixel-to-physical space multiplier.
+6. **Scale**: Set the pixel-to-physical space multiplier.
 
-6. **Run assessments**
+7. **Run assessments**
    - Click the "Run Assessments" button.
    - View results displayed beside assessment checkboxes and in the export box.
 
@@ -163,11 +167,11 @@ napari
 
 1. **Add results**: Click "Add" to include current assessment data in the export file.
 
-2. **Remove results**: Click "Remove" to delete the last added results.
+2. **Remove last result**: Click "Remove" to delete the last added results.
 
-3. **Clear data**: Click "Clear" to empty the export data file.
+3. **Clear export data**: Click "Clear" to empty the export data file.
 
-4. **Export**: Click "Export Results" to save the data (`.csv` or `.json` format).
+4. **Export results**: Click "Export Results" to save the data (`.csv` or `.json` format).
 
 **Results Key**
 
@@ -191,7 +195,7 @@ napari
 
 ### Label Reference
 
-| Structure           | Label Number |
+| Structure          | Label Number |
 |--------------------|--------------|
 | Blocker            | 1            |
 | Airway Epithelium  | 2            |
@@ -203,9 +207,9 @@ napari
 
 ### Annotation Tips
 
-- **Eyedropper tool**: Click the eyedropper tool, then click a pixel in the image to set its label as your active label for drawing and editing.  
+- **Eyedropper tool**: Click the eyedropper tool, then click a pixel in the image to set your active label (for drawing and editing) to that pixel's label.  
 - **Layer selection**: Ensure you're working on the correct layer before annotating.  
-- **Visibility control**: Hide unnecessary layers using the eye icon for clearer viewing.
+- **Visibility control**: Hide unnecessary layers using the eye icon on the layer boxes (to the left of the image viewer) for clearer viewing.
 
 <div align="right">
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
