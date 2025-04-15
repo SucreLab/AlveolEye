@@ -139,21 +139,25 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ![assessments diagram](./docs/ASSESSMENTS_FINAL.svg)
 
-1. **ASVD**
-   - Select the checkbox to include **A**ir**s**pace **V**olume **D**ensity calculations.
+1. **Airspace Volume Density (ASVD)**
+   - Select the checkbox to include ASVD calculations.
    - Deselect the checkbox to exclude data from export and increase processing speed.
 
-2. **MLI**
-   - Select the checkbox to include **M**ean **L**inear **I**ntercept calculations.
+2. **Mean Linear Intercept (MLI)**
+   - Select the checkbox to include MLI calculations.
    - Deselect the checkbox to exclude data from export and increase processing speed.
 
-3. **Number of lines**: Set the number of lines used for MLI calculation.
+3. **Number of lines**
+   - Set the number of lines used for MLI calculation.
 
-4. **Minimum length**: Set the minimum chord length for inclusion in MLI calculations. (Chords are the line segments that span across an airspace between two alveolar tissue boundaries when performing MLI calculation.)
+5. **Minimum length**
+   - Set the minimum chord length for inclusion in MLI calculations.
+   - Note: Chords are the line segments that span across an airspace between two alveolar tissue boundaries during MLI calculation.
 
-6. **Scale**: Set the pixel-to-physical space multiplier.
+7. **Scale**
+   - Set the pixel-to-physical space multiplier.
 
-7. **Run assessments**
+9. **Run assessments**
    - Click the "Run Assessments" button.
    - View results displayed beside assessment checkboxes and in the export box.
 
@@ -165,13 +169,17 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ![export diagram](./docs/EXPORT_FINAL.svg)
 
-1. **Add results**: Click "Add" to include current assessment data in the export file.
+1. **Add results**
+   - Click "Add" to include current assessment data in the export file.
 
-2. **Remove last result**: Click "Remove" to delete the last added results.
+3. **Remove last result**
+   - Click "Remove" to delete the last added results.
 
-3. **Clear export data**: Click "Clear" to empty the export data file.
+5. **Clear export data**
+   - Click "Clear" to empty the export data file.
 
-4. **Export results**: Click "Export Results" to save the data (`.csv` or `.json` format).
+7. **Export results**
+   - Click "Export Results" to save the data (`.csv` or `.json` format).
 
 **Results Key**
 
