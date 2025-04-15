@@ -31,7 +31,7 @@ The goal of this process is to create a conda environment containing Napari and 
    - Choose the version that matches your processor.  
    - Download the `.pkg` version for easy installation.
 
-2. **Clone the repository** by opening a terminal or Miniconda prompt and running:
+2. **Clone the repository** (by opening a terminal or Miniconda prompt and running the following)
    ```
    git clone https://github.com/SucreLab/AlveolEye
    ```
@@ -79,7 +79,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ## Usage
 
-### Processing: Identify and Segment Vessel and Airway Epithelium with Computer Vision
+### Processing: Identify and Segment Vessel Endothelium and Airway Epithelium with Computer Vision
 
 ![processing diagram](./docs/PROCESSING_FINAL.svg)
 
@@ -120,11 +120,11 @@ The goal of this process is to create a conda environment containing Napari and 
    - For automatic thresholding ([Otsu's method](https://learnopencv.com/otsu-thresholding-with-opencv/)): Leave the box unchecked.
 
 2. **Remove small particles**  
-   - Set the maximum size cutoff for particles to remove.  
+   - Set the minimum size cutoff.
    - Particles with fewer pixels than this value will be removed.
 
 3. **Remove small holes**  
-   - Set the maximum size cutoff for holes to remove.  
+   - Set the minimum size cutoff.  
    - Holes with fewer pixels than this value will be removed.
 
 4. **Run postprocessing**  
@@ -173,10 +173,10 @@ The goal of this process is to create a conda environment containing Napari and 
    - Click "Add" to include current assessment data in the export file.
 
 3. **Remove last result**
-   - Click "Remove" to delete the last added results.
+   - Click "Remove" to delete the last added results from the export file.
 
 5. **Clear export data**
-   - Click "Clear" to empty the export data file.
+   - Click "Clear" to empty the export file.
 
 7. **Export results**
    - Click "Export Results" to save the data (`.csv` or `.json` format).
@@ -218,6 +218,7 @@ The goal of this process is to create a conda environment containing Napari and 
 - **Eyedropper tool**: Click the eyedropper tool, then click a pixel in the image to set your active label (for drawing and editing) to that pixel's label.  
 - **Layer selection**: Ensure you're working on the correct layer before annotating.  
 - **Visibility control**: Hide unnecessary layers using the eye icon on the layer boxes (to the left of the image viewer) for clearer viewing.
+- **Blocking**: Encircle airways and vessels in the blocking label, and everything within that closed shape will be discounted from assessments calculation. 
 
 <div align="right">
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
