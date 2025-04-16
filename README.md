@@ -237,7 +237,7 @@ Or through Napari preferences:
 
 1. Select "napari" in the menu bar.
    
-2. Choose "Preferences".
+2. Choose "Preferences."
    
 3. Click "Appearance" in the left menu.
      
