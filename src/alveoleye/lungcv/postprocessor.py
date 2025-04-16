@@ -79,10 +79,11 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
 def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_image, epithelium_label, lumen_label, blocking=False, edge_distance=10):
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
 
-    non_tissue_spaces = cv2.connectedComponents(thresholded_image)[1]
-
     labelmap_without_overlap = class_epithelium_labelmap.copy()
     labelmap_with_overlap = np.where(thresholded_image, 0, class_epithelium_labelmap)
+
+    class_epithelium_labelmap_binarized = np.where(labelmap_with_overlap == 0, 0, 255).astype(np.uint8)
+    non_tissue_spaces = cv2.connectedComponents(~(~thresholded_image | class_epithelium_labelmap_binarized))[1]
 
     contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
     height, width = class_epithelium_labelmap.shape
