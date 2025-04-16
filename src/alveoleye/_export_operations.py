@@ -4,6 +4,10 @@ import json
 import os
 import re
 
+import numpy as np
+from PIL import Image
+import torch
+
 
 def format_results(result):
     (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
@@ -124,3 +128,54 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
         results_file.write(csv_data)
 
     return unique_file_name
+
+
+def save_image(data, name, save_dir, get_colormap=None):
+    os.makedirs(save_dir, exist_ok=True)
+
+    if get_colormap:
+        colormap = get_colormap(name)
+
+    base_name, ext = os.path.splitext(name)
+    candidate_name = name
+    counter = 1
+
+    existing_files = set(os.listdir(save_dir))
+    while candidate_name in existing_files:
+        candidate_name = f"{base_name}({counter}){ext}"
+        counter += 1
+
+    save_path = os.path.join(save_dir, candidate_name)
+
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
+
+    if isinstance(data, np.ndarray):
+        data = np.squeeze(data)
+
+        if data.ndim == 3 and data.shape[2] in {3, 4}:
+            image = Image.fromarray(data.astype(np.uint8))
+        elif data.ndim == 2:
+            if colormap:
+                h, w = data.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[data == label] = color
+                image = Image.fromarray(rgb_image)
+            else:
+                image = Image.fromarray(data.astype(np.uint8), mode='L')
+        else:
+            raise ValueError(f"Unsupported image shape after squeeze: {data.shape}")
+    else:
+        raise ValueError(f"Unsupported data type: {type(data)}")
+
+    image.save(save_path)
+
+
+def make_save_image_callback(save_dir, get_colormap):
+    snapshots_dir = os.path.join(save_dir, "snapshots")
+
+    def save_image_callback(data, name):
+        save_image(data, name, snapshots_dir, get_colormap)
+
+    return save_image_callback
