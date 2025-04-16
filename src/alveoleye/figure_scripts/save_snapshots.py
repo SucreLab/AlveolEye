@@ -62,11 +62,11 @@ def main(args):
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_input_image = os.path.abspath(os.path.join(script_dir, "../../example_images/2.png"))
+    default_input_image = os.path.abspath(os.path.join(script_dir, "../../example_images/10.png"))
 
     parser = argparse.ArgumentParser(description="Generate intermediate snapshots of image in AlveolEye pipeline")
     parser.add_argument("--input-image", type=str, required=False, default=default_input_image,
-                        help="Path to the image (default: ../../example_images/2.png)")
+                        help="Path to the image (default: ../../example_images/10.png)")
     parser.add_argument("--weights-path", type=str, required=False, default=None,
                         help="Path to the model weights file (optional)")
     parser.add_argument("--output-dir", type=str, required=False,
