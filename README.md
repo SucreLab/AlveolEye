@@ -140,11 +140,11 @@ The goal of this process is to create a conda environment containing Napari and 
 ![assessments diagram](./docs/ASSESSMENTS_FINAL.svg)
 
 1. **Airspace Volume Density (ASVD)**
-   - Select the checkbox to include ASVD calculations.
+   - Select the checkbox to run ASVD calculation.
    - Deselect the checkbox to exclude data from export and increase processing speed.
 
 2. **Mean Linear Intercept (MLI)**
-   - Select the checkbox to include MLI calculations.
+   - Select the checkbox to run MLI calculation.
    - Deselect the checkbox to exclude data from export and increase processing speed.
 
 3. **Number of lines**
