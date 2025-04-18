@@ -27,7 +27,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 *If you already have conda set up, you can skip step 1.*
 
-1. **Install Miniconda** by downloading the appropriate version from [here](https://docs.anaconda.com/free/miniconda/):  
+1. **Install Miniconda** by downloading the appropriate version from [here](https://www.anaconda.com/docs/getting-started/miniconda/install):  
    - Choose the version that matches your processor.  
    - Download the `.pkg` version for easy installation.
 
