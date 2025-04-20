@@ -316,7 +316,7 @@ class PostprocessingActionBox(ActionBox):
 
         super().on_results_ready()
 
-
+@typechecked
 class AssessmentsActionBox(ActionBox):
     lines_spin_box: Optional[QSpinBox]
     min_length_spin_box: Optional[QSpinBox]
@@ -475,8 +475,8 @@ class AssessmentsActionBox(ActionBox):
 
         super().create_ui_rules()
 
-    def on_results_ready(self, asvd: float, mli: float, chords: int, stdev_chord_lengths: float,
-                         airspace_pixels: int, non_airspace_pixels: int, wrapped_assessments_layer: dict) -> None:
+    def on_results_ready(self, asvd: str, mli: str, chords: str, stdev_chord_lengths: str,
+                         airspace_pixels: str, non_airspace_pixels: str, wrapped_assessments_layer: dict) -> None:
         assessments_layer = wrapped_assessments_layer["assessments_layer"]
 
         gui_creator.update_line_edit(self.asvd_line_edit, asvd,
@@ -498,7 +498,7 @@ class AssessmentsActionBox(ActionBox):
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
 
-
+@typechecked
 class ExportActionBox(ActionBox):
     mli_chords_line_edit: Optional[QLineEdit]
     mli_stdev_line_edit: Optional[QLineEdit]
