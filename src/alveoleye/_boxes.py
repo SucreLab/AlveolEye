@@ -2,7 +2,8 @@ import cv2
 import os
 from pathlib import Path
 
-from qtpy.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QVBoxLayout, QPushButton
+from qtpy.QtWidgets import QFileDialog, QLineEdit, QSpinBox, QWidget
 
 import alveoleye._gui_creator
 from alveoleye._action_box import ActionBox
@@ -11,43 +12,48 @@ from alveoleye._workers import ProcessingWorker, PostprocessingWorker, Assessmen
 
 import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
-import alveoleye._rules as rules
+
+from typing import Optional, Tuple, Any, List
+import numpy as np
+from napari.viewer import Viewer
+from typeguard import typechecked
 
 
+@typechecked
 class ProcessingActionBox(ActionBox):
-    model_output = None
+    model_output: Optional[dict] = None
 
-    def __init__(self, config_data, napari_viewer):
+    def __init__(self, config_data: dict, napari_viewer: Viewer) -> None:
         super().__init__(config_data, napari_viewer)
 
-        self.image = None
+        self.image: Optional[np.ndarray] = None
 
-        self.import_image_line_edit = None
-        self.import_weights_line_edit = None
-        self.confidence_threshold_spin_box = None
+        self.import_image_line_edit: Optional[QLineEdit] = None
+        self.import_weights_line_edit: Optional[QLineEdit] = None
+        self.confidence_threshold_spin_box: Optional[QSpinBox] = None
 
-        self.box_id = 1
+        self.box_id: int = 1
 
         self.create_ui_elements()
         self.create_ui_rules()
         self.set_default_weights()
 
-    def set_default_weights(self):
+    def set_default_weights(self) -> None:
         ActionBox.import_paths["weights"] = Path(__file__).resolve().parent.parent / "weights" / "default.pth"
 
-    def thread_worker(self):
+    def thread_worker(self) -> None:
         self.worker = ProcessingWorker()
 
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_image_path(ActionBox.import_paths["image"])
         self.worker.set_weights(ActionBox.import_paths["weights"])
         self.worker.set_labels(self.labels_config_data)
-        self.worker.set_image_shape(self.image.shape)
-        self.worker.set_confidence_threshold_value(self.confidence_threshold_spin_box.value())
+        self.worker.set_image_shape(self.image.shape)  # type: ignore
+        self.worker.set_confidence_threshold_value(self.confidence_threshold_spin_box.value())  # type: ignore
 
         super().thread_worker()
 
-    def create_ui_elements(self):
+    def create_ui_elements(self) -> None:
         import_image_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_IMAGE_BUTTON_TEXT"],
             self.box_config_data["IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT"],
@@ -78,37 +84,60 @@ class ProcessingActionBox(ActionBox):
         self.import_weights_line_edit = import_weights_button_and_line_edit[2]
         self.confidence_threshold_spin_box = confidence_threshold_label_and_spin_box[2]
 
-        ui_elements = [import_image_button_and_line_edit_layout,
-                       import_weights_button_and_line_edit_layout,
-                       confidence_threshold_label_and_spin_box_layout]
+        ui_elements = [
+            import_image_button_and_line_edit_layout,
+            import_weights_button_and_line_edit_layout,
+            confidence_threshold_label_and_spin_box_layout
+        ]
 
-        self.create_action_box_layout(ui_elements,
-                                      self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
+        self.create_action_box_layout(
+            ui_elements,
+            self.box_config_data["ACTION_BUTTON_TEXT"],
+            self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"]
+        )
 
-    def create_ui_rules(self):
-        self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
-                                    lambda: ActionBox.import_paths["weights"] is None,
-                                    lambda: not self.state == 2],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+    def create_ui_rules(self) -> None:
+        self.rules_engine.add_rule([
+            lambda: ActionBox.import_paths["image"] is None,
+            lambda: ActionBox.import_paths["weights"] is None,
+            lambda: not self.state == 2
+        ], lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+        self.rules_engine.add_rule(
+            lambda: ActionBox.import_paths["image"] is not None,
+            lambda: alveoleye._gui_creator.toggle(True, self.action_button)
+        )
 
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is None,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit))
-        self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
+        self.rules_engine.add_rule(
+            lambda: ActionBox.import_paths["image"] is None,
+            lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit)  # type: ignore
+        )
+        self.rules_engine.add_rule(
+            lambda: ActionBox.import_paths["image"] is not None,
+            lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit)  # type: ignore
+        )
 
         super().create_ui_rules()
 
-    def open_file_dialogue(self, title, accepted_extensions, parent_directory):
+    def open_file_dialogue(
+            self,
+            title: str,
+            accepted_extensions: str,
+            parent_directory: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         parent_directory = str(Path(__file__).resolve().parent.parent / parent_directory)
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
 
-        return file_path, Path(file_path).name if file_path else (None, None)
+        return (file_path, Path(file_path).name) if file_path else (None, None)
 
-    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats, parent_directory):
+    def on_import_press(
+            self,
+            file_type: str,
+            file_line_edit: QLineEdit,
+            dialogue_text: str,
+            accepted_file_formats: str,
+            parent_directory: str
+    ) -> bool:
         file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats, parent_directory)
 
         if not file_path:
@@ -122,11 +151,13 @@ class ProcessingActionBox(ActionBox):
         self.rules_engine.evaluate_rules()
         return True
 
-    def on_import_image_press(self):
-        if not self.on_import_press("image", self.import_image_line_edit,
-                                    self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
-                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
-                                    self.box_config_data["IMAGES_FOLDER_PATH"]):
+    def on_import_image_press(self) -> None:
+        if not self.on_import_press(
+                "image", self.import_image_line_edit,  # type: ignore
+                self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
+                self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
+                self.box_config_data["IMAGES_FOLDER_PATH"]
+        ):
             return
         try:
             self.image = cv2.imread(ActionBox.import_paths["image"])
@@ -137,30 +168,50 @@ class ProcessingActionBox(ActionBox):
             return
 
         layers_editor.remove_all_layers(self.napari_viewer)
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
-                                    self.colormap_config_data, self.labels_config_data, False)
+        layers_editor.update_layers(
+            self.napari_viewer,
+            self.layers_config_data["INITIAL_LAYER"],
+            self.image,
+            self.colormap_config_data,
+            self.labels_config_data,
+            False
+        )
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
 
-    def on_import_weights_press(self):
-        self.on_import_press("weights", self.import_weights_line_edit,
-                             self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
-                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
-                             self.box_config_data["WEIGHTS_FOLDER_PATH"])
+    def on_import_weights_press(self) -> None:
+        self.on_import_press(
+            "weights", self.import_weights_line_edit,  # type: ignore
+            self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
+            self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
+            self.box_config_data["WEIGHTS_FOLDER_PATH"]
+        )
 
-    def on_results_ready(self, model_output, inference_labelmap):
+    def on_results_ready(self, model_output: dict, inference_labelmap: np.ndarray) -> None:
         ProcessingActionBox.model_output = model_output
 
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
-                                    inference_labelmap, self.colormap_config_data, self.labels_config_data, True)
+        layers_editor.update_layers(
+            self.napari_viewer,
+            self.layers_config_data["PROCESSING_LAYER"],
+            inference_labelmap,
+            self.colormap_config_data,
+            self.labels_config_data,
+            True
+        )
 
         super().on_results_ready()
 
 
+@typechecked
 class PostprocessingActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
+    thresholding_check_box: Optional[QCheckBox]
+    thresholding_spin_box: Optional[QDoubleSpinBox]
+    clean_alveoli_spin_box: Optional[QDoubleSpinBox]
+    clean_parenchyma_spin_box: Optional[QDoubleSpinBox]
+
+    def __init__(self, config_data: dict[str, Any], napari_viewer: Viewer) -> None:
         super().__init__(config_data, napari_viewer)
 
         self.thresholding_check_box = None
@@ -174,7 +225,7 @@ class PostprocessingActionBox(ActionBox):
         self.create_ui_elements()
         self.create_ui_rules()
 
-    def thread_worker(self):
+    def thread_worker(self) -> None:
         self.worker = PostprocessingWorker()
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_layer_names(self.layers_config_data)
@@ -187,7 +238,7 @@ class PostprocessingActionBox(ActionBox):
 
         super().thread_worker()
 
-    def create_ui_elements(self):
+    def create_ui_elements(self) -> None:
         thresholding_check_box_and_spin_box = gui_creator.create_check_box_and_spin_box_layout(
             self.box_config_data["THRESHOLDING_BOX_TEXT"],
             self.box_config_data["MANUAL_THRESHOLD_CHECKBOX_TOOLTIP_TEXT"],
@@ -226,15 +277,19 @@ class PostprocessingActionBox(ActionBox):
         self.clean_alveoli_spin_box = clean_alveoli_label_and_spin_box[2]
         self.clean_parenchyma_spin_box = clean_parenchyma_label_and_spin_box[2]
 
-        ui_elements = [thresholding_check_box_and_spin_box_layout,
-                       clean_alveoli_label_and_spin_box_layout,
-                       clean_parenchyma_label_and_spin_box_layout]
+        ui_elements = [
+            thresholding_check_box_and_spin_box_layout,
+            clean_alveoli_label_and_spin_box_layout,
+            clean_parenchyma_label_and_spin_box_layout
+        ]
 
-        self.create_action_box_layout(ui_elements,
-                                      self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
+        self.create_action_box_layout(
+            ui_elements,
+            self.box_config_data["ACTION_BUTTON_TEXT"],
+            self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"]
+        )
 
-    def create_ui_rules(self):
+    def create_ui_rules(self) -> None:
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
                                    lambda: alveoleye._gui_creator.toggle(True, self.thresholding_spin_box))
         self.rules_engine.add_rule(lambda: not self.thresholding_check_box.isChecked(),
@@ -243,25 +298,46 @@ class PostprocessingActionBox(ActionBox):
         self.rules_engine.add_rule(lambda: ActionBox.step == 0,
                                    lambda: alveoleye._gui_creator.toggle(False, self.action_button))
 
-        self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 1],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
-        self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 2],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
-        self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 3],
+        self.rules_engine.add_rule(lambda: self.state == 0 and ActionBox.step in {1, 2, 3},
                                    lambda: alveoleye._gui_creator.toggle(True, self.action_button))
 
         super().create_ui_rules()
 
-    def on_results_ready(self, labelmap):
+    def on_results_ready(self, labelmap: np.ndarray) -> None:
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
-        layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
-                                    self.colormap_config_data, self.labels_config_data, True)
+        layers_editor.update_layers(
+            self.napari_viewer,
+            self.layers_config_data["POSTPROCESSING_LAYER"],
+            labelmap,
+            self.colormap_config_data,
+            self.labels_config_data,
+            True
+        )
 
         super().on_results_ready()
 
 
 class AssessmentsActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
+    lines_spin_box: Optional[QSpinBox]
+    min_length_spin_box: Optional[QSpinBox]
+    scale_spin_box: Optional[QSpinBox]
+
+    lines_label_and_spin_box_layout: Optional[QVBoxLayout]
+    min_length_label_and_spin_box_layout: Optional[QVBoxLayout]
+    scale_label_and_spin_box_layout: Optional[QVBoxLayout]
+
+    mli_line_edit: Optional[QLineEdit]
+    mli_check_box: Optional[QCheckBox]
+    mli_check_box_and_line_edit_layout: Optional[QVBoxLayout]
+
+    asvd_line_edit: Optional[QLineEdit]
+    asvd_check_box: Optional[QCheckBox]
+    asvd_check_box_and_line_edit_layout: Optional[QVBoxLayout]
+
+    box_id: int
+    worker: Optional[AssessmentsWorker]
+
+    def __init__(self, config_data: dict[str, Any], napari_viewer: Viewer) -> None:
         super().__init__(config_data, napari_viewer)
 
         self.lines_spin_box = None
@@ -281,13 +357,13 @@ class AssessmentsActionBox(ActionBox):
         self.asvd_check_box_and_line_edit_layout = None
 
         self.box_id = 3
+        self.worker = None
 
         self.create_ui_elements()
         self.create_ui_rules()
 
-    def thread_worker(self):
+    def thread_worker(self) -> None:
         self.worker = AssessmentsWorker()
-
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_layer_names(self.layers_config_data)
         self.worker.set_labels(self.labels_config_data)
@@ -299,7 +375,7 @@ class AssessmentsActionBox(ActionBox):
 
         super().thread_worker()
 
-    def create_ui_elements(self):
+    def create_ui_elements(self) -> None:
         (self.asvd_check_box_and_line_edit_layout,
          self.asvd_check_box,
          self.asvd_line_edit) = gui_creator.create_check_box_and_line_edit_layout(
@@ -317,6 +393,8 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["MLI_CHECKBOX_TOOLTIP_TEXT"],
             self.rules_engine.evaluate_rules,
             self.box_config_data["MLI_RESULT_LINE_EDIT_DEFAULT"])
+
+        # Create layouts for spinboxes and labels
         lines_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["LINES_LABEL_TEXT"],
             self.box_config_data["NUMBER_OF_LINES_SPIN_BOX_TOOLTIP_TEXT"],
@@ -325,6 +403,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["LINES_SPIN_BOX_DEFAULT_VALUE"],
             self.box_config_data["LINES_SPIN_BOX_STEP"],
             self.box_config_data["LINES_SPIN_BOX_SUFFIX"])
+
         min_length_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["MIN_LENGTH_LABEL_TEXT"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_TOOLTIP_TEXT"],
@@ -333,6 +412,7 @@ class AssessmentsActionBox(ActionBox):
             self.box_config_data["MIN_LENGTH_SPIN_BOX_DEFAULT_VALUE"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_STEP"],
             self.box_config_data["MIN_LENGTH_SPIN_BOX_SUFFIX"])
+
         scale_label_and_spin_box = gui_creator.create_label_and_spin_box_layout(
             self.box_config_data["SCALE_LABEL_TEXT"],
             self.box_config_data["SCALE_SPIN_BOX_TOOLTIP_TEXT"],
@@ -362,7 +442,7 @@ class AssessmentsActionBox(ActionBox):
                                       self.box_config_data["ACTION_BUTTON_TEXT"],
                                       self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
-    def create_ui_rules(self):
+    def create_ui_rules(self) -> None:
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
                                    lambda: alveoleye._gui_creator.toggle(True, self.mli_line_edit))
         self.rules_engine.add_rule(lambda: self.asvd_check_box.isChecked(),
@@ -395,8 +475,8 @@ class AssessmentsActionBox(ActionBox):
 
         super().create_ui_rules()
 
-    def on_results_ready(self, asvd, mli, chords, stdev_chord_lengths,
-                         airspace_pixels, non_airspace_pixels, wrapped_assessments_layer):
+    def on_results_ready(self, asvd: float, mli: float, chords: int, stdev_chord_lengths: float,
+                         airspace_pixels: int, non_airspace_pixels: int, wrapped_assessments_layer: dict) -> None:
         assessments_layer = wrapped_assessments_layer["assessments_layer"]
 
         gui_creator.update_line_edit(self.asvd_line_edit, asvd,
@@ -420,7 +500,31 @@ class AssessmentsActionBox(ActionBox):
 
 
 class ExportActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
+    mli_chords_line_edit: Optional[QLineEdit]
+    mli_stdev_line_edit: Optional[QLineEdit]
+    mli_line_edit: Optional[QLineEdit]
+
+    mli_metrics: Optional[List[QLineEdit]]
+
+    asvd_non_airspace_pixels_line_edit: Optional[QLineEdit]
+    asvd_airspace_pixels_line_edit: Optional[QLineEdit]
+    asvd_line_edit: Optional[QLineEdit]
+
+    asvd_metrics: Optional[List[QLineEdit]]
+
+    add_button: Optional[QPushButton]
+    remove_button: Optional[QPushButton]
+    clear_button: Optional[QPushButton]
+    selected_filter: Optional[str]
+    file_path: Optional[str]
+
+    accumulated_results: List[Tuple]
+    name_line_edit: Optional[QLineEdit]
+    box_id: int
+
+    worker: Optional[ExportWorker]
+
+    def __init__(self, config_data: dict[str, Any], napari_viewer: Viewer) -> None:
         super().__init__(config_data, napari_viewer)
 
         self.mli_chords_line_edit = None
@@ -449,11 +553,11 @@ class ExportActionBox(ActionBox):
         self.create_ui_elements()
         self.create_ui_rules()
 
-    def on_action_button_press(self):
+    def on_action_button_press(self) -> None:
         self.file_path, self.selected_filter = gui_creator.save_data_with_file_dialog()
         super().on_action_button_press()
 
-    def thread_worker(self):
+    def thread_worker(self) -> None:
         self.worker = ExportWorker()
 
         self.worker.set_file_path(self.file_path)
@@ -462,7 +566,7 @@ class ExportActionBox(ActionBox):
 
         super().thread_worker()
 
-    def create_ui_elements(self):
+    def create_ui_elements(self) -> None:
         mli_layout, _, self.mli_line_edit = gui_creator.create_label_and_line_edit_layout(
             self.box_config_data["MLI_METRIC"],
             self.box_config_data["MLI_METRIC_LINE_EDIT"]
@@ -527,7 +631,7 @@ class ExportActionBox(ActionBox):
                                        clear_label_and_button_layout], self.box_config_data["ACTION_BUTTON_TEXT"],
                                       self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
-    def create_ui_rules(self):
+    def create_ui_rules(self) -> None:
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
                                     lambda: ActionBox.current_results],
                                    [lambda: alveoleye._gui_creator.toggle(True, self.add_button),
@@ -566,7 +670,7 @@ class ExportActionBox(ActionBox):
 
         super().create_ui_rules()
 
-    def set_results(self):
+    def set_results(self) -> None:
         _, _, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
 
         gui_creator.update_line_edit(self.mli_line_edit, mli,
@@ -582,12 +686,12 @@ class ExportActionBox(ActionBox):
         gui_creator.update_line_edit(self.asvd_non_airspace_pixels_line_edit, non_airspace_pixels,
                                      self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
 
-    def add_results(self):
+    def add_results(self) -> None:
         self.accumulated_results.append(tuple(ActionBox.current_results))
         self.rules_engine.evaluate_rules()
         self.update_export_counter()
 
-    def remove_results(self):
+    def remove_results(self) -> None:
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
 
         if result:
@@ -595,7 +699,7 @@ class ExportActionBox(ActionBox):
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
 
-    def clear_results(self):
+    def clear_results(self) -> None:
         result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
 
         if result:
@@ -603,7 +707,7 @@ class ExportActionBox(ActionBox):
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
 
-    def update_export_counter(self):
+    def update_export_counter(self) -> None:
         base_text = self.box_config_data["ACTION_BUTTON_TEXT"]
         max_export_count_display_number = self.box_config_data["MAX_EXPORT_COUNT_DISPLAY_NUMBER"]
         number_of_results = len(self.accumulated_results)
@@ -615,11 +719,9 @@ class ExportActionBox(ActionBox):
         else:
             self.action_button.setText(f'{base_text} ({number_of_results})')
 
-    def on_thread_completed(self):
+    def on_thread_completed(self) -> None:
         super().on_thread_completed()
         self.update_export_counter()
 
-    def on_results_ready(self, wrapped_data, extension):
+    def on_results_ready(self, wrapped_data: dict, extension: str) -> None:
         pass
-
-
