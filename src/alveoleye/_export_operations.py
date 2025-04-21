@@ -3,29 +3,51 @@ import io
 import json
 import os
 import re
+from typing import List, Tuple, Optional, Dict, Any, Union, Iterable
+from typeguard import typechecked
 
 
-def format_results(result):
-    (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-     lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+ResultTuple = Tuple[
+    str, str, Union[str, float, None], Union[str, float, None], Union[str, float, None],
+    Union[str, int, None], Union[str, int, None], Union[str, int, None],
+    int, int, float
+]
 
-    asvd = None if not asvd else float(asvd)
-    mli = None if not mli else float(mli)
-    stdev = None if stdev in ('', 'NA') else float(stdev)
-    chords = None if not chords else int(chords)
-    airspace_pixels = None if not airspace_pixels else int(airspace_pixels)
-    non_airspace_pixels = None if not non_airspace_pixels else int(non_airspace_pixels)
-
-    return (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-            lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
+FormattedResult = Tuple[
+    str, str, Optional[float], Optional[float], Optional[float],
+    Optional[int], Optional[int], Optional[int],
+    int, int, float
+]
 
 
-def create_json_data(accumulated_results):
-    data = {}
+@typechecked
+def format_results(result: ResultTuple) -> FormattedResult:
+    (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels,
+     non_airspace_pixels, lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+
+    asvd_f = None if not asvd else float(asvd)
+    mli_f = None if not mli else float(mli)
+    stdev_f = None if stdev in ('', 'NA') else float(stdev)
+    chords_i = None if not chords else int(chords)
+    airspace_pixels_i = None if not airspace_pixels else int(airspace_pixels)
+    non_airspace_pixels_i = None if not non_airspace_pixels else int(non_airspace_pixels)
+
+    return (
+        image_file_name, weights_file_name,
+        asvd_f, mli_f, stdev_f,
+        chords_i, airspace_pixels_i, non_airspace_pixels_i,
+        lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value
+    )
+
+
+@typechecked
+def create_json_data(accumulated_results: List[ResultTuple]) -> str:
+    data: Dict[str, Any] = {}
 
     for result in accumulated_results:
-        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
+        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels,
+         non_airspace_pixels, lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
+
         data[str(image_file_name)] = {
             "Weights": weights_file_name,
             "ASVD": {
@@ -48,17 +70,22 @@ def create_json_data(accumulated_results):
     return json.dumps(data, indent=2)
 
 
-def create_csv_data(accumulated_results, field_names=("Image", "Weights", "ASVD", "Airspace Pixels",
-                                                      "Non-Airspace Pixels", "MLI", "Standard Deviation",
-                                                      "Number of Chords", "Number of Lines", "Minimum Length",
-                                                      "Scale")):
+@typechecked
+def create_csv_data(
+    accumulated_results: List[ResultTuple],
+    field_names: Iterable[str] = (
+        "Image", "Weights", "ASVD", "Airspace Pixels", "Non-Airspace Pixels",
+        "MLI", "Standard Deviation", "Number of Chords",
+        "Number of Lines", "Minimum Length", "Scale"
+    )
+) -> str:
     csv_buffer = io.StringIO()
     writer = csv.DictWriter(csv_buffer, fieldnames=field_names)
     writer.writeheader()
 
     for result in accumulated_results:
-        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
+        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels,
+         non_airspace_pixels, lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
 
         writer.writerow({
             "Image": image_file_name,
@@ -76,17 +103,17 @@ def create_csv_data(accumulated_results, field_names=("Image", "Weights", "ASVD"
 
     csv_data = csv_buffer.getvalue()
     csv_buffer.close()
-
     return csv_data
 
 
-def append_csv_data(accumulated_results, export_file):
+@typechecked
+def append_csv_data(accumulated_results: List[ResultTuple], export_file: str) -> None:
     csv_data = create_csv_data(accumulated_results)
 
     file_exists = os.path.exists(export_file)
     mode = 'a' if file_exists else 'w'
 
-    with open(export_file, mode) as file:
+    with open(export_file, mode, newline="") as file:
         if file_exists:
             csv_lines = csv_data.splitlines()[1:]
             file.write('\n'.join(csv_lines) + '\n')
@@ -94,7 +121,8 @@ def append_csv_data(accumulated_results, export_file):
             file.write(csv_data)
 
 
-def get_unique_filename(output_dir, file_name):
+@typechecked
+def get_unique_filename(output_dir: str, file_name: str) -> str:
     base_name, ext = os.path.splitext(file_name)
     pattern = re.compile(rf"{re.escape(base_name)}\((\d+)\){re.escape(ext)}")
 
@@ -110,13 +138,18 @@ def get_unique_filename(output_dir, file_name):
     return file_name
 
 
-def export_accumulated_results(accumulated_results, output_dir, file_name="test_results.csv"):
+@typechecked
+def export_accumulated_results(
+    accumulated_results: List[ResultTuple],
+    output_dir: str,
+    file_name: str = "test_results.csv"
+) -> Optional[str]:
     if not output_dir:
-        return
+        return None
 
     csv_data = create_csv_data(accumulated_results)
-
     os.makedirs(output_dir, exist_ok=True)
+
     unique_file_name = get_unique_filename(output_dir, file_name)
     complete_export_path = os.path.join(output_dir, unique_file_name)
 
