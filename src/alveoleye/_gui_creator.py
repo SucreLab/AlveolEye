@@ -1,12 +1,16 @@
+from typing import Union, Callable, Tuple, List, Optional, Dict
 from IPython.external.qt_for_kernel import QtCore
 from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import QMessageBox
+from qtpy.QtWidgets import (
+    QMessageBox, QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout,
+    QSizePolicy, QCheckBox, QPushButton, QFileDialog, QLabel, QLayout, QWidget
+)
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
-                            QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
+from typeguard import typechecked
 
 
-def create_sub_layout(layout, elements):
+@typechecked
+def create_sub_layout(layout: QLayout, elements: List[Union[QWidget, QLayout]]) -> QLayout:
     for element in elements:
         if isinstance(element, QLayout):
             layout.addLayout(element)
@@ -15,22 +19,34 @@ def create_sub_layout(layout, elements):
     return layout
 
 
-def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spin_box_max, spin_box_default,
-                                     spin_box_step, spin_box_suffix, value_type="single", decimals=5):
+@typechecked
+def create_label_and_spin_box_layout(
+    label_text: str,
+    tooltip_text: str,
+    spin_box_min: Union[int, float],
+    spin_box_max: Union[int, float],
+    spin_box_default: Union[int, float],
+    spin_box_step: Union[int, float],
+    spin_box_suffix: str,
+    value_type: str = "single",
+    decimals: int = 5
+) -> Tuple[QHBoxLayout, QLineEdit, Union[QDoubleSpinBox, QSpinBox]]:
     label = QLineEdit(label_text)
     label.setReadOnly(True)
     label.setObjectName("labelLineEdit")
 
-    spin_box_parameters = {
-        "minimum": spin_box_min,
-        "maximum": spin_box_max,
-        "value": spin_box_default,
-        "singleStep": spin_box_step,
-        "suffix": spin_box_suffix
-    }
-    spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
+    spin_box: Union[QDoubleSpinBox, QSpinBox]
     if value_type == "double":
+        spin_box = QDoubleSpinBox()
         spin_box.setDecimals(decimals)
+    else:
+        spin_box = QSpinBox()
+
+    spin_box.setMinimum(spin_box_min)
+    spin_box.setMaximum(spin_box_max)
+    spin_box.setValue(spin_box_default)
+    spin_box.setSingleStep(spin_box_step)
+    spin_box.setSuffix(spin_box_suffix)
 
     label_and_spin_box_layout = create_sub_layout(QHBoxLayout(), [label, spin_box])
 
@@ -44,24 +60,37 @@ def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spi
     return label_and_spin_box_layout, label, spin_box
 
 
-def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text, spin_box_tooltip_text,
-                                         on_check_box_checked, spin_box_min, spin_box_max, spin_box_default,
-                                         spin_box_step, spin_box_suffix="", value_type="single", decimals=5):
+@typechecked
+def create_check_box_and_spin_box_layout(
+    check_box_text: str,
+    check_box_tooltip_text: str,
+    spin_box_tooltip_text: str,
+    on_check_box_checked: Callable,
+    spin_box_min: Union[int, float],
+    spin_box_max: Union[int, float],
+    spin_box_default: Union[int, float],
+    spin_box_step: Union[int, float],
+    spin_box_suffix: str = "",
+    value_type: str = "single",
+    decimals: int = 5
+) -> Tuple[QHBoxLayout, QCheckBox, Union[QDoubleSpinBox, QSpinBox]]:
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
 
-    spin_box_parameters = {
-        "minimum": spin_box_min,
-        "maximum": spin_box_max,
-        "value": spin_box_default,
-        "singleStep": spin_box_step,
-        "suffix": spin_box_suffix
-    }
-    spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
+    spin_box: Union[QDoubleSpinBox, QSpinBox]
     if value_type == "double":
+        spin_box = QDoubleSpinBox()
         spin_box.setDecimals(decimals)
+    else:
+        spin_box = QSpinBox()
 
-    check_box_and_spin_box_layout = create_sub_layout(QHBoxLayout(), [check_box, spin_box])
+    spin_box.setMinimum(spin_box_min)
+    spin_box.setMaximum(spin_box_max)
+    spin_box.setValue(spin_box_default)
+    spin_box.setSingleStep(spin_box_step)
+    spin_box.setSuffix(spin_box_suffix)
+
+    layout = create_sub_layout(QHBoxLayout(), [check_box, spin_box])
 
     check_box.setToolTip(check_box_tooltip_text)
     spin_box.setToolTip(spin_box_tooltip_text)
@@ -72,10 +101,16 @@ def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text,
     check_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    return check_box_and_spin_box_layout, check_box, spin_box
+    return layout, check_box, spin_box
 
 
-def create_check_box_and_line_edit_layout(check_box_text, tooltip_text, on_check_box_checked, line_edit_text):
+@typechecked
+def create_check_box_and_line_edit_layout(
+    check_box_text: str,
+    tooltip_text: str,
+    on_check_box_checked: Callable,
+    line_edit_text: str
+) -> Tuple[QHBoxLayout, QCheckBox, QLineEdit]:
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
     check_box.setToolTip(tooltip_text)
@@ -85,37 +120,47 @@ def create_check_box_and_line_edit_layout(check_box_text, tooltip_text, on_check
     line_edit.setAlignment(QtCore.Qt.AlignCenter)
     line_edit.setReadOnly(True)
 
-    check_box_and_line_edit_layout = create_sub_layout(QHBoxLayout(), [check_box, line_edit])
+    layout = create_sub_layout(QHBoxLayout(), [check_box, line_edit])
 
     check_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     line_edit.setCursorPosition(0)
 
-    return check_box_and_line_edit_layout, check_box, line_edit
+    return layout, check_box, line_edit
 
 
-def create_button_and_line_edit_layout(button_text, tooltip_text, on_button_pressed, line_edit_text):
+@typechecked
+def create_button_and_line_edit_layout(
+    button_text: str,
+    tooltip_text: str,
+    on_button_pressed: Callable,
+    line_edit_text: str
+) -> Tuple[QHBoxLayout, QPushButton, QLineEdit]:
     button = QPushButton(button_text)
     button.clicked.connect(on_button_pressed)
-
-    line_edit = QLineEdit(line_edit_text)
-    line_edit.setReadOnly(True)
-
-    button_and_line_edit_layout = create_sub_layout(QHBoxLayout(), [button, line_edit])
-
     button.setToolTip(tooltip_text)
     button.setCursor(Qt.PointingHandCursor)
 
+    line_edit = QLineEdit(line_edit_text)
+    line_edit.setReadOnly(True)
     line_edit.setAlignment(QtCore.Qt.AlignCenter)
     line_edit.setCursorPosition(0)
+
+    layout = create_sub_layout(QHBoxLayout(), [button, line_edit])
 
     button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    return button_and_line_edit_layout, button, line_edit
+    return layout, button, line_edit
 
 
-def create_label_and_button_layout(label_text, button_text, tooltip_text, on_button_pressed):
+@typechecked
+def create_label_and_button_layout(
+    label_text: str,
+    button_text: str,
+    tooltip_text: str,
+    on_button_pressed: Callable
+) -> Tuple[QHBoxLayout, QLineEdit, QPushButton]:
     label = QLineEdit(label_text)
     label.setObjectName("labelLineEdit")
     label.setReadOnly(True)
@@ -123,17 +168,21 @@ def create_label_and_button_layout(label_text, button_text, tooltip_text, on_but
     button = QPushButton(button_text)
     button.clicked.connect(on_button_pressed)
     button.setToolTip(tooltip_text)
-
-    label_and_button_layout = create_sub_layout(QHBoxLayout(), [label, button])
-
     button.setCursor(Qt.PointingHandCursor)
+
+    layout = create_sub_layout(QHBoxLayout(), [label, button])
+
     button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    return label_and_button_layout, label, button
+    return layout, label, button
 
 
-def create_label_and_line_edit_layout(label_text, line_edit_text):
+@typechecked
+def create_label_and_line_edit_layout(
+    label_text: str,
+    line_edit_text: str
+) -> Tuple[QHBoxLayout, QLineEdit, QLineEdit]:
     label = QLineEdit(label_text)
     label.setObjectName("labelLineEdit")
     label.setReadOnly(True)
@@ -142,30 +191,29 @@ def create_label_and_line_edit_layout(label_text, line_edit_text):
     line_edit.setReadOnly(True)
     line_edit.setAlignment(QtCore.Qt.AlignCenter)
     line_edit.setCursorPosition(0)
-    line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    label_and_line_edit_layout = QHBoxLayout()
-    label_and_line_edit_layout.addWidget(label)
-    label_and_line_edit_layout.addWidget(line_edit)
+    layout = QHBoxLayout()
+    layout.addWidget(label)
+    layout.addWidget(line_edit)
 
-    return label_and_line_edit_layout, label, line_edit
-
-
-def update_line_edit(line_edit, value, default, condition):
-    if condition:
-        line_edit.setText(value)
-    else:
-        line_edit.setText(default)
+    return layout, label, line_edit
 
 
-def create_horizontal_line_widget():
+@typechecked
+def update_line_edit(line_edit: QLineEdit, value: str, default: str, condition: str) -> None:
+    line_edit.setText(value if condition else default)
+
+
+@typechecked
+def create_horizontal_line_widget() -> QLabel:
     horizontal_line = QLabel()
     horizontal_line.setFixedHeight(1)
     horizontal_line.setObjectName("divider")
     return horizontal_line
 
 
-def save_data_with_file_dialog():
+@typechecked
+def save_data_with_file_dialog() -> Tuple[str, str]:
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
     file_dialog = QFileDialog()
@@ -175,24 +223,28 @@ def save_data_with_file_dialog():
     file_dialog.setDefaultSuffix("csv")
     file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
-    file_path, selected_filter = file_dialog.getSaveFileName(None, 'Save File', "",
-                                                             "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
+    file_path, selected_filter = file_dialog.getSaveFileName(
+        None, 'Save File', "",
+        "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)"
+    )
+
     return file_path, selected_filter
 
 
-def create_confirmation_message_box(parent, message):
+@typechecked
+def create_confirmation_message_box(parent: Optional[QWidget], message: str) -> bool:
     message_box = QMessageBox(parent)
     message_box.setIcon(QMessageBox.Warning)
     message_box.setText(
-        f'<html><body style="font-weight: normal;">{message}</body></html>')
+        f'<html><body style="font-weight: normal;">{message}</body></html>'
+    )
 
     buttons = {
         "Yes": QMessageBox.AcceptRole,
         "No": QMessageBox.RejectRole
     }
 
-    button_objects = {}
-
+    button_objects: Dict[str, QPushButton] = {}
     for text, role in buttons.items():
         button = message_box.addButton(text, role)
         button.setFixedSize(80, 25)
@@ -200,22 +252,25 @@ def create_confirmation_message_box(parent, message):
         button_objects[text] = button
 
     message_box.setDefaultButton(button_objects["No"])
-
     message_box.exec_()
     clicked_button = message_box.clickedButton()
 
     return clicked_button == button_objects["Yes"]
 
-def toggle(state, elements):
+
+@typechecked
+def toggle(state: bool, elements: Union[QWidget, QLayout, List[Union[QWidget, QLayout]]]) -> None:
     if not isinstance(elements, list):
         elements = [elements]
 
     for item in elements:
-        stack = [item]
+        stack: List[Union[QWidget, QLayout]] = [item]
         while stack:
             current = stack.pop()
             if isinstance(current, QLayout):
                 for i in range(current.count()):
-                    stack.append(current.itemAt(i).widget())
-            else:
+                    widget = current.itemAt(i).widget()
+                    if widget:
+                        stack.append(widget)
+            elif current is not None:
                 current.setEnabled(state)
