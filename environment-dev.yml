@@ -11,15 +11,15 @@ dependencies:
   - pyqt<5.16.0
   - qtpy
   - pytorch
-  - tensorboard
-  - pillow
+  - pillow>=10.2.0
+  - pip
   - gdown
   - numpy<2.0.0
-  - pip
   - matplotlib
+  - py-opencv>=4.1.1.26
+  - tensorboard
   - pip:
       - pycocotools
-      - opencv-python-headless
       - pytest
       - pytest-cov
       - pytest-qt
