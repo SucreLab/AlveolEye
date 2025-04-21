@@ -1,15 +1,20 @@
+from typing import Optional, Any, Dict, Union
+import numpy as np
 from napari.utils.colormaps import DirectLabelColormap
+from napari.viewer import Viewer
+from typeguard import typechecked
 
 
-def get_layer_by_name(napari_viewer, layer_name):
+@typechecked
+def get_layer_by_name(napari_viewer: Viewer, layer_name: str) -> Optional[np.ndarray]:
     for layer in napari_viewer.layers:
         if layer.name == layer_name:
             return layer.data
-
     return None
 
 
-def remove_layer(napari_viewer, layer_name):
+@typechecked
+def remove_layer(napari_viewer: Viewer, layer_name: str) -> None:
     layers_to_remove = list(napari_viewer.layers)
     for layer in layers_to_remove:
         if layer.name == layer_name:
@@ -17,15 +22,17 @@ def remove_layer(napari_viewer, layer_name):
             break
 
 
-def remove_all_layers(napari_viewer):
+@typechecked
+def remove_all_layers(napari_viewer: Viewer) -> None:
     layers_to_remove = list(napari_viewer.layers)
     for layer in layers_to_remove:
         napari_viewer.layers.remove(layer)
 
 
-def _labels_dict_to_properties_array(labels_dict):
+@typechecked
+def _labels_dict_to_properties_array(labels_dict: Dict[str, int]) -> list[str]:
     max_index = max(labels_dict.values())
-    result_array = ["undefined"] * (max_index + 1)
+    result_array: list[str] = ["undefined"] * (max_index + 1)
 
     for name, value in labels_dict.items():
         name_with_spaces = name.replace("_", " ").title()
@@ -34,7 +41,15 @@ def _labels_dict_to_properties_array(labels_dict):
     return result_array
 
 
-def update_layers(napari_viewer, layer_name, layer_data, color_dict, labels_dict, is_labelmap):
+@typechecked
+def update_layers(
+    napari_viewer: Viewer,
+    layer_name: str,
+    layer_data: np.ndarray,
+    color_dict: Dict[Optional[int], list[float]],
+    labels_dict: Dict[str, int],
+    is_labelmap: bool
+) -> None:
     existing_layers = {layer.name: layer for layer in napari_viewer.layers}
 
     if layer_name in existing_layers:
@@ -45,10 +60,15 @@ def update_layers(napari_viewer, layer_name, layer_data, color_dict, labels_dict
         colormap = DirectLabelColormap(color_dict=color_dict)
         properties = _labels_dict_to_properties_array(labels_dict)
 
-        napari_viewer.add_labels(layer_data, colormap=colormap, properties=properties, opacity=1.0, name=layer_name)
+        napari_viewer.add_labels(
+            layer_data,
+            colormap=colormap,
+            properties=properties,
+            opacity=1.0,
+            name=layer_name
+        )
         napari_viewer.layers[layer_name].editable = True
         return
 
     layer_data_rgb = layer_data[:, :, ::-1]
     napari_viewer.add_image(layer_data_rgb, name=layer_name)
-
