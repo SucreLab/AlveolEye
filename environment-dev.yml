@@ -23,4 +23,5 @@ dependencies:
       - pytest
       - pytest-cov
       - pytest-qt
+      - typeguard
 
