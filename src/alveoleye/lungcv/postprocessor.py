@@ -1,27 +1,27 @@
 import cv2
 import numpy as np
+from typing import Any
 
 
-def convert_to_grayscale(image):
+def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
-def apply_dynamic_threshold(grayscale_image):
+def apply_dynamic_threshold(grayscale_image: np.ndarray) -> np.ndarray:
     threshold_value = cv2.threshold(grayscale_image, 0, 255, cv2.THRESH_OTSU)[0] + 20
     return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
 
-def apply_manual_threshold(grayscale_image, threshold_value):
+def apply_manual_threshold(grayscale_image: np.ndarray, threshold_value: int) -> np.ndarray:
     return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
 
-def invert_image_binary(binary_image):
+def invert_image_binary(binary_image: np.ndarray) -> np.ndarray:
     return cv2.bitwise_not(binary_image)
 
 
-def remove_small_components(binary_image, minimum_size):
-    connected_components = cv2.connectedComponentsWithStats(binary_image)
-    quantity, image, stats = connected_components[:3]
+def remove_small_components(binary_image: np.ndarray, minimum_size: int) -> np.ndarray:
+    quantity, image, stats, _ = cv2.connectedComponentsWithStats(binary_image)
     sizes = stats[:, -1][1:]
 
     small_blobs = np.where(sizes <= minimum_size)[0] + 1
@@ -30,7 +30,12 @@ def remove_small_components(binary_image, minimum_size):
     return binary_image
 
 
-def generate_processing_labelmap(model_output, shape, confidence_threshold, labels):
+def generate_processing_labelmap(
+    model_output: dict[str, Any],
+    shape: tuple[int, int] | tuple[int, int, int],
+    confidence_threshold: int,
+    labels: dict[str, int]
+) -> np.ndarray:
     confidence_threshold = confidence_threshold / 100
 
     if len(shape) == 3:
@@ -46,14 +51,26 @@ def generate_processing_labelmap(model_output, shape, confidence_threshold, labe
     return final_labelmap
 
 
-def extract_class_labelmap_from_model(model_output, class_id, confidence_threshold):
-    model_output_mask = np.array([mask.cpu().numpy() for idx, mask in enumerate(model_output["masks"]) if (model_output["labels"][idx].cpu().numpy() == class_id and model_output["scores"][idx] > confidence_threshold)])
+def extract_class_labelmap_from_model(
+    model_output: dict[str, Any],
+    class_id: int,
+    confidence_threshold: float
+) -> np.ndarray:
+    model_output_mask = np.array([
+        mask.cpu().numpy()
+        for idx, mask in enumerate(model_output["masks"])
+        if (model_output["labels"][idx].cpu().numpy() == class_id and model_output["scores"][idx] > confidence_threshold)
+    ])
     mask_with_confidence = (model_output_mask > confidence_threshold).any(axis=0)
 
     return mask_with_confidence
 
 
-def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels):
+def generate_postprocessing_labelmap(
+    masks_labelmap: np.ndarray,
+    thresholded_labelmap: np.ndarray,
+    labels: dict[str, int]
+) -> np.ndarray:
     intermediate_label = max(labels.values()) + 1
 
     parenchyma_labelmap = np.where(thresholded_labelmap, labels["ALVEOLI"], labels["PARENCHYMA"])
@@ -61,22 +78,34 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
     vessel_epithelium_labelmap = np.where(masks_labelmap == labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_ENDOTHELIUM"], 0)
     blocking_labelmap = np.where(masks_labelmap == labels["BLOCKER"], labels["BLOCKER"], 0)
 
-    airway_complete_labelmap = generate_complete_class_labelmap(airway_epithelium_labelmap, thresholded_labelmap, labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"])
-    vessel_complete_labelmap = generate_complete_class_labelmap(vessel_epithelium_labelmap, thresholded_labelmap, labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"])
-    blocking_complete_labelmap = generate_complete_class_labelmap(blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], intermediate_label, True)
+    airway_complete_labelmap = generate_complete_class_labelmap(
+        airway_epithelium_labelmap, thresholded_labelmap, labels["AIRWAY_EPITHELIUM"], labels["AIRWAY_LUMEN"]
+    )
+    vessel_complete_labelmap = generate_complete_class_labelmap(
+        vessel_epithelium_labelmap, thresholded_labelmap, labels["VESSEL_ENDOTHELIUM"], labels["VESSEL_LUMEN"]
+    )
+    blocking_complete_labelmap = generate_complete_class_labelmap(
+        blocking_labelmap, thresholded_labelmap, labels["BLOCKER"], intermediate_label, True
+    )
 
     final_labelmap = np.zeros(masks_labelmap.shape, dtype="uint8")
     final_labelmap = np.where(parenchyma_labelmap, parenchyma_labelmap, final_labelmap)
     final_labelmap = np.where(airway_complete_labelmap, airway_complete_labelmap, final_labelmap)
     final_labelmap = np.where(vessel_complete_labelmap, vessel_complete_labelmap, final_labelmap)
-
     final_labelmap = np.where(blocking_complete_labelmap, blocking_complete_labelmap, final_labelmap)
     final_labelmap[final_labelmap == intermediate_label] = 0
 
     return final_labelmap
 
 
-def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_image, epithelium_label, lumen_label, blocking=False, edge_distance=10):
+def generate_complete_class_labelmap(
+    class_epithelium_labelmap: np.ndarray,
+    thresholded_image: np.ndarray,
+    epithelium_label: int,
+    lumen_label: int,
+    blocking: bool = False,
+    edge_distance: int = 10
+) -> np.ndarray:
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
 
     non_tissue_spaces = cv2.connectedComponents(thresholded_image)[1]
@@ -84,7 +113,7 @@ def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_imag
     labelmap_without_overlap = class_epithelium_labelmap.copy()
     labelmap_with_overlap = np.where(thresholded_image, 0, class_epithelium_labelmap)
 
-    contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    contours, _ = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     height, width = class_epithelium_labelmap.shape
 
     for contour in contours:
@@ -101,7 +130,7 @@ def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_imag
         if y2 >= height - edge_distance:
             cv2.line(class_epithelium_labelmap, (x1, y2), (x2, y2), epithelium_label, thickness=1)
 
-    contours = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    contours, _ = cv2.findContours(class_epithelium_labelmap, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     kernel = np.ones((5, 5), np.uint8)
 
     for contour in contours:
@@ -122,6 +151,6 @@ def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_imag
                 cx, cy = map(int, centroid)
                 component = non_tissue_spaces[cy, cx]
                 if component:
-                    labelmap_with_overlap[(non_tissue_spaces == component)] = lumen_label
+                    labelmap_with_overlap[non_tissue_spaces == component] = lumen_label
 
     return labelmap_without_overlap if blocking else labelmap_with_overlap

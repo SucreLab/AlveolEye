@@ -8,10 +8,11 @@ from torchvision.models.detection import maskrcnn_resnet50_fpn, MaskRCNN_ResNet5
 from torchvision.transforms import v2 as T
 from torchvision.models.detection import MaskRCNN
 from PIL import Image
+from typing import Optional
 
 
-def get_transform(train=True):
-    transform_list = [
+def get_transform(train: bool = True) -> T.Compose:
+    transform_list: list[T.Transform] = [
         T.PILToTensor(),
     ]
 
@@ -38,8 +39,8 @@ def get_transform(train=True):
     return T.Compose(transform_list)
 
 
-def init_untrained_model(num_classes) -> MaskRCNN:
-    model = maskrcnn_resnet50_fpn(weights=MaskRCNN_ResNet50_FPN_Weights.COCO_V1)
+def init_untrained_model(num_classes: int) -> MaskRCNN:
+    model: MaskRCNN = maskrcnn_resnet50_fpn(weights=MaskRCNN_ResNet50_FPN_Weights.COCO_V1)
 
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
@@ -55,42 +56,31 @@ def init_untrained_model(num_classes) -> MaskRCNN:
     return model
 
 
-def download_file(url, out_file):
-    # local_filename = url.split('/')[-1]
-    # NOTE the stream=True parameter below
+def download_file(url: str, out_file: str | Path) -> str | Path:
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(out_file, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
-                # If you have chunk encoded response uncomment if
-                # and set chunk_size parameter to None.
-                # if chunk:
                 f.write(chunk)
     return out_file
 
 
-def init_trained_model(model_path=None):
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+def init_trained_model(model_path: str | Path | None = None) -> MaskRCNN:
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = init_untrained_model(3)
 
     if model_path is None or not Path(model_path).exists():
         model_path = Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"
 
-        if not os.path.exists(str(Path(model_path))):
-            if not os.path.exists(str(Path(model_path).parent)):
-                os.makedirs(str(Path(model_path).parent), exist_ok=True)
+        if not os.path.exists(str(model_path)):
+            os.makedirs(model_path.parent, exist_ok=True)
 
             import gdown
             url = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
             gdown.download(url=url, output=str(model_path), fuzzy=True)
 
-    loaded_model = torch.load(model_path, map_location=torch.device(device))
+    loaded_model = torch.load(model_path, map_location=device)
     state_dictionary = loaded_model.state_dict()
     model.load_state_dict(state_dictionary)
     model.to(device)
@@ -98,13 +88,8 @@ def init_trained_model(model_path=None):
     return model
 
 
-def run_prediction(image_path, model):
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+def run_prediction(image_path: str | Path, model: MaskRCNN) -> dict[str, torch.Tensor]:
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     image = T.PILToTensor()(Image.open(image_path).convert('RGB'))
     eval_transform = get_transform(train=False)
@@ -113,7 +98,7 @@ def run_prediction(image_path, model):
     with torch.no_grad():
         x = eval_transform(image)
         x = x.to(device)
-        predictions = model([x, ])
+        predictions = model([x])
         prediction = predictions[0]
         del x
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, Callable, Any
+from typing import Callable, Any
+from collections.abc import Iterable
 from pathlib import Path
 
 from qtpy.QtCore import Qt, QTimer, QThread
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 
-import numpy as np 
+import numpy as np
 
 import alveoleye._gui_creator
 import alveoleye._rules as rules
@@ -19,14 +20,14 @@ from typeguard import typechecked
 
 @typechecked
 class ActionBox(QGroupBox):
-    current_results: List[Any] = []
+    current_results: list[Any] = []
 
-    import_paths: Dict[str, Optional[str]] = {
+    import_paths: dict[str, str | None] = {
         "image": None,
         "weights": None
     }
 
-    all_action_boxes: List[ActionBox] = []
+    all_action_boxes: list[ActionBox] = []
     step: int = 0
 
     def __init__(self, config_data: dict, napari_viewer: Viewer) -> None:
@@ -53,12 +54,12 @@ class ActionBox(QGroupBox):
         self.layout: QVBoxLayout = QVBoxLayout()
         self.rules_engine: rules.RulesEngine = rules.RulesEngine()
 
-        self.worker: Optional[WorkerParent] = None
-        self.thread: Optional[QThread] = None
-        self.action_button: Optional[ActionBox.ActionButton] = None
-        self.animation_timer: Optional[QTimer] = None
+        self.worker: WorkerParent | None = None
+        self.thread: QThread | None = None
+        self.action_button: ActionBox.ActionButton | None = None
+        self.animation_timer: QTimer | None = None
 
-        self.box_id: Optional[int] = None
+        self.box_id: int | None = None
         self.napari_viewer: Viewer = napari_viewer
 
     @typechecked
@@ -90,13 +91,13 @@ class ActionBox(QGroupBox):
             if box is not self:
                 box.cancel_action()
 
-    def broadcast_step_change_message(self, box_id: Optional[int] = None) -> None:
+    def broadcast_step_change_message(self, box_id: int | None = None) -> None:
         for box in ActionBox.all_action_boxes:
             if box is not self:
                 ActionBox.step = self.box_id if box_id is None else box_id
                 box.rules_engine.evaluate_rules()
 
-    def create_action_box_layout(self, elements: List[Any], button_text: str, tooltip_text: str) -> None:
+    def create_action_box_layout(self, elements: list[Any], button_text: str, tooltip_text: str) -> None:
         self.action_button = self.ActionButton(button_text, tooltip_text, self.on_action_button_press)
         elements.append(self.action_button)
         gui_creator.create_sub_layout(self.layout, elements)
@@ -135,10 +136,10 @@ class ActionBox(QGroupBox):
 
     def set_state(self, state: int) -> None:
         self.state = state
-        
+
         if self.action_button:
             self.action_button.set_state(state)
-        
+
         self.rules_engine.evaluate_rules()
 
     def cancel_action(self) -> None:
