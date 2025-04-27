@@ -5,6 +5,8 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
                             QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
 
+from pathlib import Path
+
 
 def create_sub_layout(layout, elements):
     for element in elements:
@@ -175,8 +177,15 @@ def save_data_with_file_dialog():
     file_dialog.setDefaultSuffix("csv")
     file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
-    file_path, selected_filter = file_dialog.getSaveFileName(None, 'Save File', "",
-                                                             "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
+    downloads_path = str(Path.home() / "Downloads")
+
+    file_path, selected_filter = file_dialog.getSaveFileName(
+        None,
+        'Save File',
+        downloads_path,
+        "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)"
+    )
+
     return file_path, selected_filter
 
 
