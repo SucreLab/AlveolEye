@@ -139,6 +139,10 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
                                     self.colormap_config_data, self.labels_config_data, False)
+        
+        
+        
+        self.set_image_threshold_value()
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
 
@@ -148,6 +152,13 @@ class ProcessingActionBox(ActionBox):
                              self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
                              self.box_config_data["WEIGHTS_FOLDER_PATH"])
 
+    def set_image_threshold_value(self):
+        image = layers_editor.get_layer_by_name(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
+        grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
+        threshold_value = int(5 * round(otsu_value / 5))
+        PostprocessingActionBox.threshold_value = threshold_value
+    
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
 
@@ -160,6 +171,8 @@ class ProcessingActionBox(ActionBox):
 
 
 class PostprocessingActionBox(ActionBox):
+    threshold_value = None
+
     def __init__(self, config_data, napari_viewer):
         super().__init__(config_data, napari_viewer)
 
@@ -235,6 +248,9 @@ class PostprocessingActionBox(ActionBox):
                                       self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
+        self.rules_engine.add_rule([lambda: PostprocessingActionBox.threshold_value != None,
+                                    lambda: ActionBox.step == 0],
+                                   lambda: self.thresholding_spin_box.setValue(PostprocessingActionBox.threshold_value))
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
                                    lambda: alveoleye._gui_creator.toggle(True, self.thresholding_spin_box))
         self.rules_engine.add_rule(lambda: not self.thresholding_check_box.isChecked(),
