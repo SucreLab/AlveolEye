@@ -139,9 +139,7 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
                                     self.colormap_config_data, self.labels_config_data, False)
-        
-        
-        
+
         self.set_image_threshold_value()
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
