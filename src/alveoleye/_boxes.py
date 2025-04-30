@@ -408,9 +408,9 @@ class AssessmentsActionBox(ActionBox):
             layers_editor.update_layers(self.napari_viewer,
                                         self.layers_config_data["ASSESSMENTS_LAYER_NAME"], assessments_layer,
                                         self.colormap_config_data, self.labels_config_data, True)
-            
-            self.napari_viewer.layers.selection.active = self.napari_viewer.layers[self.layers_config_data["POSTPROCESSING_LAYER"]]
 
+            self.napari_viewer.layers.selection.active = self.napari_viewer.layers[
+                self.layers_config_data["POSTPROCESSING_LAYER"]]
 
         ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
                                      os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
@@ -624,5 +624,3 @@ class ExportActionBox(ActionBox):
 
     def on_results_ready(self, wrapped_data, extension):
         pass
-
-
