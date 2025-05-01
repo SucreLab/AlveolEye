@@ -11,6 +11,7 @@ from alveoleye._workers import ProcessingWorker, PostprocessingWorker, Assessmen
 
 import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
+from alveoleye._export_operations import is_real_writable_dir
 import alveoleye._rules as rules
 
 
@@ -450,10 +451,13 @@ class ExportActionBox(ActionBox):
         self.create_ui_rules()
 
     def on_action_button_press(self):
-        export_location = self.box_config_data["EXPORT_LOCATION"]
+        export_location = self.box_config_data.get("EXPORT_LOCATION", "")
 
         if self.file_path:
             export_location = os.path.dirname(self.file_path)
+
+        if not is_real_writable_dir(export_location):
+            export_location = os.getcwd()
 
         self.file_path, self.selected_filter = gui_creator.save_data_with_file_dialog(export_location)
         super().on_action_button_press()

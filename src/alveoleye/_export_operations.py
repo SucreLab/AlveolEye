@@ -124,3 +124,7 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
         results_file.write(csv_data)
 
     return unique_file_name
+
+
+def is_real_writable_dir(path):
+    return os.path.isdir(path) and os.access(path, os.W_OK | os.X_OK)
