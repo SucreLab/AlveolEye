@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from qtpy.QtCore import Qt, QTimer, QThread
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 
@@ -101,7 +103,7 @@ class ActionBox(QGroupBox):
 
     def thread_worker(self):
         if self.action_box_config_data["SAVE_INTERMEDIATE_SNAPSHOTS"]:
-            export_location = self.action_box_config_data["INTERMEDIATE_SNAPSHOT_SAVE_LOCATION"]
+            export_location = Path.home() / self.action_box_config_data["INTERMEDIATE_SNAPSHOT_SAVE_LOCATION"]
             self.worker.set_callback(make_save_image_callback(export_location))
 
         self.thread = QThread()
