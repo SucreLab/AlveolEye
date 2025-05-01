@@ -167,7 +167,7 @@ def create_horizontal_line_widget():
     return horizontal_line
 
 
-def save_data_with_file_dialog():
+def save_data_with_file_dialog(save_location):
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
     file_dialog = QFileDialog()
@@ -177,7 +177,7 @@ def save_data_with_file_dialog():
     file_dialog.setDefaultSuffix("csv")
     file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
-    downloads_path = str(Path.home() / "Downloads")
+    downloads_path = str(Path.home() / save_location)
 
     file_path, selected_filter = file_dialog.getSaveFileName(
         None,
@@ -214,6 +214,7 @@ def create_confirmation_message_box(parent, message):
     clicked_button = message_box.clickedButton()
 
     return clicked_button == button_objects["Yes"]
+
 
 def toggle(state, elements):
     if not isinstance(elements, list):
