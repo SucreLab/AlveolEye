@@ -451,10 +451,10 @@ class ExportActionBox(ActionBox):
 
     def on_action_button_press(self):
         export_location = self.box_config_data["EXPORT_LOCATION"]
-        # if self.file_path:
-        #     export_location = os.path.dirname(self.file_path)
-        #
-        # print("Export_location: ", export_location)
+
+        if self.file_path:
+            export_location = os.path.dirname(self.file_path)
+
         self.file_path, self.selected_filter = gui_creator.save_data_with_file_dialog(export_location)
         super().on_action_button_press()
 
