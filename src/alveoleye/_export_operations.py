@@ -4,6 +4,10 @@ import json
 import os
 import re
 
+import numpy as np
+from PIL import Image
+import torch
+
 
 def format_results(result):
     (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
@@ -124,3 +128,81 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
         results_file.write(csv_data)
 
     return unique_file_name
+
+
+def load_image_specific_colormap(name):
+    colormap = {
+        0: (255, 255, 255),
+        1: (191, 67, 66),
+        2: (40, 54, 24),
+        3: (188, 108, 37),
+        4: (96, 108, 56),
+        5: (221, 161, 94),
+        6: (23, 83, 135),
+        7: (254, 250, 224),
+        8: (78, 77, 72),
+        9: (37, 36, 34)
+    }
+
+    if name == "airway_epithelium_labelmap.png":
+        colormap[1] = colormap[2]
+    elif name == "vessel_epithelium_labelmap.png":
+        colormap[1] = colormap[3]
+    elif name == "grayscaled.png":
+        colormap = None
+
+    return colormap
+
+
+def save_image(data, name, save_dir, get_colormap_function=None):
+    os.makedirs(save_dir, exist_ok=True)
+
+    if get_colormap_function:
+        colormap = get_colormap_function(name)
+    else:
+        colormap = load_image_specific_colormap(name)
+
+    base_name, ext = os.path.splitext(name)
+    candidate_name = name
+    counter = 1
+
+    existing_files = set(os.listdir(save_dir))
+    while candidate_name in existing_files:
+        candidate_name = f"{base_name}({counter}){ext}"
+        counter += 1
+
+    save_path = os.path.join(save_dir, candidate_name)
+
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
+
+    if isinstance(data, np.ndarray):
+        data = np.squeeze(data)
+
+        if data.ndim == 3 and data.shape[2] in {3, 4}:
+            image = Image.fromarray(data.astype(np.uint8))
+        elif data.ndim == 2:
+            if colormap:
+                h, w = data.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[data == label] = color
+                image = Image.fromarray(rgb_image)
+            else:
+                image = Image.fromarray(data.astype(np.uint8), mode='L')
+        else:
+            raise ValueError(f"Unsupported image shape after squeeze: {data.shape}")
+    else:
+        raise ValueError(f"Unsupported data type: {type(data)}")
+
+    image.save(save_path)
+    print(f"[+] Saved image to {save_path}")
+
+
+def make_save_image_callback(save_dir, get_colormap_function=None):
+    snapshots_dir = os.path.join(save_dir, "snapshots")
+
+    def save_image_callback(data, name):
+        save_image(data, name, snapshots_dir, get_colormap_function)
+
+    return save_image_callback

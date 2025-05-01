@@ -37,6 +37,7 @@ class CombinedWorker:
         self.minimum_length = 20
         self.scale = 0.18872
         self.randomized_distribution = False
+        self.callback = None
 
         self.shortened_image_path = None
         self.asvd = None
@@ -87,6 +88,9 @@ class CombinedWorker:
     def set_randomized_distribution(self, randomized_distribution):
         self.randomized_distribution = randomized_distribution
 
+    def set_callback(self, callback):
+        self.callback = callback
+
     def run_processing(self):
         if not self.image_path:
             raise ValueError("[-] Error: Image path is not set.")
@@ -96,11 +100,13 @@ class CombinedWorker:
 
         try:
             self.rgb_image = cv2.imread(self.image_path, cv2.IMREAD_COLOR)[:, :, ::-1]
+
             model = model_operations.init_trained_model(self.weights_path)
 
             model_output = model_operations.run_prediction(self.image_path, model)
             self.inference_labelmap = generate_processing_labelmap(model_output, self.rgb_image.shape, self.confidence,
-                                                                   self.labels)
+                                                                   self.labels, self.callback)
+
         except Exception as e:
             print(f"[-] Error in processing: {e}")
 
@@ -118,14 +124,14 @@ class CombinedWorker:
             raise ValueError("[-] Error: Run processing first")
 
         try:
-            grayscaled = convert_to_grayscale(self.rgb_image)
-            thresholded = apply_dynamic_threshold(grayscaled)
-            parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
-            inverted = invert_image_binary(parenchyma_cleaned)
-            alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
-            inverted_back = invert_image_binary(alveoli_cleaned)
+            grayscaled = convert_to_grayscale(self.rgb_image, self.callback)
+            thresholded = apply_dynamic_threshold(grayscaled, self.callback)
+            parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size, self.callback)
+            inverted = invert_image_binary(parenchyma_cleaned, self.callback)
+            alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size, self.callback)
+            inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
-            self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels)
+            self.labelmap = generate_postprocessing_labelmap(self.inference_labelmap, inverted_back, self.labels, self.callback)
         except Exception as e:
             print(f"[-] Error: Error in post-processing: {e}")
 
@@ -147,7 +153,8 @@ class CombinedWorker:
 
         try:
             self.mli, self.assessments_layer, self.number_of_chords, self.stdev_chord_lengths = calculate_mean_linear_intercept(
-                self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels, self.randomized_distribution)
+                self.labelmap, self.number_of_lines, self.minimum_length, self.scale, self.labels,
+                self.randomized_distribution, self.callback)
             self.asvd, self.airspace_pixels, self.non_airspace_pixels = calculate_airspace_volume_density(self.labelmap,
                                                                                                           self.labels)
             self.shortened_image_path = os.path.join(os.path.basename(os.path.dirname(self.image_path)),

@@ -1,9 +1,12 @@
 from napari.utils.colormaps import DirectLabelColormap
 
 
-def get_layer_by_name(napari_viewer, layer_name):
+def get_layer_by_name(napari_viewer, layer_name, callback=None):
     for layer in napari_viewer.layers:
         if layer.name == layer_name:
+            if callback:
+                callback(layer.data, layer.name)
+
             return layer.data
 
     return None
