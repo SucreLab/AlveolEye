@@ -130,11 +130,37 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
     return unique_file_name
 
 
-def save_image(data, name, save_dir, get_colormap=None):
+def load_image_specific_colormap(name):
+    colormap = {
+        0: (255, 255, 255),
+        1: (191, 67, 66),
+        2: (40, 54, 24),
+        3: (188, 108, 37),
+        4: (96, 108, 56),
+        5: (221, 161, 94),
+        6: (23, 83, 135),
+        7: (254, 250, 224),
+        8: (78, 77, 72),
+        9: (37, 36, 34)
+    }
+
+    if name == "airway_epithelium_labelmap.png":
+        colormap[1] = colormap[2]
+    elif name == "vessel_epithelium_labelmap.png":
+        colormap[1] = colormap[3]
+    elif name == "grayscaled.png":
+        colormap = None
+
+    return colormap
+
+
+def save_image(data, name, save_dir, get_colormap_function=None):
     os.makedirs(save_dir, exist_ok=True)
 
-    if get_colormap:
-        colormap = get_colormap(name)
+    if get_colormap_function:
+        colormap = get_colormap_function(name)
+    else:
+        colormap = load_image_specific_colormap(name)
 
     base_name, ext = os.path.splitext(name)
     candidate_name = name
@@ -170,12 +196,13 @@ def save_image(data, name, save_dir, get_colormap=None):
         raise ValueError(f"Unsupported data type: {type(data)}")
 
     image.save(save_path)
+    print(f"[+] Saved image to {save_path}")
 
 
-def make_save_image_callback(save_dir, get_colormap):
+def make_save_image_callback(save_dir, get_colormap_function=None):
     snapshots_dir = os.path.join(save_dir, "snapshots")
 
     def save_image_callback(data, name):
-        save_image(data, name, snapshots_dir, get_colormap)
+        save_image(data, name, snapshots_dir, get_colormap_function)
 
     return save_image_callback

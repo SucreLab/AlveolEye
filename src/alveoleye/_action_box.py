@@ -4,6 +4,7 @@ from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 import alveoleye._gui_creator
 import alveoleye._rules as rules
 import alveoleye._gui_creator as gui_creator
+from alveoleye._export_operations import make_save_image_callback
 from alveoleye._workers import WorkerParent
 
 
@@ -99,6 +100,10 @@ class ActionBox(QGroupBox):
         self.setTitle(new_title)
 
     def thread_worker(self):
+        if self.action_box_config_data["SAVE_INTERMEDIATE_SNAPSHOTS"]:
+            export_location = self.action_box_config_data["INTERMEDIATE_SNAPSHOT_SAVE_LOCATION"]
+            self.worker.set_callback(make_save_image_callback(export_location))
+
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
 

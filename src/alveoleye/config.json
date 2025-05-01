@@ -126,7 +126,9 @@
   },
   "ActionBox": {
     "ANIMATION_INTERVAL": 500,
-    "ANIMATION_DOTS": 3
+    "ANIMATION_DOTS": 3,
+    "SAVE_INTERMEDIATE_SNAPSHOTS": true,
+    "INTERMEDIATE_SNAPSHOT_SAVE_LOCATION": "Downloads"
   },
   "Layers": {
     "INITIAL_LAYER": "Initial",

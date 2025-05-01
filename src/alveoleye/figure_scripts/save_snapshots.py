@@ -6,30 +6,6 @@ from alveoleye.figure_scripts._combined_workers import CombinedWorker
 from alveoleye._export_operations import make_save_image_callback
 
 
-def load_image_specific_colormap(name):
-    colormap = {
-        0: (255, 255, 255),
-        1: (191, 67, 66),
-        2: (40, 54, 24),
-        3: (188, 108, 37),
-        4: (96, 108, 56),
-        5: (221, 161, 94),
-        6: (23, 83, 135),
-        7: (254, 250, 224),
-        8: (78, 77, 72),
-        9: (37, 36, 34)
-    }
-
-    if name == "airway_epithelium_labelmap.png":
-        colormap[1] = colormap[2]
-    elif name == "vessel_epithelium_labelmap.png":
-        colormap[1] = colormap[3]
-    elif name == "grayscaled.png":
-        colormap = None
-
-    return colormap
-
-
 def validate_arguments(args):
     if not os.path.exists(args.input_image):
         raise ValueError(f"Input image does not exist: {args.input_image}")
@@ -54,7 +30,7 @@ def generate_intermediate_snapshots(args, colormap):
 
 def main(args):
     start_time = time.time()
-    generate_intermediate_snapshots(args, load_image_specific_colormap)
+    generate_intermediate_snapshots(args)
     end_time = time.time()
 
     print(f"Elapsed time: {end_time - start_time:.2f} seconds")
