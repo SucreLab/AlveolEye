@@ -58,5 +58,9 @@ class Config:
             raise KeyError(f"Missing colormap entries for labels: {missing_keys}")
         return {labels[key]: colormap[key] for key in labels.keys()}
 
+    @classmethod
+    def get_snapshot_names(cls) -> dict[str, Any]:
+        return cls.get_section("SnapshotNames")
+
 
 __all__ = ["Config"]

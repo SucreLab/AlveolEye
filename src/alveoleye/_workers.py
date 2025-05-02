@@ -1,3 +1,5 @@
+import traceback
+
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
@@ -157,6 +159,7 @@ class PostprocessingWorker(WorkerParent):
 
         except Exception as e:
             print(f"Error in post-processing: {e}")
+            traceback.print_exc()
         finally:
             self.finished.emit()
 

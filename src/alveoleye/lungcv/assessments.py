@@ -60,8 +60,8 @@ def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labe
     chords_highlighted_labelmap = np.where(chords_labelmap, labels["MLI_LINES_INSIDE"], chords_highlighted_labelmap)
 
     if callback:
-        callback(chords_labelmap, "chords_labelmap.png")
-        callback(test_lines_labelmap, "test_lines_labelmap.png")
-        callback(chords_highlighted_labelmap, "chords_highlighted_labelmap.png")
+        callback(test_lines_labelmap, "CALCULATE_MEAN_LINEAR_INTERCEPT_LINES")
+        callback(chords_labelmap, "CALCULATE_MEAN_LINEAR_INTERCEPT_CHORDS")
+        callback(chords_highlighted_labelmap, "CALCULATE_MEAN_LINEAR_INTERCEPT_HIGHLIGHTED_CHORDS")
 
     return average_length, chords_highlighted_labelmap.astype(int), counter, stdev_chord_lengths

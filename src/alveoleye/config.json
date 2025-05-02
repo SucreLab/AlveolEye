@@ -157,5 +157,25 @@
     "ALVEOLI": [0.996, 0.996, 0.996],
     "MLI_LINES_INSIDE": [0.741, 0.694, 0.059],
     "MLI_LINES_OUTSIDE": [0.941, 0.894, 0.259]
+  },
+  "SnapshotNames": {
+    "CONVERT_TO_GRAYSCALE": "grayscaled.png",
+    "APPLY_DYNAMIC_THRESHOLD": "dynamic_thresholded.png",
+    "APPLY_MANUAL_THRESHOLD": "manual_thresholded.png",
+    "INVERT_IMAGE_BINARY": "inverted.png",
+    "REMOVE_SMALL_COMPONENTS": "small_components_removed.png",
+    "GENERATE_PROCESSING_LABELMAP_AIRWAY": "airway_processed_labelmap.png",
+    "GENERATE_PROCESSING_LABELMAP_VESSEL": "vessel_processed_labelmap.png",
+    "GENERATE_PROCESSING_LABELMAP_COMBINED": "combined_processed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_AIRWAY": "airway_postprocessed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_VESSEL": "vessel_postprocessed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_COMBINED": "combined_postprocessed_labelmap.png",
+    "Initial": "initial_layer.png",
+    "Processing": "processing_layer.png",
+    "Postprocessing": "postprocessing_layer.png",
+    "Assessments": "assessments_layer.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_LINES": "mli_lines.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_CHORDS":  "mli_chords.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_HIGHLIGHTED_CHORDS": "mli_highlighted_chords.png"
   }
 }

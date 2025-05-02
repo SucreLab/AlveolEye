@@ -7,6 +7,7 @@ import re
 import numpy as np
 from PIL import Image
 import torch
+from alveoleye._config_utils import Config
 
 
 def format_results(result):
@@ -130,32 +131,33 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
     return unique_file_name
 
 
-def load_image_specific_colormap(name):
-    colormap = {
-        0: (255, 255, 255),
-        1: (191, 67, 66),
-        2: (40, 54, 24),
-        3: (188, 108, 37),
-        4: (96, 108, 56),
-        5: (221, 161, 94),
-        6: (23, 83, 135),
-        7: (254, 250, 224),
-        8: (78, 77, 72),
-        9: (37, 36, 34)
-    }
+def _norm_to_rgb(colormap):
+    rgb_map = {}
+    for k, v in colormap.items():
+        rgb_map[k] = [int(round(x * 255)) for x in v]
 
-    if name == "airway_epithelium_labelmap.png":
-        colormap[1] = colormap[2]
-    elif name == "vessel_epithelium_labelmap.png":
-        colormap[1] = colormap[3]
-    elif name == "grayscaled.png":
-        colormap = None
-
-    return colormap
+    rgb_map[0] = (255, 255, 255)
+    return rgb_map
 
 
-def save_image(data, name, save_dir, get_colormap_function=None):
+def load_image_specific_colormap(snapshot_step):
+    colormap = Config.get_label_indexed_colormap()
+    rgb_colormap = _norm_to_rgb(colormap)
+
+    if snapshot_step == "GENERATE_PROCESSING_LABELMAP_AIRWAY":
+        rgb_colormap[1] = rgb_colormap[2]
+    elif snapshot_step == "GENERATE_PROCESSING_LABELMAP_VESSEL":
+        rgb_colormap[1] = rgb_colormap[3]
+    elif snapshot_step == "CONVERT_TO_GRAYSCALE":
+        rgb_colormap = None
+
+    return rgb_colormap
+
+
+def save_image(data, snapshot_step, save_dir, get_colormap_function=None):
     os.makedirs(save_dir, exist_ok=True)
+
+    name = Config.get_snapshot_names()[snapshot_step]
 
     base_name = name
     ext = ".png"
@@ -163,9 +165,9 @@ def save_image(data, name, save_dir, get_colormap_function=None):
     counter = 1
 
     if get_colormap_function:
-        colormap = get_colormap_function(name)
+        colormap = get_colormap_function(snapshot_step)
     else:
-        colormap = load_image_specific_colormap(name)
+        colormap = load_image_specific_colormap(snapshot_step)
 
     existing_files = set(os.listdir(save_dir))
     while candidate_name in existing_files:

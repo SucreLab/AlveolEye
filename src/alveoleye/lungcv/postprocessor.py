@@ -6,7 +6,7 @@ def convert_to_grayscale(image, callback=None):
     grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     if callback:
-        callback(grayscaled, "grayscaled.png")
+        callback(grayscaled, "CONVERT_TO_GRAYSCALE")
 
     return grayscaled
 
@@ -16,7 +16,7 @@ def apply_dynamic_threshold(grayscale_image, callback=None):
     thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
     if callback:
-        callback(thresholded, "dynamic_thresholded.png")
+        callback(thresholded, "APPLY_DYNAMIC_THRESHOLD")
 
     return thresholded
 
@@ -25,7 +25,7 @@ def apply_manual_threshold(grayscale_image, threshold_value, callback=None):
     thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
 
     if callback:
-        callback(thresholded, "manual_thresholded.png")
+        callback(thresholded, "APPLY_MANUAL_THRESHOLD")
 
     return thresholded
 
@@ -34,7 +34,7 @@ def invert_image_binary(binary_image, callback=None):
     inverted = cv2.bitwise_not(binary_image)
 
     if callback:
-        callback(inverted, "inverted.png")
+        callback(inverted, "INVERT_IMAGE_BINARY")
 
     return inverted
 
@@ -48,7 +48,7 @@ def remove_small_components(binary_image, minimum_size, callback=None):
     binary_image[np.isin(image, small_blobs)] = 0
 
     if callback:
-        callback(binary_image, "small_components_removed.png")
+        callback(binary_image, "REMOVE_SMALL_COMPONENTS")
 
     return binary_image
 
@@ -67,9 +67,9 @@ def generate_processing_labelmap(model_output, shape, confidence_threshold, labe
     final_labelmap = np.where(vessel_epithelium_labelmap, labels["VESSEL_ENDOTHELIUM"], final_labelmap)
 
     if callback:
-        callback(airway_epithelium_labelmap, "airway_epithelium_labelmap.png")
-        callback(vessel_epithelium_labelmap, "vessel_epithelium_labelmap.png")
-        callback(final_labelmap, "combined_labelmap.png")
+        callback(airway_epithelium_labelmap, "GENERATE_PROCESSING_LABELMAP_AIRWAY")
+        callback(vessel_epithelium_labelmap, "GENERATE_PROCESSING_LABELMAP_VESSEL")
+        callback(final_labelmap, "GENERATE_PROCESSING_LABELMAP_COMBINED")
 
     return final_labelmap
 
@@ -102,9 +102,9 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
     final_labelmap[final_labelmap == intermediate_label] = 0
 
     if callback:
-        callback(airway_complete_labelmap, "airway_complete_labelmap.png")
-        callback(vessel_complete_labelmap, "vessel_complete_labelmap.png")
-        callback(final_labelmap, "combined_postprocessed_labelmap.png")
+        callback(airway_complete_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_AIRWAY")
+        callback(vessel_complete_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_VESSEL")
+        callback(final_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_COMBINED")
 
     return final_labelmap
 
