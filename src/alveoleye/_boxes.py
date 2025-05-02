@@ -17,8 +17,8 @@ import alveoleye._rules as rules
 class ProcessingActionBox(ActionBox):
     model_output = None
 
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.image = None
 
@@ -160,8 +160,8 @@ class ProcessingActionBox(ActionBox):
 
 
 class PostprocessingActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.thresholding_check_box = None
         self.thresholding_spin_box = None
@@ -261,8 +261,8 @@ class PostprocessingActionBox(ActionBox):
 
 
 class AssessmentsActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.lines_spin_box = None
         self.min_length_spin_box = None
@@ -420,8 +420,8 @@ class AssessmentsActionBox(ActionBox):
 
 
 class ExportActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.mli_chords_line_edit = None
         self.mli_stdev_line_edit = None

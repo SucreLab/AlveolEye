@@ -6,6 +6,7 @@ from qtpy.QtWidgets import QVBoxLayout, QPushButton, QGroupBox
 import alveoleye._gui_creator
 import alveoleye._rules as rules
 import alveoleye._gui_creator as gui_creator
+from alveoleye._config_utils import Config
 from alveoleye._export_operations import make_save_image_callback
 from alveoleye._workers import WorkerParent
 
@@ -21,15 +22,16 @@ class ActionBox(QGroupBox):
     all_action_boxes = []
     step = 0
 
-    def __init__(self, config_data, napari_viewer):
+    def __init__(self, napari_viewer):
         super().__init__()
 
-        self.action_box_config_data = config_data["ActionBox"]
-        self.layers_config_data = config_data["Layers"]
-        self.labels_config_data = config_data["Labels"]
-        self.colormap_config_data = {self.labels_config_data[key]: config_data["Colormap"][key] for key in self.labels_config_data}
+        Config.load()
 
-        self.box_config_data = config_data[self.__class__.__name__]
+        self.action_box_config_data = Config.get_action_box()
+        self.layers_config_data = Config.get_layers()
+        self.labels_config_data = Config.get_labels()
+        self.colormap_config_data = Config.get_label_indexed_colormap()
+        self.box_config_data = Config.get_class_config(self.__class__)
 
         ActionBox.all_action_boxes.append(self)
         WorkerParent.layers_config_data = self.layers_config_data
