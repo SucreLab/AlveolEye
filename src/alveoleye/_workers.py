@@ -124,7 +124,8 @@ class PostprocessingWorker(WorkerParent):
     def run(self):
         try:
             if not self.terminate:
-                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"])
+                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
+                                                        self.callback)
 
             if not self.terminate:
                 grayscaled = convert_to_grayscale(image, self.callback)
@@ -146,7 +147,7 @@ class PostprocessingWorker(WorkerParent):
 
             if not self.terminate:
                 masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
-                                                                 self.layer_names["PROCESSING_LAYER"])
+                                                                 self.layer_names["PROCESSING_LAYER"], self.callback)
 
             if not self.terminate:
                 labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels, self.callback)
@@ -197,7 +198,8 @@ class AssessmentsWorker(WorkerParent):
 
         try:
             if not self.terminate:
-                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"])
+                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
+                                                           self.callback)
 
             if not self.terminate:
                 if self.asvd_check_box_state:
@@ -208,7 +210,7 @@ class AssessmentsWorker(WorkerParent):
                 if self.mli_check_box_state:
                     mli, assessments_layer, chords, stdev_chord_lengths = calculate_mean_linear_intercept(
                         labelmap, self.lines_spin_box_value, self.min_length_spin_box_value,
-                        self.scale_spin_box_value, self.labels, self.callback
+                        self.scale_spin_box_value, self.labels, False, self.callback
                     )
 
             if not self.terminate:

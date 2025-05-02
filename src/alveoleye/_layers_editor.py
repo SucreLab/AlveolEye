@@ -26,7 +26,7 @@ def remove_all_layers(napari_viewer):
         napari_viewer.layers.remove(layer)
 
 
-def update_layers(napari_viewer, layer_name, layer_data, color_dict, is_labelmap):
+def update_layers(napari_viewer, layer_name, layer_data, color_dict, is_labelmap, callback=None):
     existing_layers = {layer.name: layer for layer in napari_viewer.layers}
 
     if layer_name in existing_layers:
@@ -38,7 +38,9 @@ def update_layers(napari_viewer, layer_name, layer_data, color_dict, is_labelmap
 
         napari_viewer.add_labels(layer_data, colormap=colormap, opacity=1.0, name=layer_name)
         napari_viewer.layers[layer_name].editable = True
-        return
+    else:
+        layer_data_rgb = layer_data[:, :, ::-1]
+        napari_viewer.add_image(layer_data_rgb, name=layer_name)
 
-    layer_data_rgb = layer_data[:, :, ::-1]
-    napari_viewer.add_image(layer_data_rgb, name=layer_name)
+    if callback is not None:
+        callback(layer_data, layer_name)

@@ -157,14 +157,15 @@ def load_image_specific_colormap(name):
 def save_image(data, name, save_dir, get_colormap_function=None):
     os.makedirs(save_dir, exist_ok=True)
 
+    base_name = name
+    ext = ".png"
+    candidate_name = f"{base_name}{ext}"
+    counter = 1
+
     if get_colormap_function:
         colormap = get_colormap_function(name)
     else:
         colormap = load_image_specific_colormap(name)
-
-    base_name, ext = os.path.splitext(name)
-    candidate_name = name
-    counter = 1
 
     existing_files = set(os.listdir(save_dir))
     while candidate_name in existing_files:
