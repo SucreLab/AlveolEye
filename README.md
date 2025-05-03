@@ -81,7 +81,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ### Processing: Identify and Segment Vessel Endothelium and Airway Epithelium with Computer Vision
 
-![processing diagram](./docs/PROCESSING_FINAL.svg)
+![processing diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/main/docs/PROCESSING_FINAL.svg)
 
 1. **Import image**  
    - Click the "Import Image" button.  
@@ -113,7 +113,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ### Postprocessing: Segment Alveolar Tissue and Find Vessel and Aireway Lumens
 
-![postprocessing diagram](./docs/POSTPROCESSING_FINAL.svg)
+![postprocessing diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/main/docs/POSTPROCESSING_FINAL.svg)
 
 1. **Configure thresholding**  
    - For manual thresholding: Select the "Manual threshold" checkbox and use the spinbox to set the threshold level.  
@@ -137,7 +137,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ### Assessments: Calculate Morphometry Measurements
 
-![assessments diagram](./docs/ASSESSMENTS_FINAL.svg)
+![assessments diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/main/docs/ASSESSMENTS_FINAL.svg)
 
 1. **Airspace Volume Density (ASVD)**
    - Select the checkbox to run ASVD calculation.
@@ -167,7 +167,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ### Export Results: Save Assessment Results as a CSV or JSON File
 
-![export diagram](./docs/EXPORT_FINAL.svg)
+![export diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/main/docs/EXPORT_FINAL.svg)
 
 1. **Add results**
    - Click "Add" to include current assessment data in the export file.
