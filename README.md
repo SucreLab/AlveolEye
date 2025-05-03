@@ -165,7 +165,7 @@ The goal of this process is to create a conda environment containing Napari and 
   <a href="#alveoleye-automated-lung-morphometry-made-easy">Back to Top</a>
 </div>
 
-### Export Results
+### Export Results: Save Assessment Results as a CSV or JSON File
 
 ![export diagram](./docs/EXPORT_FINAL.svg)
 
