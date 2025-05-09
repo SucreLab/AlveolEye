@@ -451,10 +451,14 @@ class ExportActionBox(ActionBox):
         self.create_ui_rules()
 
     def on_action_button_press(self):
-        export_location = self.box_config_data.get("EXPORT_LOCATION", "")
+        export_location = str(Path(ActionBox.import_paths["image"]).parent)
+        print(export_location)
 
         if self.file_path:
             export_location = os.path.dirname(self.file_path)
+
+        if not is_real_writable_dir(export_location):
+            export_location = self.box_config_data.get("DEFAULT_EXPORT_LOCATION", "")
 
         if not is_real_writable_dir(export_location):
             export_location = os.getcwd()
