@@ -173,9 +173,10 @@ class TestCreateClassLabelmapFromModelOne(unittest.TestCase):
         }
         self.class_id = 1
         self.confidence_threshold = 0.7
+        self.shape = (3, 3)
 
     def test_create_class_labelmap_from_model(self):
-        result = extract_class_labelmap_from_model(self.model_output, self.class_id, self.confidence_threshold)
+        result = extract_class_labelmap_from_model(self.model_output, self.shape, self.class_id, self.confidence_threshold)
         expected_output = np.array([[False, False, True], [False, True, False], [False, True, True]])
 
         np.testing.assert_array_equal(result, expected_output)
@@ -186,7 +187,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
         model_output = {"masks": [], "labels": [], "scores": []}
 
         # Call the function with the empty model output
-        result = extract_class_labelmap_from_model(model_output, 1, 0.5)
+        result = extract_class_labelmap_from_model(model_output, shape=(3, 3), class_id=1, confidence_threshold=0.5)
 
         # Expect an empty array as output
         expected_output = np.array([], dtype=bool)
@@ -198,7 +199,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
             "labels": torch.tensor([2]),
             "scores": torch.tensor([0.8])
         }
-        result = extract_class_labelmap_from_model(model_output, 1, 0.5)
+        result = extract_class_labelmap_from_model(model_output, shape=(2, 2), class_id=1, confidence_threshold=0.5)
 
         # Expect an array of False values--no masks match the class ID
         expected_output = np.array([[False, False], [False, False]])
@@ -210,7 +211,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
             "labels": torch.tensor([1]),
             "scores": torch.tensor([0.3])
         }
-        result = extract_class_labelmap_from_model(model_output, class_id=1, confidence_threshold=0.5)
+        result = extract_class_labelmap_from_model(model_output, shape=(2, 2), class_id=1, confidence_threshold=0.5)
 
         # Expect an array of False values--no masks meet the confidence threshold
         expected_output = np.array([[False, False], [False, False]])
@@ -222,7 +223,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
             "labels": torch.tensor([1]),
             "scores": torch.tensor([0.8])
         }
-        result = extract_class_labelmap_from_model(model_output, class_id=1, confidence_threshold=0.5)
+        result = extract_class_labelmap_from_model(model_output, shape=(2, 2), class_id=1, confidence_threshold=0.5)
         expected_output = np.array([[False, True], [True, False]])
         np.testing.assert_array_equal(result, expected_output)
 
@@ -235,7 +236,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
             "labels": torch.tensor([1, 1]),
             "scores": torch.tensor([0.8, 0.7])
         }
-        result = extract_class_labelmap_from_model(model_output, class_id=1, confidence_threshold=0.5)
+        result = extract_class_labelmap_from_model(model_output, shape=(2, 2), class_id=1, confidence_threshold=0.5)
 
         # Expect the masks to be combined in the result
         expected_output = np.array([[True, True], [True, True]])
@@ -253,7 +254,7 @@ class TestCreateClassLabelmapFromModelTwo(unittest.TestCase):
 
         # Expect ValueError
         with self.assertRaises(ValueError):
-            extract_class_labelmap_from_model(model_output, class_id=1, confidence_threshold=0.5)
+            extract_class_labelmap_from_model(model_output, shape=(2, 2), class_id=1, confidence_threshold=0.5)
 
 
 class TestCreateProcessingLabelmap(unittest.TestCase):

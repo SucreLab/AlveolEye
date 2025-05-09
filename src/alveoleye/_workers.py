@@ -3,14 +3,16 @@ from qtpy.QtCore import QObject, Signal
 
 from alveoleye.lungcv import model_operations
 from alveoleye.lungcv.postprocessor import (apply_manual_threshold, apply_dynamic_threshold,
-                                            generate_postprocessing_labelmap, remove_small_components, convert_to_grayscale,
+                                            generate_postprocessing_labelmap, remove_small_components,
+                                            convert_to_grayscale,
                                             invert_image_binary, generate_processing_labelmap)
 from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
-                                                           calculate_airspace_volume_density)
+                                          calculate_airspace_volume_density)
 import pathlib
 import json
 import alveoleye._layers_editor as layers_editor
 import alveoleye._export_operations as export_operations
+
 
 class WorkerParent(QObject):
     finished = Signal()
@@ -46,11 +48,15 @@ class ProcessingWorker(WorkerParent):
         super().__init__()
         self.image_path = None
         self.image_shape = None
+        self.use_ai = None
         self.weights = None
         self.confidence_threshold_value = None
 
     def set_image_path(self, image_path):
         self.image_path = image_path
+
+    def set_use_ai(self, use_ai):
+        self.use_ai = use_ai
 
     def set_image_shape(self, image_shape):
         self.image_shape = image_shape
@@ -63,18 +69,24 @@ class ProcessingWorker(WorkerParent):
 
     def run(self):
         try:
-            if not self.terminate:
-                model = model_operations.init_trained_model(self.weights)
+            if not self.terminate and (not self.use_ai or self.confidence_threshold_value == 100):
+                inference_labelmap = np.zeros(self.image_shape[:2], dtype=np.uint8)
+                model_output = {}
 
-            if not self.terminate:
-                model_output = model_operations.run_prediction(self.image_path, model)
+                self.results_ready.emit(model_output, inference_labelmap)
+            else:
+                if not self.terminate:
+                    model = model_operations.init_trained_model(self.weights)
 
-            if not self.terminate:
-                inference_labelmap = generate_processing_labelmap(model_output, self.image_shape,
+                if not self.terminate:
+                    model_output = model_operations.run_prediction(self.image_path, model)
+
+                if not self.terminate:
+                    inference_labelmap = generate_processing_labelmap(model_output, self.image_shape,
                                                                   self.confidence_threshold_value, self.labels)
 
-            if not self.terminate:
-                self.results_ready.emit(model_output, inference_labelmap)
+                if not self.terminate:
+                    self.results_ready.emit(model_output, inference_labelmap)
 
         except Exception as e:
             print(f"Error in processing: {e}")
@@ -87,15 +99,11 @@ class PostprocessingWorker(WorkerParent):
 
     def __init__(self):
         super().__init__()
-        self.model_output = None
         self.thresholding_check_box_value = None
         self.manual_threshold_value = None
         self.alveoli_minimum_size = None
         self.parenchyma_minimum_size = None
         self.confidence_threshold = None
-
-    def set_model_output(self, model_output):
-        self.model_output = model_output
 
     def set_thresholding_check_box_value(self, thresholding_check_box_value):
         self.thresholding_check_box_value = thresholding_check_box_value
@@ -149,6 +157,8 @@ class PostprocessingWorker(WorkerParent):
                 self.results_ready.emit(labelmap)
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Error in post-processing: {e}")
         finally:
             self.finished.emit()
