@@ -19,11 +19,11 @@ def print_arguments(args):
           f"    Output Directory: {args.output_dir}\n")
 
 
-def generate_intermediate_snapshots(args, colormap):
+def generate_intermediate_snapshots(args):
     combined_worker = CombinedWorker()
     combined_worker.set_image_path(args.input_image)
     combined_worker.set_weights_path(args.weights_path if args.weights_path else None)
-    combined_worker.set_callback(make_save_image_callback(args.output_dir, colormap))
+    combined_worker.set_callback(make_save_image_callback(args.output_dir))
 
     combined_worker.run_complete_pipline()
 
