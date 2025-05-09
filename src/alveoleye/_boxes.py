@@ -154,7 +154,7 @@ class ProcessingActionBox(ActionBox):
         image = layers_editor.get_layer_by_name(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
         grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
-        threshold_value = int(5 * round(otsu_value / 5))
+        threshold_value = round(otsu_value)
         PostprocessingActionBox.threshold_value = threshold_value
     
     def on_results_ready(self, model_output, inference_labelmap):
