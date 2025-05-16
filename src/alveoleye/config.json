@@ -2,6 +2,7 @@
   "ProcessingActionBox": {
     "TITLE": "Processing",
     "IMPORT_IMAGE_BUTTON_TEXT": "Import Image",
+    "USE_AI_CHECK_BOX_TEXT": "Process with computer vision",
     "IMPORT_WEIGHTS_BUTTON_TEXT": "Import Weights",
     "EMPTY_PATH_LINE_EDIT_TEXT": "None",
     "ACTION_BUTTON_TEXT": "Run Processing",
@@ -13,12 +14,14 @@
     "WEIGHTS_FOLDER_PATH": "default_weights",
     "IMAGES_FOLDER_PATH": "example_images",
     "CONFIDENCE_THRESHOLD_LABEL_TEXT":  "Minimum confidence",
+    "USE_AI_CHECK_BOX_DEFAULT_VALUE": 1,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MIN_VALUE": 0,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MAX_VALUE": 100,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_DEFAULT_VALUE":  30,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_STEP": 1,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_SUFFIX": "%",
     "IMPORT_IMAGE_BUTTON_TOOLTIP_TEXT": "Select a histologic lung image\nfor processing",
+    "USE_AI_CHECK_BOX_TOOLTIP_TEXT": "Uses AI when checked; otherwise,\nbox skips processing and creates\nempty processing layer",
     "IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT": "Select a weights file to load\ninto the computer vision AI",
     "MINIMUM_CONFIDENCE_SPIN_BOX_TOOLTIP_TEXT": "Set the confidence threshold\nthat pixel classifications\nmust exceed to appear in output",
     "ACTION_BUTTON_TOOLTIP_TEXT": "Process the provided image\nusing the provided weights in\na computer vision AI model"
