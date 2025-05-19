@@ -177,12 +177,12 @@ def save_data_with_file_dialog(save_location):
     file_dialog.setDefaultSuffix("csv")
     file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
 
-    downloads_path = str(Path.home() / save_location)
+    save_path = str(Path.home() / save_location)
 
     file_path, selected_filter = file_dialog.getSaveFileName(
         None,
         'Save File',
-        downloads_path,
+        save_path,
         "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)"
     )
 
