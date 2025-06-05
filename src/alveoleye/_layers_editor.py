@@ -34,21 +34,31 @@ def _labels_dict_to_properties_array(labels_dict):
     return result_array
 
 
-def update_layers(napari_viewer, layer_name, layer_data, color_dict, labels_dict, is_labelmap):
+def update_layers(
+    napari_viewer,
+    layer_name,
+    layer_data,
+    color_dict,
+    labels_dict,
+    is_labelmap,
+    editable=True,
+):
     existing_layers = {layer.name: layer for layer in napari_viewer.layers}
-
     if layer_name in existing_layers:
         napari_viewer.layers.remove(existing_layers[layer_name])
-
     if is_labelmap:
         color_dict[None] = [0, 0, 0]
         colormap = DirectLabelColormap(color_dict=color_dict)
         properties = _labels_dict_to_properties_array(labels_dict)
-
-        napari_viewer.add_labels(layer_data, colormap=colormap, properties=properties, opacity=1.0, name=layer_name)
-        napari_viewer.layers[layer_name].editable = True
+        napari_viewer.add_labels(
+            layer_data,
+            colormap=colormap,
+            properties=properties,
+            opacity=1.0,
+            name=layer_name,
+        )
+        napari_viewer.layers[layer_name].editable = editable  # Set editable here
         return
-
     layer_data_rgb = layer_data[:, :, ::-1]
     napari_viewer.add_image(layer_data_rgb, name=layer_name)
 
