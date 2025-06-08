@@ -119,11 +119,13 @@ class ProcessingActionBox(ActionBox):
                                    lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
 
         self.rules_engine.add_rule(lambda: self.use_ai_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, [self.import_weights_button_and_line_edit_layout,
-                                                                                self.confidence_threshold_label_and_spin_box_layout]))
+                                   lambda: alveoleye._gui_creator.toggle(True, [
+                                       self.import_weights_button_and_line_edit_layout,
+                                       self.confidence_threshold_label_and_spin_box_layout]))
         self.rules_engine.add_rule(lambda: not self.use_ai_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, [self.import_weights_button_and_line_edit_layout,
-                                                                                 self.confidence_threshold_label_and_spin_box_layout]))
+                                   lambda: alveoleye._gui_creator.toggle(False, [
+                                       self.import_weights_button_and_line_edit_layout,
+                                       self.confidence_threshold_label_and_spin_box_layout]))
 
         super().create_ui_rules()
 
@@ -191,6 +193,10 @@ class ProcessingActionBox(ActionBox):
                                     inference_labelmap, self.colormap_config_data, self.labels_config_data, True)
 
         super().on_results_ready()
+
+        # store processing arguments for export
+        ActionBox.current_use_computer_vision = self.use_ai_check_box.isChecked()
+        ActionBox.current_min_confidence = self.confidence_threshold_spin_box.value()
 
 
 class PostprocessingActionBox(ActionBox):
@@ -270,7 +276,7 @@ class PostprocessingActionBox(ActionBox):
                                       self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
-        self.rules_engine.add_rule([lambda: PostprocessingActionBox.threshold_value != None,
+        self.rules_engine.add_rule([lambda: PostprocessingActionBox.threshold_value is not None,
                                     lambda: ActionBox.step == 0],
                                    lambda: self.thresholding_spin_box.setValue(PostprocessingActionBox.threshold_value))
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
@@ -296,6 +302,17 @@ class PostprocessingActionBox(ActionBox):
                                     self.colormap_config_data, self.labels_config_data, True)
 
         super().on_results_ready()
+
+        # store post‐processing arguments for export
+        ActionBox.current_used_manual_threshold = self.thresholding_check_box.isChecked()
+
+        if ActionBox.current_used_manual_threshold:
+            ActionBox.current_threshold_value = self.thresholding_spin_box.value()
+        else:
+            ActionBox.current_threshold_value = PostprocessingActionBox.threshold_value
+
+        ActionBox.current_remove_small_particles = self.clean_alveoli_spin_box.value()
+        ActionBox.current_remove_small_holes = self.clean_parenchyma_spin_box.value()
 
 
 class AssessmentsActionBox(ActionBox):
@@ -447,11 +464,27 @@ class AssessmentsActionBox(ActionBox):
                                         self.layers_config_data["ASSESSMENTS_LAYER_NAME"], assessments_layer,
                                         self.colormap_config_data, self.labels_config_data, True)
 
-        ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
-                                     os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
-                                     stdev_chord_lengths, chords, airspace_pixels, non_airspace_pixels,
-                                     self.lines_spin_box.value(), self.min_length_spin_box.value(),
-                                     self.scale_spin_box.value()]
+        ActionBox.current_results = [
+            os.path.basename(ActionBox.import_paths["image"]),
+            ActionBox.current_use_computer_vision,
+            os.path.basename(ActionBox.import_paths["weights"]),
+            ActionBox.current_min_confidence,
+            ActionBox.current_used_manual_threshold,
+            ActionBox.current_threshold_value,
+            ActionBox.current_remove_small_particles,
+            ActionBox.current_remove_small_holes,
+            self.asvd_check_box.isChecked(),
+            self.mli_check_box.isChecked(),
+            self.lines_spin_box.value(),
+            self.min_length_spin_box.value(),
+            self.scale_spin_box.value(),
+            asvd,
+            airspace_pixels,
+            non_airspace_pixels,
+            mli,
+            stdev_chord_lengths,
+            chords
+        ]
 
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
@@ -605,7 +638,13 @@ class ExportActionBox(ActionBox):
         super().create_ui_rules()
 
     def set_results(self):
-        _, _, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
+        (_, _, _, _, _, _, _, _, _, _, _, _, _,
+         asvd,
+         airspace_pixels,
+         non_airspace_pixels,
+         mli,
+         stdev,
+         chords) = ActionBox.current_results
 
         gui_creator.update_line_edit(self.mli_line_edit, mli,
                                      self.box_config_data["MLI_METRIC_LINE_EDIT"], mli)
