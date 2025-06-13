@@ -1,6 +1,10 @@
+import os
+import traceback
+
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
+from alveoleye._models import Result
 from alveoleye.lungcv import model_operations
 from alveoleye.lungcv.postprocessor import (apply_manual_threshold, apply_dynamic_threshold,
                                             generate_postprocessing_labelmap, remove_small_components,
@@ -231,30 +235,66 @@ class ExportWorker(WorkerParent):
 
     def __init__(self):
         super().__init__()
-        self.file_path = None
-        self.selected_filter = None
-        self.accumulated_results = None
+        self.parent_folder = ""
+        self.project_name = ""
+        self.metrics_ext = "csv"
+        self.labelmap_ext = "tif"
+        self.zip_it = False
+        self.accumulated_results: list[Result] = []
 
-    def set_file_path(self, file_path):
-        self.file_path = file_path
+    def set_parent_folder(self, f: str):
+        self.parent_folder = f
 
-    def set_selected_filter(self, selected_filter):
-        self.selected_filter = selected_filter
+    def set_project_name(self, n: str):
+        self.project_name = n
 
-    def set_accumulated_results(self, accumulated_results):
-        self.accumulated_results = accumulated_results
+    def set_metrics_format(self, e: str):
+        self.metrics_ext = e
+
+    def set_labelmap_format(self, e: str):
+        self.labelmap_ext = e
+
+    def set_zip(self, z: bool):
+        self.zip_it = z
+
+    def set_accumulated_results(self, res: list[Result]):
+        self.accumulated_results = res
 
     def run(self):
-        data = None
+        try:
+            if self.terminate:
+                return
+            out_root = os.path.join(self.parent_folder, self.project_name)
+            os.makedirs(out_root, exist_ok=True)
 
-        if not self.terminate:
-            if self.selected_filter == "JSON Files (*.json)":
-                data = export_operations.create_json_data(self.accumulated_results)
-            elif self.selected_filter == "CSV Files (*.csv)":
-                data = export_operations.create_csv_data(self.accumulated_results)
+            # write metrics
+            metrics_fp = os.path.join(out_root, f"metrics.{self.metrics_ext}")
+            export_operations.write_metrics(self.accumulated_results, metrics_fp, self.metrics_ext)
 
-        if not self.terminate and data:
-            with open(self.file_path, 'w') as file:
-                file.write(data)
+            # write labelmaps
+            labelmaps_dir = None
+            if any(r.labelmap is not None for r in self.accumulated_results):
+                labelmaps_dir = os.path.join(out_root, "labelmaps")
+                export_operations.write_labelmaps(self.accumulated_results,
+                                                  labelmaps_dir,
+                                                  self.labelmap_ext)
 
-        self.finished.emit()
+            # optional zip
+            archive_fp = None
+            if self.zip_it:
+                archive_fp = os.path.join(self.parent_folder,
+                                          f"{self.project_name}.zip")
+                export_operations.zip_folder(out_root, archive_fp)
+
+            info = {
+                "metrics": metrics_fp,
+                "labelmaps": labelmaps_dir,
+                "archive": archive_fp
+            }
+            self.results_ready.emit(info, "")
+
+        except Exception as e:
+            traceback.print_exc()
+            self.results_ready.emit({}, str(e))
+        finally:
+            self.finished.emit()

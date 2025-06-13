@@ -230,3 +230,88 @@ def toggle(state, elements):
                     stack.append(current.itemAt(i).widget())
             else:
                 current.setEnabled(state)
+
+
+# -------------------------------------------------------------------
+# NEW: Dialog + helper for picking export parameters
+# -------------------------------------------------------------------
+import os, re
+from qtpy.QtWidgets import (
+    QDialog, QFileDialog, QFormLayout, QLineEdit, QComboBox,
+    QCheckBox, QPushButton, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QMessageBox
+)
+
+class ExportDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Export Results")
+        self.setMinimumWidth(400)
+
+        # 1) Parent folder
+        self.parent_le = QLineEdit()
+        browse = QPushButton("Browse…")
+        browse.clicked.connect(self._on_browse_parent)
+        h1 = QHBoxLayout(); h1.addWidget(self.parent_le); h1.addWidget(browse)
+
+        # 2) Project name
+        self.project_le = QLineEdit("results")
+        self.project_le.setPlaceholderText("Subfolder name")
+
+        # 3) Metrics format
+        self.metrics_combo = QComboBox()
+        self.metrics_combo.addItems(["csv", "json"])
+
+        # 4) Labelmap format
+        self.labelmap_combo = QComboBox()
+        self.labelmap_combo.addItems(["tif", "png"])
+
+        # 5) Zip?
+        self.zip_cb = QCheckBox("Compress into ZIP archive")
+
+        # OK/Cancel
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self._on_accept)
+        buttons.rejected.connect(self.reject)
+
+        form = QFormLayout()
+        form.addRow("Parent folder:", h1)
+        form.addRow("Project name:", self.project_le)
+        form.addRow("Metrics format:", self.metrics_combo)
+        form.addRow("Labelmap format:", self.labelmap_combo)
+        form.addRow("", self.zip_cb)
+
+        layout = QVBoxLayout()
+        layout.addLayout(form)
+        layout.addWidget(buttons)
+        self.setLayout(layout)
+
+    def _on_browse_parent(self):
+        d = QFileDialog.getExistingDirectory(self, "Select Folder", os.getcwd())
+        if d:
+            self.parent_le.setText(d)
+
+    def _on_accept(self):
+        p = self.parent_le.text().strip()
+        if not p or not os.path.isdir(p) or not os.access(p, os.W_OK):
+            QMessageBox.warning(self, "Invalid Folder", "Please pick an existing, writable folder.")
+            return
+        name = self.project_le.text().strip()
+        if not name or re.search(r"[\\/]", name):
+            QMessageBox.warning(self, "Invalid Name", "Enter a non-empty name without slashes.")
+            return
+        self.accept()
+
+    def get_values(self):
+        return (
+            self.parent_le.text().strip(),
+            self.project_le.text().strip(),
+            self.metrics_combo.currentText(),
+            self.labelmap_combo.currentText(),
+            self.zip_cb.isChecked(),
+        )
+
+def get_export_params(parent=None):
+    dlg = ExportDialog(parent)
+    if dlg.exec_() == QDialog.Accepted:
+        return dlg.get_values()
+    return None
