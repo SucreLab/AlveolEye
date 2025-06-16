@@ -163,7 +163,7 @@ class ProcessingActionBox(ActionBox):
 
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
-                                    self.colormap_config_data, self.labels_config_data, False)
+                                    self.colormap_config_data, self.labels_config_data, False, False)
 
         self.set_image_threshold_value()
         self.broadcast_cancel_message()
@@ -188,7 +188,7 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
-                                    inference_labelmap, self.colormap_config_data, self.labels_config_data, True)
+                                    inference_labelmap, self.colormap_config_data, self.labels_config_data, True, True)
 
         super().on_results_ready()
 
@@ -294,7 +294,7 @@ class PostprocessingActionBox(ActionBox):
     def on_results_ready(self, labelmap):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
-                                    self.colormap_config_data, self.labels_config_data, True)
+                                    self.colormap_config_data, self.labels_config_data, True, True)
 
         super().on_results_ready()
 
@@ -446,7 +446,10 @@ class AssessmentsActionBox(ActionBox):
         if assessments_layer is not None:
             layers_editor.update_layers(self.napari_viewer,
                                         self.layers_config_data["ASSESSMENTS_LAYER_NAME"], assessments_layer,
-                                        self.colormap_config_data, self.labels_config_data, True)
+                                        self.colormap_config_data, self.labels_config_data, True, False)
+
+            self.napari_viewer.layers.selection.active = self.napari_viewer.layers[
+                self.layers_config_data["POSTPROCESSING_LAYER"]]
 
         ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
                                      os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
