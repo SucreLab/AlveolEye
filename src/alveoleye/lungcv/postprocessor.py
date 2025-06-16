@@ -59,8 +59,8 @@ def generate_processing_labelmap(model_output, shape, confidence_threshold, labe
     if len(shape) == 3:
         shape = shape[:2]
 
-    airway_epithelium_labelmap = extract_class_labelmap_from_model(model_output, 1, confidence_threshold)
-    vessel_epithelium_labelmap = extract_class_labelmap_from_model(model_output, 2, confidence_threshold)
+    airway_epithelium_labelmap = extract_class_labelmap_from_model(model_output, shape, 1, confidence_threshold)
+    vessel_epithelium_labelmap = extract_class_labelmap_from_model(model_output, shape, 2, confidence_threshold)
 
     final_labelmap = np.zeros(shape, dtype="uint8")
     final_labelmap = np.where(airway_epithelium_labelmap, labels["AIRWAY_EPITHELIUM"], final_labelmap)
@@ -74,9 +74,12 @@ def generate_processing_labelmap(model_output, shape, confidence_threshold, labe
     return final_labelmap
 
 
-def extract_class_labelmap_from_model(model_output, class_id, confidence_threshold):
+def extract_class_labelmap_from_model(model_output, shape, class_id, confidence_threshold):
     model_output_mask = np.array([mask.cpu().numpy() for idx, mask in enumerate(model_output["masks"]) if (model_output["labels"][idx].cpu().numpy() == class_id and model_output["scores"][idx] > confidence_threshold)])
     mask_with_confidence = (model_output_mask > confidence_threshold).any(axis=0)
+
+    if mask_with_confidence is False:
+        mask_with_confidence = np.full(shape, False, dtype=bool)
 
     return mask_with_confidence
 
@@ -111,6 +114,9 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
 
 def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_image, epithelium_label, lumen_label, blocking=False, edge_distance=10):
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
+
+    if class_epithelium_labelmap.ndim == 3 and class_epithelium_labelmap.shape[2] == 3:
+        class_epithelium_labelmap = class_epithelium_labelmap[:, :, 0]
 
     non_tissue_spaces = cv2.connectedComponents(thresholded_image)[1]
 
