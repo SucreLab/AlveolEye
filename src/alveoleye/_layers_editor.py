@@ -1,9 +1,12 @@
 from napari.utils.colormaps import DirectLabelColormap
 
 
-def get_layer_by_name(napari_viewer, layer_name):
+def get_layer_by_name(napari_viewer, layer_name, callback=None):
     for layer in napari_viewer.layers:
         if layer.name == layer_name:
+            if callback:
+                callback(layer.data, layer.name)
+
             return layer.data
 
     return None
@@ -23,6 +26,7 @@ def remove_all_layers(napari_viewer):
         napari_viewer.layers.remove(layer)
 
 
+
 def _labels_dict_to_properties_array(labels_dict):
     max_index = max(labels_dict.values())
     result_array = ["undefined"] * (max_index + 1)
@@ -32,6 +36,7 @@ def _labels_dict_to_properties_array(labels_dict):
         result_array[value] = name_with_spaces
 
     return result_array
+
 
 
 def update_layers(
@@ -61,4 +66,3 @@ def update_layers(
         return
     layer_data_rgb = layer_data[:, :, ::-1]
     napari_viewer.add_image(layer_data_rgb, name=layer_name)
-

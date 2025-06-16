@@ -17,6 +17,7 @@ dependencies:
   - numpy<2.0.0
   - pip
   - matplotlib
+  - typeguard
   - pip:
       - pycocotools
       - opencv-python-headless
