@@ -46,6 +46,16 @@ def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spi
     return label_and_spin_box_layout, label, spin_box
 
 
+def create_check_box_widget(check_box_text, on_check_box_checked, check_box_tooltip_text, default_checked=False):
+    check_box = QCheckBox(check_box_text)
+    check_box.setChecked(default_checked)
+    check_box.stateChanged.connect(on_check_box_checked)
+    check_box.setToolTip(check_box_tooltip_text)
+    check_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+    return check_box
+
+
 def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text, spin_box_tooltip_text,
                                          on_check_box_checked, spin_box_min, spin_box_max, spin_box_default,
                                          spin_box_step, spin_box_suffix="", value_type="single", decimals=5):

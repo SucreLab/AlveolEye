@@ -12,19 +12,22 @@ from alveoleye._workers import ProcessingWorker, PostprocessingWorker, Assessmen
 import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
 from alveoleye._export_operations import is_real_writable_dir
-import alveoleye._rules as rules
+
 
 
 class ProcessingActionBox(ActionBox):
     model_output = None
 
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.image = None
 
         self.import_image_line_edit = None
+        self.import_weights_button_and_line_edit_layout = None
+        self.use_ai_check_box = None
         self.import_weights_line_edit = None
+        self.confidence_threshold_label_and_spin_box_layout = None
         self.confidence_threshold_spin_box = None
 
         self.box_id = 1
@@ -41,6 +44,7 @@ class ProcessingActionBox(ActionBox):
 
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_image_path(ActionBox.import_paths["image"])
+        self.worker.set_use_ai(self.use_ai_check_box.isChecked())
         self.worker.set_weights(ActionBox.import_paths["weights"])
         self.worker.set_labels(self.labels_config_data)
         self.worker.set_image_shape(self.image.shape)
@@ -55,6 +59,16 @@ class ProcessingActionBox(ActionBox):
             self.on_import_image_press,
             self.box_config_data["EMPTY_PATH_LINE_EDIT_TEXT"]
         )
+
+        horizontal_line = gui_creator.create_horizontal_line_widget()
+
+        use_ai_check_box = gui_creator.create_check_box_widget(
+            self.box_config_data["USE_AI_CHECK_BOX_TEXT"],
+            self.rules_engine.evaluate_rules,
+            self.box_config_data["USE_AI_CHECK_BOX_TOOLTIP_TEXT"],
+            self.box_config_data["USE_AI_CHECK_BOX_DEFAULT_VALUE"]
+        )
+
         import_weights_button_and_line_edit = gui_creator.create_button_and_line_edit_layout(
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TEXT"],
             self.box_config_data["IMPORT_WEIGHTS_BUTTON_TOOLTIP_TEXT"],
@@ -76,10 +90,15 @@ class ProcessingActionBox(ActionBox):
         confidence_threshold_label_and_spin_box_layout = confidence_threshold_label_and_spin_box[0]
 
         self.import_image_line_edit = import_image_button_and_line_edit[2]
+        self.import_weights_button_and_line_edit_layout = import_weights_button_and_line_edit_layout
+        self.use_ai_check_box = use_ai_check_box
         self.import_weights_line_edit = import_weights_button_and_line_edit[2]
         self.confidence_threshold_spin_box = confidence_threshold_label_and_spin_box[2]
+        self.confidence_threshold_label_and_spin_box_layout = confidence_threshold_label_and_spin_box_layout
 
         ui_elements = [import_image_button_and_line_edit_layout,
+                       horizontal_line,
+                       use_ai_check_box,
                        import_weights_button_and_line_edit_layout,
                        confidence_threshold_label_and_spin_box_layout]
 
@@ -100,6 +119,13 @@ class ProcessingActionBox(ActionBox):
                                    lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit))
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
                                    lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
+
+        self.rules_engine.add_rule(lambda: self.use_ai_check_box.isChecked(),
+                                   lambda: alveoleye._gui_creator.toggle(True, [self.import_weights_button_and_line_edit_layout,
+                                                                                self.confidence_threshold_label_and_spin_box_layout]))
+        self.rules_engine.add_rule(lambda: not self.use_ai_check_box.isChecked(),
+                                   lambda: alveoleye._gui_creator.toggle(False, [self.import_weights_button_and_line_edit_layout,
+                                                                                 self.confidence_threshold_label_and_spin_box_layout]))
 
         super().create_ui_rules()
 
@@ -140,6 +166,8 @@ class ProcessingActionBox(ActionBox):
         layers_editor.remove_all_layers(self.napari_viewer)
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
                                     self.colormap_config_data, self.labels_config_data, False)
+
+        self.set_image_threshold_value()
         self.broadcast_cancel_message()
         self.broadcast_step_change_message(0)
 
@@ -149,6 +177,13 @@ class ProcessingActionBox(ActionBox):
                              self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
                              self.box_config_data["WEIGHTS_FOLDER_PATH"])
 
+    def set_image_threshold_value(self):
+        image = layers_editor.get_layer_by_name(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
+        grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
+        threshold_value = round(otsu_value)
+        PostprocessingActionBox.threshold_value = threshold_value
+    
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
 
@@ -161,6 +196,9 @@ class ProcessingActionBox(ActionBox):
 
 
 class PostprocessingActionBox(ActionBox):
+
+    threshold_value = None
+
     def __init__(self, config_data, napari_viewer):
         super().__init__(config_data, napari_viewer)
 
@@ -180,7 +218,6 @@ class PostprocessingActionBox(ActionBox):
         self.worker.set_napari_viewer(self.napari_viewer)
         self.worker.set_layer_names(self.layers_config_data)
         self.worker.set_labels(self.labels_config_data)
-        self.worker.set_model_output(ProcessingActionBox.model_output)
         self.worker.set_thresholding_check_box_value(self.thresholding_check_box.isChecked())
         self.worker.set_manual_threshold_value(self.thresholding_spin_box.value())
         self.worker.set_alveoli_minimum_size(self.clean_alveoli_spin_box.value())
@@ -236,6 +273,9 @@ class PostprocessingActionBox(ActionBox):
                                       self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
 
     def create_ui_rules(self):
+        self.rules_engine.add_rule([lambda: PostprocessingActionBox.threshold_value != None,
+                                    lambda: ActionBox.step == 0],
+                                   lambda: self.thresholding_spin_box.setValue(PostprocessingActionBox.threshold_value))
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
                                    lambda: alveoleye._gui_creator.toggle(True, self.thresholding_spin_box))
         self.rules_engine.add_rule(lambda: not self.thresholding_check_box.isChecked(),
@@ -262,8 +302,8 @@ class PostprocessingActionBox(ActionBox):
 
 
 class AssessmentsActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.lines_spin_box = None
         self.min_length_spin_box = None
@@ -421,8 +461,8 @@ class AssessmentsActionBox(ActionBox):
 
 
 class ExportActionBox(ActionBox):
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.mli_chords_line_edit = None
         self.mli_stdev_line_edit = None
@@ -634,5 +674,3 @@ class ExportActionBox(ActionBox):
 
     def on_results_ready(self, wrapped_data, extension):
         pass
-
-

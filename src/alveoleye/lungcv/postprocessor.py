@@ -2,24 +2,44 @@ import cv2
 import numpy as np
 
 
-def convert_to_grayscale(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def convert_to_grayscale(image, callback=None):
+    grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    if callback:
+        callback(grayscaled, "CONVERT_TO_GRAYSCALE")
+
+    return grayscaled
 
 
-def apply_dynamic_threshold(grayscale_image):
+def apply_dynamic_threshold(grayscale_image, callback=None):
     threshold_value = cv2.threshold(grayscale_image, 0, 255, cv2.THRESH_OTSU)[0] + 20
-    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+    thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+
+    if callback:
+        callback(thresholded, "APPLY_DYNAMIC_THRESHOLD")
+
+    return thresholded
 
 
-def apply_manual_threshold(grayscale_image, threshold_value):
-    return cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+def apply_manual_threshold(grayscale_image, threshold_value, callback=None):
+    thresholded = cv2.threshold(grayscale_image, threshold_value, 255, cv2.THRESH_BINARY)[1]
+
+    if callback:
+        callback(thresholded, "APPLY_MANUAL_THRESHOLD")
+
+    return thresholded
 
 
-def invert_image_binary(binary_image):
-    return cv2.bitwise_not(binary_image)
+def invert_image_binary(binary_image, callback=None):
+    inverted = cv2.bitwise_not(binary_image)
+
+    if callback:
+        callback(inverted, "INVERT_IMAGE_BINARY")
+
+    return inverted
 
 
-def remove_small_components(binary_image, minimum_size):
+def remove_small_components(binary_image, minimum_size, callback=None):
     connected_components = cv2.connectedComponentsWithStats(binary_image)
     quantity, image, stats = connected_components[:3]
     sizes = stats[:, -1][1:]
@@ -27,33 +47,44 @@ def remove_small_components(binary_image, minimum_size):
     small_blobs = np.where(sizes <= minimum_size)[0] + 1
     binary_image[np.isin(image, small_blobs)] = 0
 
+    if callback:
+        callback(binary_image, "REMOVE_SMALL_COMPONENTS")
+
     return binary_image
 
 
-def generate_processing_labelmap(model_output, shape, confidence_threshold, labels):
+def generate_processing_labelmap(model_output, shape, confidence_threshold, labels, callback=None):
     confidence_threshold = confidence_threshold / 100
 
     if len(shape) == 3:
         shape = shape[:2]
 
-    airway_epithelium_labelmap = extract_class_labelmap_from_model(model_output, 1, confidence_threshold)
-    vessel_epithelium_labelmap = extract_class_labelmap_from_model(model_output, 2, confidence_threshold)
+    airway_epithelium_labelmap = extract_class_labelmap_from_model(model_output, shape, 1, confidence_threshold)
+    vessel_epithelium_labelmap = extract_class_labelmap_from_model(model_output, shape, 2, confidence_threshold)
 
     final_labelmap = np.zeros(shape, dtype="uint8")
     final_labelmap = np.where(airway_epithelium_labelmap, labels["AIRWAY_EPITHELIUM"], final_labelmap)
     final_labelmap = np.where(vessel_epithelium_labelmap, labels["VESSEL_ENDOTHELIUM"], final_labelmap)
 
+    if callback:
+        callback(airway_epithelium_labelmap, "GENERATE_PROCESSING_LABELMAP_AIRWAY")
+        callback(vessel_epithelium_labelmap, "GENERATE_PROCESSING_LABELMAP_VESSEL")
+        callback(final_labelmap, "GENERATE_PROCESSING_LABELMAP_COMBINED")
+
     return final_labelmap
 
 
-def extract_class_labelmap_from_model(model_output, class_id, confidence_threshold):
+def extract_class_labelmap_from_model(model_output, shape, class_id, confidence_threshold):
     model_output_mask = np.array([mask.cpu().numpy() for idx, mask in enumerate(model_output["masks"]) if (model_output["labels"][idx].cpu().numpy() == class_id and model_output["scores"][idx] > confidence_threshold)])
     mask_with_confidence = (model_output_mask > confidence_threshold).any(axis=0)
+
+    if mask_with_confidence is False:
+        mask_with_confidence = np.full(shape, False, dtype=bool)
 
     return mask_with_confidence
 
 
-def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels):
+def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, labels, callback=None):
     intermediate_label = max(labels.values()) + 1
 
     parenchyma_labelmap = np.where(thresholded_labelmap, labels["ALVEOLI"], labels["PARENCHYMA"])
@@ -73,11 +104,19 @@ def generate_postprocessing_labelmap(masks_labelmap, thresholded_labelmap, label
     final_labelmap = np.where(blocking_complete_labelmap, blocking_complete_labelmap, final_labelmap)
     final_labelmap[final_labelmap == intermediate_label] = 0
 
+    if callback:
+        callback(airway_complete_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_AIRWAY")
+        callback(vessel_complete_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_VESSEL")
+        callback(final_labelmap, "GENERATE_POSTPROCESSING_LABELMAP_COMBINED")
+
     return final_labelmap
 
 
 def generate_complete_class_labelmap(class_epithelium_labelmap, thresholded_image, epithelium_label, lumen_label, blocking=False, edge_distance=10):
     class_epithelium_labelmap = class_epithelium_labelmap.astype(np.uint8).squeeze()
+
+    if class_epithelium_labelmap.ndim == 3 and class_epithelium_labelmap.shape[2] == 3:
+        class_epithelium_labelmap = class_epithelium_labelmap[:, :, 0]
 
     non_tissue_spaces = cv2.connectedComponents(thresholded_image)[1]
 

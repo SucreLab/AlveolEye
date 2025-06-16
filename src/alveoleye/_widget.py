@@ -25,9 +25,6 @@ class WidgetMain(QWidget):
         self.outer_layout = QVBoxLayout(self.outer_widget)
         self.scroll_area = QScrollArea()
 
-        with open(pathlib.Path(__file__).resolve().parent / "config.json", 'r') as config_file:
-            self.config_data = json.load(config_file)
-
         self.init_ui()
 
     def init_ui(self):
@@ -48,10 +45,10 @@ class WidgetMain(QWidget):
         self.napari_viewer.events.theme.connect(self.apply_theme)
 
     def create_action_boxes(self):
-        self.processing_group_box = ProcessingActionBox(self.config_data, self.napari_viewer)
-        self.postprocessing_group_box = PostprocessingActionBox(self.config_data, self.napari_viewer)
-        self.assessments_group_box = AssessmentsActionBox(self.config_data, self.napari_viewer)
-        self.export_group_box = ExportActionBox(self.config_data, self.napari_viewer)
+        self.processing_group_box = ProcessingActionBox(self.napari_viewer)
+        self.postprocessing_group_box = PostprocessingActionBox(self.napari_viewer)
+        self.assessments_group_box = AssessmentsActionBox(self.napari_viewer)
+        self.export_group_box = ExportActionBox(self.napari_viewer)
 
     def setup_layout(self):
         boxes = [self.processing_group_box, self.postprocessing_group_box,
