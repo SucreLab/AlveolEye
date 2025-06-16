@@ -197,8 +197,8 @@ class PostprocessingActionBox(ActionBox):
 
     threshold_value = None
 
-    def __init__(self, config_data, napari_viewer):
-        super().__init__(config_data, napari_viewer)
+    def __init__(self, napari_viewer):
+        super().__init__(napari_viewer)
 
         self.thresholding_check_box = None
         self.thresholding_spin_box = None
