@@ -117,6 +117,7 @@
     "CLEAR_PROMPT": "Clear export data",
     "CLEAR_BUTTON_TEXT": "Clear",
     "MAX_EXPORT_COUNT_DISPLAY_NUMBER": 99,
+    "DEFAULT_EXPORT_LOCATION": "Downloads",
     "NAME_LABEL_TEXT": "Name: ",
     "NAME_DEFAULT_TEXT": "default.csv",
     "CLEAR_CONFIRMATION_MESSAGE": "Are you sure you want to clear all results?",
