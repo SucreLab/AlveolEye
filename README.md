@@ -18,7 +18,7 @@ to calculate mean linear intercept (MLI) and airspace volume density (ASVD) of h
 
 The goal of this tool is to aid researchers, not provide a complete automated annotation solution.
 
-We welcome Git issues and feedback!
+We welcome GitHub issues and feedback!
 
 ## Installation
 
