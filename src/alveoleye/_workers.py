@@ -1,3 +1,5 @@
+import traceback
+
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
@@ -23,6 +25,7 @@ class WorkerParent(QObject):
         self.napari_viewer = None
         self.layer_names = None
         self.labels = None
+        self.callback = None
         self.terminate = False
 
         with open(pathlib.Path(__file__).resolve().parent / "config.json", 'r') as config_file:
@@ -36,6 +39,9 @@ class WorkerParent(QObject):
 
     def set_labels(self, labels):
         self.labels = labels
+
+    def set_callback(self, callback):
+        self.callback = callback
 
     def cancel(self):
         self.terminate = True
@@ -78,6 +84,7 @@ class ProcessingWorker(WorkerParent):
                 if not self.terminate:
                     model = model_operations.init_trained_model(self.weights)
 
+
                 if not self.terminate:
                     model_output = model_operations.run_prediction(self.image_path, model)
 
@@ -117,41 +124,42 @@ class PostprocessingWorker(WorkerParent):
     def set_parenchyma_minimum_size(self, parenchyma_minimum_size):
         self.parenchyma_minimum_size = parenchyma_minimum_size
 
-    def threshold_according_to_method(self, image):
+    def threshold_according_to_method(self, image, callback):
         if self.thresholding_check_box_value:
-            return apply_manual_threshold(image, self.manual_threshold_value)
+            return apply_manual_threshold(image, self.manual_threshold_value, callback)
 
-        return apply_dynamic_threshold(image)
+        return apply_dynamic_threshold(image, callback)
 
     def run(self):
         try:
             if not self.terminate:
-                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"])
+                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
+                                                        self.callback)
 
             if not self.terminate:
-                grayscaled = convert_to_grayscale(image)
+                grayscaled = convert_to_grayscale(image, self.callback)
 
             if not self.terminate:
-                thresholded = self.threshold_according_to_method(grayscaled)
+                thresholded = self.threshold_according_to_method(grayscaled, self.callback)
 
             if not self.terminate:
-                parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size)
+                parenchyma_cleaned = remove_small_components(thresholded, self.parenchyma_minimum_size, self.callback)
 
             if not self.terminate:
-                inverted = invert_image_binary(parenchyma_cleaned)
+                inverted = invert_image_binary(parenchyma_cleaned, self.callback)
 
             if not self.terminate:
-                alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size)
+                alveoli_cleaned = remove_small_components(inverted, self.alveoli_minimum_size, self.callback)
 
             if not self.terminate:
-                inverted_back = invert_image_binary(alveoli_cleaned)
+                inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
             if not self.terminate:
                 masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
-                                                                 self.layer_names["PROCESSING_LAYER"])
+                                                                 self.layer_names["PROCESSING_LAYER"], self.callback)
 
             if not self.terminate:
-                labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels)
+                labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels, self.callback)
 
             if not self.terminate:
                 self.results_ready.emit(labelmap)
@@ -160,6 +168,7 @@ class PostprocessingWorker(WorkerParent):
             import traceback
             traceback.print_exc()
             print(f"Error in post-processing: {e}")
+            traceback.print_exc()
         finally:
             self.finished.emit()
 
@@ -201,7 +210,8 @@ class AssessmentsWorker(WorkerParent):
 
         try:
             if not self.terminate:
-                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"])
+                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
+                                                           self.callback)
 
             if not self.terminate:
                 if self.asvd_check_box_state:
@@ -212,7 +222,7 @@ class AssessmentsWorker(WorkerParent):
                 if self.mli_check_box_state:
                     mli, assessments_layer, chords, stdev_chord_lengths = calculate_mean_linear_intercept(
                         labelmap, self.lines_spin_box_value, self.min_length_spin_box_value,
-                        self.scale_spin_box_value, self.labels
+                        self.scale_spin_box_value, self.labels, False, self.callback
                     )
 
             if not self.terminate:

@@ -103,7 +103,7 @@
     "MLI_CHORDS_METRIC": "Number of chords",
     "ASVD_METRIC": "ASVD",
     "ASVD_AIRSPACE_PIXELS_METRIC": "Airspace pixels",
-    "ASVD_NON_AIRSPACE_PIXELS_METRIC": "Non airspace pixels",
+    "ASVD_NON_AIRSPACE_PIXELS_METRIC": "Non-airspace pixels",
     "MLI_METRIC_LINE_EDIT": "None",
     "MLI_STDEV_METRIC_LINE_EDIT": "None",
     "MLI_CHORDS_METRIC_LINE_EDIT": "None",
@@ -129,7 +129,9 @@
   },
   "ActionBox": {
     "ANIMATION_INTERVAL": 500,
-    "ANIMATION_DOTS": 3
+    "ANIMATION_DOTS": 3,
+    "SAVE_INTERMEDIATE_SNAPSHOTS": true,
+    "INTERMEDIATE_SNAPSHOT_SAVE_LOCATION": "Desktop"
   },
   "Layers": {
     "INITIAL_LAYER": "Initial",
@@ -149,14 +151,34 @@
     "MLI_LINES_OUTSIDE": 9
   },
   "Colormap": {
-    "BLOCKER": [0.749, 0.263, 0.259],
-    "AIRWAY_EPITHELIUM": [0.157, 0.212, 0.094],
-    "AIRWAY_LUMEN": [0.376, 0.424, 0.220],
-    "PARENCHYMA": [0.090,0.325,0.529],
-    "VESSEL_ENDOTHELIUM": [0.737, 0.424, 0.145],
-    "VESSEL_LUMEN": [0.867, 0.631, 0.369],
-    "ALVEOLI": [0.996, 0.980, 0.878],
-    "MLI_LINES_INSIDE": [0.305, 0.301, 0.283],
-    "MLI_LINES_OUTSIDE": [0.145, 0.141, 0.133]
+    "BLOCKER": [0.000, 0.620, 0.451],
+    "AIRWAY_EPITHELIUM": [0.835, 0.369, 0.000],
+    "AIRWAY_LUMEN": [0.902, 0.624, 0.000],
+    "PARENCHYMA": [0.333, 0.333, 0.333],
+    "VESSEL_ENDOTHELIUM": [0.000, 0.447, 0.698],
+    "VESSEL_LUMEN": [0.337, 0.706, 0.914],
+    "ALVEOLI": [0.996, 0.996, 0.996],
+    "MLI_LINES_INSIDE": [0.741, 0.694, 0.059],
+    "MLI_LINES_OUTSIDE": [0.941, 0.894, 0.259]
+  },
+  "SnapshotNames": {
+    "CONVERT_TO_GRAYSCALE": "grayscaled.png",
+    "APPLY_DYNAMIC_THRESHOLD": "dynamic_thresholded.png",
+    "APPLY_MANUAL_THRESHOLD": "manual_thresholded.png",
+    "INVERT_IMAGE_BINARY": "inverted.png",
+    "REMOVE_SMALL_COMPONENTS": "small_components_removed.png",
+    "GENERATE_PROCESSING_LABELMAP_AIRWAY": "airway_processed_labelmap.png",
+    "GENERATE_PROCESSING_LABELMAP_VESSEL": "vessel_processed_labelmap.png",
+    "GENERATE_PROCESSING_LABELMAP_COMBINED": "combined_processed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_AIRWAY": "airway_postprocessed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_VESSEL": "vessel_postprocessed_labelmap.png",
+    "GENERATE_POSTPROCESSING_LABELMAP_COMBINED": "combined_postprocessed_labelmap.png",
+    "Initial": "initial_layer.png",
+    "Processing": "processing_layer.png",
+    "Postprocessing": "postprocessing_layer.png",
+    "Assessments": "assessments_layer.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_LINES": "mli_lines.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_CHORDS":  "mli_chords.png",
+    "CALCULATE_MEAN_LINEAR_INTERCEPT_HIGHLIGHTED_CHORDS": "mli_highlighted_chords.png"
   }
 }

@@ -4,6 +4,11 @@ import json
 import os
 import re
 
+import numpy as np
+from PIL import Image
+import torch
+from alveoleye._config_utils import Config
+
 
 def format_results(result):
     (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
@@ -124,3 +129,83 @@ def export_accumulated_results(accumulated_results, output_dir, file_name="test_
         results_file.write(csv_data)
 
     return unique_file_name
+
+
+def _norm_to_rgb(colormap):
+    rgb_map = {}
+    for k, v in colormap.items():
+        rgb_map[k] = [int(round(x * 255)) for x in v]
+
+    rgb_map[0] = (255, 255, 255)
+    return rgb_map
+
+
+def load_image_specific_colormap(snapshot_step):
+    colormap = Config.get_label_indexed_colormap()
+    rgb_colormap = _norm_to_rgb(colormap)
+
+    if snapshot_step == "GENERATE_PROCESSING_LABELMAP_AIRWAY":
+        rgb_colormap[1] = rgb_colormap[2]
+    elif snapshot_step == "GENERATE_PROCESSING_LABELMAP_VESSEL":
+        rgb_colormap[1] = rgb_colormap[3]
+    elif snapshot_step == "CONVERT_TO_GRAYSCALE":
+        rgb_colormap = None
+
+    return rgb_colormap
+
+
+def save_image(data, snapshot_step, save_dir, get_colormap_function=None):
+    os.makedirs(save_dir, exist_ok=True)
+
+    name = Config.get_snapshot_names()[snapshot_step]
+
+    base_name = name
+    ext = ".png"
+    candidate_name = f"{base_name}{ext}"
+    counter = 1
+
+    if get_colormap_function:
+        colormap = get_colormap_function(snapshot_step)
+    else:
+        colormap = load_image_specific_colormap(snapshot_step)
+
+    existing_files = set(os.listdir(save_dir))
+    while candidate_name in existing_files:
+        candidate_name = f"{base_name}({counter}){ext}"
+        counter += 1
+
+    save_path = os.path.join(save_dir, candidate_name)
+
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
+
+    if isinstance(data, np.ndarray):
+        data = np.squeeze(data)
+
+        if data.ndim == 3 and data.shape[2] in {3, 4}:
+            image = Image.fromarray(data.astype(np.uint8))
+        elif data.ndim == 2:
+            if colormap:
+                h, w = data.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[data == label] = color
+                image = Image.fromarray(rgb_image)
+            else:
+                image = Image.fromarray(data.astype(np.uint8), mode='L')
+        else:
+            raise ValueError(f"Unsupported image shape after squeeze: {data.shape}")
+    else:
+        raise ValueError(f"Unsupported data type: {type(data)}")
+
+    image.save(save_path)
+    print(f"[+] Saved image to {save_path}")
+
+
+def make_save_image_callback(save_dir, get_colormap_function=None):
+    snapshots_dir = os.path.join(save_dir, "snapshots")
+
+    def save_image_callback(data, name):
+        save_image(data, name, snapshots_dir, get_colormap_function)
+
+    return save_image_callback
