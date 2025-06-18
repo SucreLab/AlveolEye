@@ -2,6 +2,7 @@ import cv2
 import os
 from pathlib import Path
 
+import numpy as np
 from PyQt5.QtWidgets import QMessageBox
 from qtpy.QtWidgets import QFileDialog
 
@@ -487,19 +488,11 @@ class AssessmentsActionBox(ActionBox):
             stdev_chord_lengths,
             chords
         ]
+        print("\nadded current results")
 
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
 
-
-from qtpy.QtWidgets import QMessageBox
-import os
-
-import alveoleye._gui_creator as gui_creator
-import alveoleye._layers_editor as layers_editor
-from alveoleye._action_box import ActionBox
-from alveoleye._models import Result
-from alveoleye._workers import ExportWorker
 
 class ExportActionBox(ActionBox):
     def __init__(self, config_data, napari_viewer):
@@ -635,67 +628,41 @@ class ExportActionBox(ActionBox):
         )
 
     def create_ui_rules(self):
-        """
-        1) Add button is ON iff:
-             step==3 (Assessments done)
-          AND current_result is not None
-          AND not already in accumulated_results
-        2) Add button OFF otherwise
-        3) Remove/Clear as before
-        4) Export action_button ON iff len(accumulated_results)>0
-        """
-        # disable Add if no current_result yet
-        self.rules_engine.add_rule(
-            lambda: self.current_result is None,
-            lambda: gui_creator.toggle(False, self.add_button)
-        )
+        self.rules_engine.add_rule([lambda: ActionBox.step == 3,
+                                    lambda: ActionBox.current_results],
+                                   [lambda: gui_creator.toggle(True, self.add_button),
+                                    lambda: self.set_results()])
 
-        # disable Add if current_result already added
-        self.rules_engine.add_rule(
-            lambda: (
-                self.current_result is not None
-                and self.current_result in self.accumulated_results
-            ),
-            lambda: gui_creator.toggle(False, self.add_button)
-        )
+        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
+                                   lambda: gui_creator.toggle(False, self.mli_metrics))
+        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() == self.box_config_data["ASVD_METRIC_LINE_EDIT"],
+                                   lambda: gui_creator.toggle(False, self.asvd_metrics))
+        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() != self.box_config_data["MLI_METRIC_LINE_EDIT"],
+                                   lambda: gui_creator.toggle(True, self.mli_metrics))
+        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
+                                   lambda: gui_creator.toggle(True, self.asvd_metrics))
 
-        # enable Add only when step 3 & new result
-        self.rules_engine.add_rule(
-            [
-                lambda: ActionBox.step == 3,
-                lambda: self.current_result is not None,
-                lambda: self.current_result not in self.accumulated_results,
-            ],
-            lambda: gui_creator.toggle(True, self.add_button)
-        )
+        self.rules_engine.add_rule(lambda: not ActionBox.current_results,
+                                   lambda: gui_creator.toggle(False, self.add_button))
+        self.rules_engine.add_rule([lambda: ActionBox.current_results],
+                                   lambda: gui_creator.toggle(True, self.add_button))
+        self.rules_engine.add_rule([lambda: Result(*ActionBox.current_results) in self.accumulated_results],
+                                   lambda: gui_creator.toggle(False, self.add_button))
 
-        # remove / clear button toggles
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) != 0,
-            lambda: gui_creator.toggle(True, self.remove_button)
-        )
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) == 0,
-            lambda: gui_creator.toggle(False, self.remove_button)
-        )
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) != 0,
-            lambda: gui_creator.toggle(True, self.clear_button)
-        )
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) == 0,
-            lambda: gui_creator.toggle(False, self.clear_button)
-        )
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
+                                   lambda: gui_creator.toggle(True, self.remove_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
+                                   lambda: gui_creator.toggle(False, self.remove_button))
 
-        # Export Results action_button toggle
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) != 0,
-            lambda: gui_creator.toggle(True, self.action_button)
-        )
-        self.rules_engine.add_rule(
-            lambda: len(self.accumulated_results) == 0,
-            lambda: gui_creator.toggle(False, self.action_button)
-        )
+        self.rules_engine.add_rule(lambda: not self.accumulated_results,
+                                   lambda: gui_creator.toggle(False, self.clear_button))
+        self.rules_engine.add_rule([lambda: self.accumulated_results],
+                                   lambda: gui_creator.toggle(True, self.clear_button))
+
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
+                                   lambda: gui_creator.toggle(True, self.action_button))
+        self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
+                                   lambda: gui_creator.toggle(False, self.action_button))
 
         super().create_ui_rules()
 
@@ -706,8 +673,6 @@ class ExportActionBox(ActionBox):
         Wrap it into self.current_result and re-eval rules.
         """
         super().on_results_ready(wrapped_data, extension)
-        raw = tuple(ActionBox.current_results)
-        self.current_result = Result.from_raw(raw, labelmap=None)
         self.rules_engine.evaluate_rules()
 
     def set_results(self):
@@ -737,17 +702,20 @@ class ExportActionBox(ActionBox):
         """
         Build a full Result (with optional labelmap) and append.
         """
+        raw = tuple(ActionBox.current_results)
+        self.current_result = Result.from_raw(raw, labelmap=None)
+
         if not self.current_result:
             return
 
         labelmap = None
         if self.export_labelmap_check_box.isChecked():
-            layer = layers_editor.get_layer_by_name(
+            layer_data = layers_editor.get_layer_by_name(
                 self.napari_viewer,
                 self.layers_config_data["POSTPROCESSING_LAYER"]
             )
-            if layer is not None:
-                labelmap = layer.data.copy()
+            if layer_data is not None:
+                labelmap = np.array(layer_data, copy=True)
 
         full_r = Result(
             **self.current_result.to_dict(),
@@ -759,7 +727,7 @@ class ExportActionBox(ActionBox):
 
     def remove_results(self):
         if gui_creator.create_confirmation_message_box(
-            self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"]
+                self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"]
         ):
             self.accumulated_results.pop()
             self.rules_engine.evaluate_rules()
@@ -767,7 +735,7 @@ class ExportActionBox(ActionBox):
 
     def clear_results(self):
         if gui_creator.create_confirmation_message_box(
-            self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"]
+                self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"]
         ):
             self.accumulated_results.clear()
             self.rules_engine.evaluate_rules()
@@ -789,7 +757,7 @@ class ExportActionBox(ActionBox):
         """
         Pop the ExportDialog → store the 5 params → kick off the thread.
         """
-        params = gui_creator.get_export_params(self.viewer.window.qt_viewer)
+        params = gui_creator.get_export_params(self)
         if not params:
             return
         (

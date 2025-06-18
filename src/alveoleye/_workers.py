@@ -264,35 +264,17 @@ class ExportWorker(WorkerParent):
         try:
             if self.terminate:
                 return
-            out_root = os.path.join(self.parent_folder, self.project_name)
-            os.makedirs(out_root, exist_ok=True)
 
-            # write metrics
-            metrics_fp = os.path.join(out_root, f"metrics.{self.metrics_ext}")
-            export_operations.write_metrics(self.accumulated_results, metrics_fp, self.metrics_ext)
-
-            # write labelmaps
-            labelmaps_dir = None
-            if any(r.labelmap is not None for r in self.accumulated_results):
-                labelmaps_dir = os.path.join(out_root, "labelmaps")
-                export_operations.write_labelmaps(self.accumulated_results,
-                                                  labelmaps_dir,
-                                                  self.labelmap_ext)
-
-            # optional zip
-            archive_fp = None
-            if self.zip_it:
-                archive_fp = os.path.join(self.parent_folder,
-                                          f"{self.project_name}.zip")
-                export_operations.zip_folder(out_root, archive_fp)
-
-            info = {
-                "metrics": metrics_fp,
-                "labelmaps": labelmaps_dir,
-                "archive": archive_fp
-            }
+            info = export_operations.export_results(
+                results=self.accumulated_results,
+                base_dir=self.parent_folder,
+                project_name=self.project_name,
+                metrics_format=self.metrics_ext,
+                labelmap_ext=self.labelmap_ext,
+                zip_it=self.zip_it,
+            )
+            # all done
             self.results_ready.emit(info, "")
-
         except Exception as e:
             traceback.print_exc()
             self.results_ready.emit({}, str(e))
