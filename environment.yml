@@ -11,7 +11,7 @@ dependencies:
   - pyqt<5.16.0
   - qtpy
   - pytorch
-  - pillow>=10.2.0
+  - pillow>=10.2.0, <11.0.0
   - pip
   - gdown
   - numpy<2.0.0
