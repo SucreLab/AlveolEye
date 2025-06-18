@@ -273,7 +273,7 @@ class ExportWorker(WorkerParent):
                 labelmap_ext=self.labelmap_ext,
                 zip_it=self.zip_it,
             )
-            # all done
+
             self.results_ready.emit(info, "")
         except Exception as e:
             traceback.print_exc()

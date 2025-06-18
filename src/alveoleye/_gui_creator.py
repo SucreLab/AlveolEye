@@ -1,9 +1,11 @@
+import os
+import re
 from IPython.external.qt_for_kernel import QtCore
 from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import QMessageBox
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy,
-                            QCheckBox, QPushButton, QFileDialog, QLabel, QLayout)
+from qtpy.QtWidgets import (QLineEdit, QDoubleSpinBox, QSpinBox, QHBoxLayout, QSizePolicy, QCheckBox, QPushButton,
+                            QFileDialog, QLabel, QLayout, QDialog, QFormLayout, QComboBox, QDialogButtonBox,
+                            QVBoxLayout, QMessageBox)
 
 
 def create_sub_layout(layout, elements):
@@ -175,21 +177,6 @@ def create_horizontal_line_widget():
     return horizontal_line
 
 
-def save_data_with_file_dialog():
-    options = QFileDialog.Options()
-    options |= QFileDialog.DontUseNativeDialog
-    file_dialog = QFileDialog()
-    file_dialog.setOptions(options)
-    file_dialog.setWindowTitle("Save Data")
-
-    file_dialog.setDefaultSuffix("csv")
-    file_dialog.setNameFilter("CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
-
-    file_path, selected_filter = file_dialog.getSaveFileName(None, 'Save File', "",
-                                                             "CSV Files (*.csv);;JSON Files (*.json);;All Files (*)")
-    return file_path, selected_filter
-
-
 def create_confirmation_message_box(parent, message):
     message_box = QMessageBox(parent)
     message_box.setIcon(QMessageBox.Warning)
@@ -232,26 +219,23 @@ def toggle(state, elements):
                 current.setEnabled(state)
 
 
-# -------------------------------------------------------------------
-# NEW: Dialog + helper for picking export parameters
-# -------------------------------------------------------------------
-import os, re
-from qtpy.QtWidgets import (
-    QDialog, QFileDialog, QFormLayout, QLineEdit, QComboBox,
-    QCheckBox, QPushButton, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QMessageBox
-)
-
 class ExportDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, default_parent_folder: str = None):
         super().__init__(parent)
         self.setWindowTitle("Export Results")
         self.setMinimumWidth(400)
 
-        # 1) Parent folder
-        self.parent_le = QLineEdit()
+        # remember the folder so browse can default to it
+        self._default_parent = default_parent_folder or os.getcwd()
+
+        # 1) Parent folder line‐edit + browse button
+        self.parent_le = QLineEdit(self._default_parent)
         browse = QPushButton("Browse…")
+        browse.setToolTip("Pick the parent folder for your export")
         browse.clicked.connect(self._on_browse_parent)
-        h1 = QHBoxLayout(); h1.addWidget(self.parent_le); h1.addWidget(browse)
+        h1 = QHBoxLayout()
+        h1.addWidget(self.parent_le)
+        h1.addWidget(browse)
 
         # 2) Project name
         self.project_le = QLineEdit("results")
@@ -268,37 +252,52 @@ class ExportDialog(QDialog):
         # 5) Zip?
         self.zip_cb = QCheckBox("Compress into ZIP archive")
 
-        # OK/Cancel
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        # OK / Cancel buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
 
+        # lay it all out
         form = QFormLayout()
-        form.addRow("Parent folder:", h1)
-        form.addRow("Project name:", self.project_le)
-        form.addRow("Metrics format:", self.metrics_combo)
-        form.addRow("Labelmap format:", self.labelmap_combo)
-        form.addRow("", self.zip_cb)
+        form.addRow("Parent folder:",        h1)
+        form.addRow("Project name:",         self.project_le)
+        form.addRow("Metrics format:",       self.metrics_combo)
+        form.addRow("Labelmap format:",      self.labelmap_combo)
+        form.addRow("",                      self.zip_cb)
 
-        layout = QVBoxLayout()
-        layout.addLayout(form)
-        layout.addWidget(buttons)
-        self.setLayout(layout)
+        v = QVBoxLayout()
+        v.addLayout(form)
+        v.addWidget(buttons)
+        self.setLayout(v)
 
     def _on_browse_parent(self):
-        d = QFileDialog.getExistingDirectory(self, "Select Folder", os.getcwd())
-        if d:
-            self.parent_le.setText(d)
+        start = self.parent_le.text().strip() or self._default_parent
+        chosen = QFileDialog.getExistingDirectory(
+            self,
+            "Select Parent Folder",
+            start,
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+        )
+        if chosen:
+            self.parent_le.setText(chosen)
 
     def _on_accept(self):
         p = self.parent_le.text().strip()
         if not p or not os.path.isdir(p) or not os.access(p, os.W_OK):
-            QMessageBox.warning(self, "Invalid Folder", "Please pick an existing, writable folder.")
+            QMessageBox.warning(self,
+                                "Invalid Folder",
+                                "Please pick an existing, writable folder.")
             return
+
         name = self.project_le.text().strip()
+        # no slashes in project‐name
         if not name or re.search(r"[\\/]", name):
-            QMessageBox.warning(self, "Invalid Name", "Enter a non-empty name without slashes.")
+            QMessageBox.warning(self,
+                                "Invalid Name",
+                                "Enter a non‐empty name without slashes.")
             return
+
+        # all good
         self.accept()
 
     def get_values(self):
@@ -310,8 +309,9 @@ class ExportDialog(QDialog):
             self.zip_cb.isChecked(),
         )
 
-def get_export_params(parent=None):
-    dlg = ExportDialog(parent)
+
+def get_export_params(parent=None, default_parent_folder: str = None):
+    dlg = ExportDialog(parent, default_parent_folder=default_parent_folder)
     if dlg.exec_() == QDialog.Accepted:
         return dlg.get_values()
     return None

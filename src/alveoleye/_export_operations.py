@@ -106,3 +106,7 @@ def export_results(
         "labelmaps": labelmaps_dir,
         "archive": archive_fp,
     }
+
+
+def is_real_writable_dir(path):
+    return os.path.isdir(path) and os.access(path, os.W_OK | os.X_OK)

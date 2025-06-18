@@ -14,6 +14,7 @@ import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
 
 from alveoleye._models import Result
+from alveoleye._export_operations import is_real_writable_dir
 
 
 class ProcessingActionBox(ActionBox):
@@ -488,7 +489,6 @@ class AssessmentsActionBox(ActionBox):
             stdev_chord_lengths,
             chords
         ]
-        print("\nadded current results")
 
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
@@ -521,11 +521,11 @@ class ExportActionBox(ActionBox):
         self.current_result: Result | None = None
 
         # Dialog parameters (initialized so thread_worker can read them)
-        self._exp_parent_folder = ""
-        self._exp_project_name = ""
-        self._exp_metrics_ext = "csv"
-        self._exp_labelmap_ext = "tif"
-        self._exp_zip_it = False
+        self.exp_parent_folder = ""
+        self.exp_project_name = ""
+        self.exp_metrics_ext = "csv"
+        self.exp_labelmap_ext = "tif"
+        self.exp_zip_it = False
 
         # box_id for step‐tracking
         self.box_id = 4
@@ -745,27 +745,41 @@ class ExportActionBox(ActionBox):
         base = self.box_config_data["ACTION_BUTTON_TEXT"]
         n = len(self.accumulated_results)
         maxd = self.box_config_data["MAX_EXPORT_COUNT_DISPLAY_NUMBER"]
+
         if n == 0:
             txt = base
         elif n > maxd:
             txt = f"{base} ({maxd}+)"
         else:
             txt = f"{base} ({n})"
+
         self.action_button.setText(txt)
 
     def on_action_button_press(self):
         """
         Pop the ExportDialog → store the 5 params → kick off the thread.
         """
+        export_location = str(Path(ActionBox.import_paths["image"]).parent)
+        print(export_location)
+
+        if self.file_path:
+            export_location = os.path.dirname(self.file_path)
+
+        if not is_real_writable_dir(export_location):
+            export_location = self.box_config_data.get("DEFAULT_EXPORT_LOCATION", "")
+
+        if not is_real_writable_dir(export_location):
+            export_location = os.getcwd()
+
         params = gui_creator.get_export_params(self)
         if not params:
             return
         (
-            self._exp_parent_folder,
-            self._exp_project_name,
-            self._exp_metrics_ext,
-            self._exp_labelmap_ext,
-            self._exp_zip_it,
+            self.exp_parent_folder,
+            self.exp_project_name,
+            self.exp_metrics_ext,
+            self.exp_labelmap_ext,
+            self.exp_zip_it,
         ) = params
 
         super().on_action_button_press()
@@ -776,11 +790,11 @@ class ExportActionBox(ActionBox):
         then hand off to the base class to run it in a QThread.
         """
         self.worker = ExportWorker()
-        self.worker.set_parent_folder(self._exp_parent_folder)
-        self.worker.set_project_name(self._exp_project_name)
-        self.worker.set_metrics_format(self._exp_metrics_ext)
-        self.worker.set_labelmap_format(self._exp_labelmap_ext)
-        self.worker.set_zip(self._exp_zip_it)
+        self.worker.set_parent_folder(self.exp_parent_folder)
+        self.worker.set_project_name(self.exp_project_name)
+        self.worker.set_metrics_format(self.exp_metrics_ext)
+        self.worker.set_labelmap_format(self.exp_labelmap_ext)
+        self.worker.set_zip(self.exp_zip_it)
         self.worker.set_accumulated_results(self.accumulated_results)
         self.worker.results_ready.connect(self.on_export_finished)
 
