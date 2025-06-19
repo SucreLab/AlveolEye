@@ -628,7 +628,7 @@ class ExportActionBox(ActionBox):
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
                                     lambda: ActionBox.current_results],
-                                   [lambda: gui_creator.toggle(True, self.add_button),
+                                   [lambda: gui_creator.toggle(True, [self.add_button, self.export_labelmap_check_box]),
                                     lambda: self.set_results()])
 
         self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
@@ -641,11 +641,14 @@ class ExportActionBox(ActionBox):
                                    lambda: gui_creator.toggle(True, self.asvd_metrics))
 
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
-                                   lambda: gui_creator.toggle(False, self.add_button))
+                                lambda: gui_creator.toggle(False, [self.add_button, self.export_labelmap_check_box]))
+
         self.rules_engine.add_rule([lambda: ActionBox.current_results],
-                                   lambda: gui_creator.toggle(True, self.add_button))
+                                lambda: gui_creator.toggle(True, [self.add_button, self.export_labelmap_check_box]))
+
         self.rules_engine.add_rule([lambda: Result(*ActionBox.current_results) in self.accumulated_results],
-                                   lambda: gui_creator.toggle(False, self.add_button))
+                                lambda: gui_creator.toggle(False, [self.add_button, self.export_labelmap_check_box]))
+
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
                                    lambda: gui_creator.toggle(True, self.remove_button))
