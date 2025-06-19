@@ -110,7 +110,7 @@
     "ASVD_METRIC_LINE_EDIT": "None",
     "ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
     "ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
-    "EXPORT_LABELMAP_CHECK_BOX_TEXT": "Export fully segmented image",
+    "EXPORT_LABELMAP_CHECK_BOX_TEXT": "Include fully segmented image with Add",
     "EXPORT_LABELMAP_CHECK_BOX_TOOLTIP_TEXT": "Exports segmented image (postprocessing layer)",
     "EXPORT_LABELMAP_CHECK_BOX_DEFAULT_VALUE": 0,
     "ADD_PROMPT": "Add results",

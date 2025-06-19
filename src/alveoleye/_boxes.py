@@ -614,8 +614,8 @@ class ExportActionBox(ActionBox):
             mli_chords_layout,
             hl2,
             self.export_labelmap_check_box,
-            hl3,
             add_layout,
+            hl3,
             rem_layout,
             clr_layout
         ]
@@ -697,6 +697,7 @@ class ExportActionBox(ActionBox):
             )
             if layer_data is not None:
                 labelmap = np.array(layer_data, copy=True)
+                print(np.unique(labelmap))
 
         full_r = Result(
             **self.current_result.to_dict(),
