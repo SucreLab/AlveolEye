@@ -271,6 +271,9 @@ class ExportWorker(WorkerParent):
 
     def set_zip(self, z: bool):
         self.zip_it = z
+        
+    def set_exp_rgb(self, r: bool):
+        self.exp_rgb_colors = r
 
     def set_accumulated_results(self, res: list[Result]):
         self.accumulated_results = res
@@ -286,6 +289,7 @@ class ExportWorker(WorkerParent):
                 project_name=self.project_name,
                 metrics_format=self.metrics_ext,
                 labelmap_ext=self.labelmap_ext,
+                export_as_rgb=self.exp_rgb_colors,
                 zip_it=self.zip_it,
             )
 

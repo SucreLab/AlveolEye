@@ -527,6 +527,7 @@ class ExportActionBox(ActionBox):
         self.exp_project_name = ""
         self.exp_metrics_ext = "csv"
         self.exp_labelmap_ext = "tif"
+        self.exp_rgb_color = False
         self.exp_zip_it = False
 
         self.box_id = 4
@@ -700,7 +701,6 @@ class ExportActionBox(ActionBox):
             )
             if layer_data is not None:
                 labelmap = np.array(layer_data, copy=True)
-                print(np.unique(labelmap))
 
         full_r = Result(
             **self.current_result.to_dict(),
@@ -760,6 +760,7 @@ class ExportActionBox(ActionBox):
             self.exp_project_name,
             self.exp_metrics_ext,
             self.exp_labelmap_ext,
+            self.exp_rgb_color,
             self.exp_zip_it,
         ) = params
 
@@ -771,6 +772,7 @@ class ExportActionBox(ActionBox):
         self.worker.set_project_name(self.exp_project_name)
         self.worker.set_metrics_format(self.exp_metrics_ext)
         self.worker.set_labelmap_format(self.exp_labelmap_ext)
+        self.worker.set_exp_rgb(self.exp_rgb_color)
         self.worker.set_zip(self.exp_zip_it)
         self.worker.set_accumulated_results(self.accumulated_results)
 

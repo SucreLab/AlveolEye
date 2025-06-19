@@ -59,6 +59,27 @@ def write_labelmaps(results: List[Result], labelmap_dir: str, ext: str):
         tifffile.imwrite(outp, r.labelmap.astype("uint16"))
 
 
+def write_images(results: List[Result], labelmap_dir: str, ext: str):
+    os.makedirs(labelmap_dir, exist_ok=True)
+
+    colormap = _norm_to_rgb(Config.get_label_indexed_colormap())
+
+    for idx, r in enumerate(results, start=1):
+        if r.labelmap is None:
+            continue
+
+        labelmap = r.labelmap.astype(np.uint8)
+        labelmap = np.squeeze(labelmap, axis=0)
+        h, w = labelmap.shape
+        rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+
+        for label, color in colormap.items():
+            rgb_image[labelmap == label] = color
+
+        outp = os.path.join(labelmap_dir, f"{idx}_labelmap.{ext}")
+        Image.fromarray(rgb_image).save(outp)
+
+
 def zip_folder(src_folder: str, zip_target: str):
     root, folder = os.path.split(src_folder.rstrip("/\\"))
     temp_archive = shutil.make_archive(os.path.join(root, folder), 'zip', root, folder)
@@ -70,12 +91,13 @@ def zip_folder(src_folder: str, zip_target: str):
 
 
 def export_results(
-        results: List[Result],
-        base_dir: str,
-        project_name: str,
-        metrics_format: str = "csv",
-        labelmap_ext: str = "tif",
-        zip_it: bool = False,
+    results: List[Result],
+    base_dir: str,
+    project_name: str,
+    metrics_format: str = "csv",
+    labelmap_ext: str = "tif",
+    zip_it: bool = False,
+    export_as_rgb: bool = False,
 ) -> Dict[str, Optional[str]]:
     export_folder = get_unique_export_folder(base_dir, project_name)
     os.makedirs(export_folder, exist_ok=True)
@@ -86,7 +108,11 @@ def export_results(
     labelmaps_dir = None
     if any(r.labelmap is not None for r in results):
         labelmaps_dir = os.path.join(export_folder, "labelmaps")
-        write_labelmaps(results, labelmaps_dir, labelmap_ext)
+
+        if export_as_rgb:
+            write_images(results, labelmaps_dir, labelmap_ext)
+        else:
+            write_labelmaps(results, labelmaps_dir, labelmap_ext)
 
     archive_fp = None
     if zip_it:

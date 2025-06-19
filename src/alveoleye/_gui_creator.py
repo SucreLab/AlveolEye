@@ -266,6 +266,7 @@ class ExportDialog(QDialog):
         self.labelmap_combo.addItems(["tif", "png"])
 
         # 5) Zip?
+        self.rgb_cb = QCheckBox("Export as RGB image")
         self.zip_cb = QCheckBox("Compress into ZIP archive")
 
         # OK / Cancel buttons
@@ -279,6 +280,7 @@ class ExportDialog(QDialog):
         form.addRow("Project name:", self.project_le)
         form.addRow("Metrics format:", self.metrics_combo)
         form.addRow("Labelmap format:", self.labelmap_combo)
+        form.addRow("", self.rgb_cb)
         form.addRow("", self.zip_cb)
 
         v = QVBoxLayout()
@@ -322,9 +324,9 @@ class ExportDialog(QDialog):
             self.project_le.text().strip(),
             self.metrics_combo.currentText(),
             self.labelmap_combo.currentText(),
+            self.rgb_cb.isChecked(),
             self.zip_cb.isChecked(),
         )
-
 
 def get_export_params(parent=None, default_parent_folder: str = None):
     dlg = ExportDialog(parent, default_parent_folder=default_parent_folder)
