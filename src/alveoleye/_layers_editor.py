@@ -26,7 +26,6 @@ def remove_all_layers(napari_viewer):
         napari_viewer.layers.remove(layer)
 
 
-
 def _labels_dict_to_properties_array(labels_dict):
     max_index = max(labels_dict.values())
     result_array = ["undefined"] * (max_index + 1)
@@ -38,15 +37,14 @@ def _labels_dict_to_properties_array(labels_dict):
     return result_array
 
 
-
 def update_layers(
-    napari_viewer,
-    layer_name,
-    layer_data,
-    color_dict,
-    labels_dict,
-    is_labelmap,
-    editable=True,
+        napari_viewer,
+        layer_name,
+        layer_data,
+        color_dict,
+        labels_dict,
+        is_labelmap,
+        editable=True,
 ):
     existing_layers = {layer.name: layer for layer in napari_viewer.layers}
     if layer_name in existing_layers:

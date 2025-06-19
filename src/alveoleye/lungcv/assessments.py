@@ -18,7 +18,8 @@ def calculate_airspace_volume_density(labelmap, labels):
     return alveolar_density, alveoli_pixels, alveoli_and_parenchyma_pixels
 
 
-def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False, callback=None):
+def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False,
+                                    callback=None):
     labelmap = np.squeeze(labelmap)
     labelmap_shape = labelmap.shape
 

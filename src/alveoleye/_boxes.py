@@ -1,18 +1,22 @@
-import cv2
 import os
 from pathlib import Path
 
+import cv2
+import numpy as np
+from PyQt5.QtWidgets import QMessageBox
 from qtpy.QtWidgets import QFileDialog
 
-import alveoleye._gui_creator
 from alveoleye._action_box import ActionBox
-
-from alveoleye._workers import ProcessingWorker, PostprocessingWorker, AssessmentsWorker, ExportWorker
-
 import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
 from alveoleye._export_operations import is_real_writable_dir
-
+from alveoleye._models import Result
+from alveoleye._workers import (
+    AssessmentsWorker,
+    ExportWorker,
+    PostprocessingWorker,
+    ProcessingWorker,
+)
 
 
 class ProcessingActionBox(ActionBox):
@@ -110,21 +114,21 @@ class ProcessingActionBox(ActionBox):
         self.rules_engine.add_rule([lambda: ActionBox.import_paths["image"] is None,
                                     lambda: ActionBox.import_paths["weights"] is None,
                                     lambda: not self.state == 2],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+                                   lambda: gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
 
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is None,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.import_image_line_edit))
+                                   lambda: gui_creator.toggle(False, self.import_image_line_edit))
         self.rules_engine.add_rule(lambda: ActionBox.import_paths["image"] is not None,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.import_image_line_edit))
+                                   lambda: gui_creator.toggle(True, self.import_image_line_edit))
 
         self.rules_engine.add_rule(lambda: self.use_ai_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, [self.import_weights_button_and_line_edit_layout,
+                                   lambda: gui_creator.toggle(True, [self.import_weights_button_and_line_edit_layout,
                                                                                 self.confidence_threshold_label_and_spin_box_layout]))
         self.rules_engine.add_rule(lambda: not self.use_ai_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, [self.import_weights_button_and_line_edit_layout,
+                                   lambda: gui_creator.toggle(False, [self.import_weights_button_and_line_edit_layout,
                                                                                  self.confidence_threshold_label_and_spin_box_layout]))
 
         super().create_ui_rules()
@@ -183,7 +187,7 @@ class ProcessingActionBox(ActionBox):
         otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
         threshold_value = round(otsu_value)
         PostprocessingActionBox.threshold_value = threshold_value
-    
+
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
 
@@ -194,9 +198,11 @@ class ProcessingActionBox(ActionBox):
 
         super().on_results_ready()
 
+        ActionBox.current_use_computer_vision = self.use_ai_check_box.isChecked()
+        ActionBox.current_min_confidence = self.confidence_threshold_spin_box.value()
+
 
 class PostprocessingActionBox(ActionBox):
-
     threshold_value = None
 
     def __init__(self, napari_viewer):
@@ -277,19 +283,19 @@ class PostprocessingActionBox(ActionBox):
                                     lambda: ActionBox.step == 0],
                                    lambda: self.thresholding_spin_box.setValue(PostprocessingActionBox.threshold_value))
         self.rules_engine.add_rule(lambda: self.thresholding_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, self.thresholding_spin_box))
+                                   lambda: gui_creator.toggle(True, self.thresholding_spin_box))
         self.rules_engine.add_rule(lambda: not self.thresholding_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, self.thresholding_spin_box))
+                                   lambda: gui_creator.toggle(False, self.thresholding_spin_box))
 
         self.rules_engine.add_rule(lambda: ActionBox.step == 0,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+                                   lambda: gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 1],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 2],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: self.state == 0, lambda: ActionBox.step == 3],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
 
         super().create_ui_rules()
 
@@ -299,6 +305,17 @@ class PostprocessingActionBox(ActionBox):
                                     self.colormap_config_data, self.labels_config_data, True, True)
 
         super().on_results_ready()
+
+        # store post‐processing arguments for export
+        ActionBox.current_used_manual_threshold = self.thresholding_check_box.isChecked()
+
+        if ActionBox.current_used_manual_threshold:
+            ActionBox.current_threshold_value = self.thresholding_spin_box.value()
+        else:
+            ActionBox.current_threshold_value = PostprocessingActionBox.threshold_value
+
+        ActionBox.current_remove_small_particles = self.clean_alveoli_spin_box.value()
+        ActionBox.current_remove_small_holes = self.clean_parenchyma_spin_box.value()
 
 
 class AssessmentsActionBox(ActionBox):
@@ -405,32 +422,32 @@ class AssessmentsActionBox(ActionBox):
 
     def create_ui_rules(self):
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, self.mli_line_edit))
+                                   lambda: gui_creator.toggle(True, self.mli_line_edit))
         self.rules_engine.add_rule(lambda: self.asvd_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, self.asvd_line_edit))
+                                   lambda: gui_creator.toggle(True, self.asvd_line_edit))
 
         self.rules_engine.add_rule(lambda: not self.mli_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, self.mli_line_edit))
+                                   lambda: gui_creator.toggle(False, self.mli_line_edit))
         self.rules_engine.add_rule(lambda: not self.asvd_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, self.asvd_line_edit))
+                                   lambda: gui_creator.toggle(False, self.asvd_line_edit))
 
         self.rules_engine.add_rule(lambda: not ActionBox.step == 2,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+                                   lambda: gui_creator.toggle(False, self.action_button))
         self.rules_engine.add_rule(lambda: ActionBox.step == 3,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 2,
                                     lambda: self.mli_check_box.isChecked() or self.asvd_check_box.isChecked()],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule([lambda: ActionBox.step == 2,
                                     lambda: not self.mli_check_box.isChecked() and not self.asvd_check_box.isChecked()],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+                                   lambda: gui_creator.toggle(False, self.action_button))
 
         self.rules_engine.add_rule(lambda: self.mli_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(True, [self.lines_spin_box,
+                                   lambda: gui_creator.toggle(True, [self.lines_spin_box,
                                                                                 self.min_length_spin_box,
                                                                                 self.scale_spin_box]))
         self.rules_engine.add_rule(lambda: not self.mli_check_box.isChecked(),
-                                   lambda: alveoleye._gui_creator.toggle(False, [self.lines_spin_box,
+                                   lambda: gui_creator.toggle(False, [self.lines_spin_box,
                                                                                  self.min_length_spin_box,
                                                                                  self.scale_spin_box]))
 
@@ -453,11 +470,27 @@ class AssessmentsActionBox(ActionBox):
             self.napari_viewer.layers.selection.active = self.napari_viewer.layers[
                 self.layers_config_data["POSTPROCESSING_LAYER"]]
 
-        ActionBox.current_results = [os.path.basename(ActionBox.import_paths["image"]),
-                                     os.path.basename(ActionBox.import_paths["weights"]), asvd, mli,
-                                     stdev_chord_lengths, chords, airspace_pixels, non_airspace_pixels,
-                                     self.lines_spin_box.value(), self.min_length_spin_box.value(),
-                                     self.scale_spin_box.value()]
+        ActionBox.current_results = [
+            os.path.basename(ActionBox.import_paths["image"]),
+            ActionBox.current_use_computer_vision,
+            os.path.basename(ActionBox.import_paths["weights"]),
+            ActionBox.current_min_confidence,
+            ActionBox.current_used_manual_threshold,
+            ActionBox.current_threshold_value,
+            ActionBox.current_remove_small_particles,
+            ActionBox.current_remove_small_holes,
+            self.asvd_check_box.isChecked(),
+            self.mli_check_box.isChecked(),
+            self.lines_spin_box.value(),
+            self.min_length_spin_box.value(),
+            self.scale_spin_box.value(),
+            asvd,
+            airspace_pixels,
+            non_airspace_pixels,
+            mli,
+            stdev_chord_lengths,
+            chords
+        ]
 
         self.rules_engine.evaluate_rules()
         super().on_results_ready()
@@ -479,44 +512,27 @@ class ExportActionBox(ActionBox):
 
         self.asvd_metrics = None
 
+        self.export_labelmap_check_box = None
+
         self.add_button = None
         self.remove_button = None
         self.clear_button = None
-        self.selected_filter = None
-        self.file_path = None
 
         self.accumulated_results = []
 
-        self.name_line_edit = None
+        self.accumulated_results: list[Result] = []
+        self.current_result: Result | None = None
+
+        self.exp_parent_folder = ""
+        self.exp_project_name = ""
+        self.exp_metrics_ext = "csv"
+        self.exp_labelmap_ext = "tif"
+        self.exp_zip_it = False
+
         self.box_id = 4
 
         self.create_ui_elements()
         self.create_ui_rules()
-
-    def on_action_button_press(self):
-        export_location = str(Path(ActionBox.import_paths["image"]).parent)
-        print(export_location)
-
-        if self.file_path:
-            export_location = os.path.dirname(self.file_path)
-
-        if not is_real_writable_dir(export_location):
-            export_location = self.box_config_data.get("DEFAULT_EXPORT_LOCATION", "")
-
-        if not is_real_writable_dir(export_location):
-            export_location = os.getcwd()
-
-        self.file_path, self.selected_filter = gui_creator.save_data_with_file_dialog(export_location)
-        super().on_action_button_press()
-
-    def thread_worker(self):
-        self.worker = ExportWorker()
-
-        self.worker.set_file_path(self.file_path)
-        self.worker.set_selected_filter(self.selected_filter)
-        self.worker.set_accumulated_results(self.accumulated_results)
-
-        super().thread_worker()
 
     def create_ui_elements(self):
         mli_layout, _, self.mli_line_edit = gui_creator.create_label_and_line_edit_layout(
@@ -532,148 +548,244 @@ class ExportActionBox(ActionBox):
             self.box_config_data["MLI_CHORDS_METRIC_LINE_EDIT"]
         )
 
-        self.mli_metrics = [self.mli_line_edit, self.mli_stdev_line_edit, self.mli_chords_line_edit]
-
-        horizontal_line_one = gui_creator.create_horizontal_line_widget()
+        self.mli_metrics = [
+            self.mli_line_edit,
+            self.mli_stdev_line_edit,
+            self.mli_chords_line_edit
+        ]
+        hl1 = gui_creator.create_horizontal_line_widget()
 
         asvd_layout, _, self.asvd_line_edit = gui_creator.create_label_and_line_edit_layout(
             self.box_config_data["ASVD_METRIC"],
             self.box_config_data["ASVD_METRIC_LINE_EDIT"]
         )
 
-        (asvd_airspace_pixels_layout, _,
-         self.asvd_airspace_pixels_line_edit) = gui_creator.create_label_and_line_edit_layout(
+        asvd_air_layout, _, self.asvd_airspace_pixels_line_edit = gui_creator.create_label_and_line_edit_layout(
             self.box_config_data["ASVD_AIRSPACE_PIXELS_METRIC"],
             self.box_config_data["ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT"]
         )
 
-        (asvd_non_airspace_pixels_layout, _,
-         self.asvd_non_airspace_pixels_line_edit) = gui_creator.create_label_and_line_edit_layout(
+        asvd_non_layout, _, self.asvd_non_airspace_pixels_line_edit = gui_creator.create_label_and_line_edit_layout(
             self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC"],
             self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"]
         )
 
-        self.asvd_metrics = [self.asvd_line_edit,
-                             self.asvd_airspace_pixels_line_edit,
-                             self.asvd_non_airspace_pixels_line_edit]
+        self.asvd_metrics = [
+            self.asvd_line_edit,
+            self.asvd_airspace_pixels_line_edit,
+            self.asvd_non_airspace_pixels_line_edit
+        ]
+        hl2 = gui_creator.create_horizontal_line_widget()
 
-        horizontal_line_two = gui_creator.create_horizontal_line_widget()
+        self.export_labelmap_check_box = gui_creator.create_check_box_widget(
+            self.box_config_data["EXPORT_LABELMAP_CHECK_BOX_TEXT"],
+            self.rules_engine.evaluate_rules,
+            self.box_config_data["EXPORT_LABELMAP_CHECK_BOX_TOOLTIP_TEXT"],
+            self.box_config_data["EXPORT_LABELMAP_CHECK_BOX_DEFAULT_VALUE"]
+        )
+        hl3 = gui_creator.create_horizontal_line_widget()
 
-        add_label_and_button_layout, label, self.add_button = gui_creator.create_label_and_button_layout(
+        add_layout, _, self.add_button = gui_creator.create_label_and_button_layout(
             self.box_config_data["ADD_PROMPT"],
             self.box_config_data["ADD_BUTTON_TEXT"],
             self.box_config_data["ADD_BUTTON_TOOLTIP_TEXT"],
-            self.add_results)
-
-        remove_label_and_button_layout, label, self.remove_button = gui_creator.create_label_and_button_layout(
+            self.add_results
+        )
+        rem_layout, _, self.remove_button = gui_creator.create_label_and_button_layout(
             self.box_config_data["REMOVE_PROMPT"],
             self.box_config_data["REMOVE_BUTTON_TEXT"],
             self.box_config_data["REMOVE_BUTTON_TOOLTIP_TEXT"],
-            self.remove_results)
-
-        clear_label_and_button_layout, label, self.clear_button = gui_creator.create_label_and_button_layout(
+            self.remove_results
+        )
+        clr_layout, _, self.clear_button = gui_creator.create_label_and_button_layout(
             self.box_config_data["CLEAR_PROMPT"],
             self.box_config_data["CLEAR_BUTTON_TEXT"],
             self.box_config_data["CLEAR_BUTTON_TOOLTIP_TEXT"],
-            self.clear_results)
+            self.clear_results
+        )
 
-        self.create_action_box_layout([asvd_layout, asvd_airspace_pixels_layout, asvd_non_airspace_pixels_layout,
-                                       horizontal_line_one, mli_layout, mli_stdev_layout, mli_chords_layout,
-                                       horizontal_line_two, add_label_and_button_layout, remove_label_and_button_layout,
-                                       clear_label_and_button_layout], self.box_config_data["ACTION_BUTTON_TEXT"],
-                                      self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"])
+        rows = [
+            asvd_layout,
+            asvd_air_layout,
+            asvd_non_layout,
+            hl1,
+            mli_layout,
+            mli_stdev_layout,
+            mli_chords_layout,
+            hl2,
+            self.export_labelmap_check_box,
+            hl3,
+            add_layout,
+            rem_layout,
+            clr_layout
+        ]
+        self.create_action_box_layout(
+            rows,
+            self.box_config_data["ACTION_BUTTON_TEXT"],
+            self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"]
+        )
 
     def create_ui_rules(self):
         self.rules_engine.add_rule([lambda: ActionBox.step == 3,
                                     lambda: ActionBox.current_results],
-                                   [lambda: alveoleye._gui_creator.toggle(True, self.add_button),
+                                   [lambda: gui_creator.toggle(True, self.add_button),
                                     lambda: self.set_results()])
 
         self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.mli_metrics))
+                                   lambda: gui_creator.toggle(False, self.mli_metrics))
         self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() == self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.asvd_metrics))
+                                   lambda: gui_creator.toggle(False, self.asvd_metrics))
         self.rules_engine.add_rule(lambda: self.mli_line_edit.text() != self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.mli_metrics))
+                                   lambda: gui_creator.toggle(True, self.mli_metrics))
         self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.asvd_metrics))
+                                   lambda: gui_creator.toggle(True, self.asvd_metrics))
 
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.add_button))
+                                   lambda: gui_creator.toggle(False, self.add_button))
         self.rules_engine.add_rule([lambda: ActionBox.current_results],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.add_button))
-        self.rules_engine.add_rule([lambda: tuple(ActionBox.current_results) in self.accumulated_results],
-                                   lambda: alveoleye._gui_creator.toggle(False, self.add_button))
+                                   lambda: gui_creator.toggle(True, self.add_button))
+        self.rules_engine.add_rule([lambda: Result(*ActionBox.current_results) in self.accumulated_results],
+                                   lambda: gui_creator.toggle(False, self.add_button))
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.remove_button))
+                                   lambda: gui_creator.toggle(True, self.remove_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.remove_button))
+                                   lambda: gui_creator.toggle(False, self.remove_button))
 
         self.rules_engine.add_rule(lambda: not self.accumulated_results,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.clear_button))
+                                   lambda: gui_creator.toggle(False, self.clear_button))
         self.rules_engine.add_rule([lambda: self.accumulated_results],
-                                   lambda: alveoleye._gui_creator.toggle(True, self.clear_button))
+                                   lambda: gui_creator.toggle(True, self.clear_button))
 
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) != 0,
-                                   lambda: alveoleye._gui_creator.toggle(True, self.action_button))
+                                   lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
-                                   lambda: alveoleye._gui_creator.toggle(False, self.action_button))
+                                   lambda: gui_creator.toggle(False, self.action_button))
 
         super().create_ui_rules()
 
     def set_results(self):
-        _, _, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels, _, _, _ = ActionBox.current_results
+        (
+            _img, _cv, _w, _mc,
+            _umt, _tv, _rsp, _rsh,
+            asvd_on, mli_on,
+            lines, min_len, scale,
+            asvd, airspace, non_airspace,
+            mli, stdev, chords
+        ) = ActionBox.current_results
 
-        gui_creator.update_line_edit(self.mli_line_edit, mli,
-                                     self.box_config_data["MLI_METRIC_LINE_EDIT"], mli)
-        gui_creator.update_line_edit(self.mli_stdev_line_edit, stdev,
-                                     self.box_config_data["MLI_STDEV_METRIC_LINE_EDIT"], mli)
-        gui_creator.update_line_edit(self.mli_chords_line_edit, chords,
-                                     self.box_config_data["MLI_CHORDS_METRIC_LINE_EDIT"], mli)
-        gui_creator.update_line_edit(self.asvd_line_edit, asvd,
-                                     self.box_config_data["ASVD_METRIC_LINE_EDIT"], asvd)
-        gui_creator.update_line_edit(self.asvd_airspace_pixels_line_edit, airspace_pixels,
-                                     self.box_config_data["ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
-        gui_creator.update_line_edit(self.asvd_non_airspace_pixels_line_edit, non_airspace_pixels,
-                                     self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"], asvd)
+        self.asvd_line_edit.setText(str(asvd) if asvd_on else "None")
+        self.asvd_airspace_pixels_line_edit.setText(str(airspace) if asvd_on else "None")
+        self.asvd_non_airspace_pixels_line_edit.setText(str(non_airspace) if asvd_on else "None")
+
+        self.mli_line_edit.setText(str(mli) if mli_on else "None")
+        self.mli_stdev_line_edit.setText(str(stdev) if mli_on else "None")
+        self.mli_chords_line_edit.setText(str(chords) if mli_on else "None")
 
     def add_results(self):
-        self.accumulated_results.append(tuple(ActionBox.current_results))
+        raw = tuple(ActionBox.current_results)
+        self.current_result = Result.from_raw(raw, labelmap=None)
+
+        if not self.current_result:
+            return
+
+        labelmap = None
+        if self.export_labelmap_check_box.isChecked():
+            layer_data = layers_editor.get_layer_by_name(
+                self.napari_viewer,
+                self.layers_config_data["POSTPROCESSING_LAYER"]
+            )
+            if layer_data is not None:
+                labelmap = np.array(layer_data, copy=True)
+
+        full_r = Result(
+            **self.current_result.to_dict(),
+            labelmap=labelmap
+        )
+        self.accumulated_results.append(full_r)
         self.rules_engine.evaluate_rules()
         self.update_export_counter()
 
     def remove_results(self):
-        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"])
-
-        if result:
+        if gui_creator.create_confirmation_message_box(
+                self, self.box_config_data["REMOVE_CONFIRMATION_MESSAGE"]
+        ):
             self.accumulated_results.pop()
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
 
     def clear_results(self):
-        result = gui_creator.create_confirmation_message_box(self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"])
-
-        if result:
+        if gui_creator.create_confirmation_message_box(
+                self, self.box_config_data["CLEAR_CONFIRMATION_MESSAGE"]
+        ):
             self.accumulated_results.clear()
             self.rules_engine.evaluate_rules()
             self.update_export_counter()
 
     def update_export_counter(self):
-        base_text = self.box_config_data["ACTION_BUTTON_TEXT"]
-        max_export_count_display_number = self.box_config_data["MAX_EXPORT_COUNT_DISPLAY_NUMBER"]
-        number_of_results = len(self.accumulated_results)
+        base = self.box_config_data["ACTION_BUTTON_TEXT"]
+        n = len(self.accumulated_results)
+        maxd = self.box_config_data["MAX_EXPORT_COUNT_DISPLAY_NUMBER"]
 
-        if number_of_results == 0:
-            self.action_button.setText(base_text)
-        elif number_of_results > max_export_count_display_number:
-            self.action_button.setText(f'{base_text} ({max_export_count_display_number}+)')
+        if n == 0:
+            txt = base
+        elif n > maxd:
+            txt = f"{base} ({maxd}+)"
         else:
-            self.action_button.setText(f'{base_text} ({number_of_results})')
+            txt = f"{base} ({n})"
+
+        self.action_button.setText(txt)
+
+    def on_action_button_press(self):
+        export_location = str(Path(ActionBox.import_paths["image"]).parent)
+
+        if self.exp_parent_folder:
+            export_location = self.exp_parent_folder
+
+        if not is_real_writable_dir(export_location):
+            export_location = self.box_config_data.get("DEFAULT_EXPORT_LOCATION", "")
+
+        if not is_real_writable_dir(export_location):
+            export_location = os.getcwd()
+
+        params = gui_creator.get_export_params(self, export_location)
+        if not params:
+            return
+        (
+            self.exp_parent_folder,
+            self.exp_project_name,
+            self.exp_metrics_ext,
+            self.exp_labelmap_ext,
+            self.exp_zip_it,
+        ) = params
+
+        super().on_action_button_press()
+
+    def thread_worker(self):
+        self.worker = ExportWorker()
+        self.worker.set_parent_folder(self.exp_parent_folder)
+        self.worker.set_project_name(self.exp_project_name)
+        self.worker.set_metrics_format(self.exp_metrics_ext)
+        self.worker.set_labelmap_format(self.exp_labelmap_ext)
+        self.worker.set_zip(self.exp_zip_it)
+        self.worker.set_accumulated_results(self.accumulated_results)
+
+        super().thread_worker()
 
     def on_thread_completed(self):
         super().on_thread_completed()
         self.update_export_counter()
 
-    def on_results_ready(self, wrapped_data, extension):
-        pass
+    def on_results_ready(self, info: dict, error_msg: str):
+        if error_msg:
+            QMessageBox.critical(self, "Export Failed", error_msg)
+            return
+
+        msg = f"Metrics saved to:\n  {info['metrics']}"
+        if info.get("labelmaps"):
+            msg += f"\nLabelmaps folder:\n  {info['labelmaps']}"
+        if info.get("archive"):
+            msg += f"\nArchive file:\n  {info['archive']}"
+
+        QMessageBox.information(self, "Export Complete", msg)
+        print("ActionBox.step: ", ActionBox.step)
