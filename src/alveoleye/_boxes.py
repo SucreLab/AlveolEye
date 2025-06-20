@@ -752,7 +752,9 @@ class ExportActionBox(ActionBox):
         if not is_real_writable_dir(export_location):
             export_location = os.getcwd()
 
-        params = gui_creator.get_export_params(self, export_location)
+        has_labelmaps = any(r.labelmap is not None for r in self.accumulated_results)
+        params = gui_creator.get_export_params(self, export_location, has_labelmaps)
+
         if not params:
             return
         (
