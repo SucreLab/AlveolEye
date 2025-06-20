@@ -353,7 +353,7 @@ class AssessmentsActionBox(ActionBox):
         self.worker.set_mli_check_box_state(self.mli_check_box.isChecked())
         self.worker.set_lines_spin_box_value(self.lines_spin_box.value())
         self.worker.set_min_length_spin_box_value(self.min_length_spin_box.value())
-        self.worker.set_scale_spin_box_value(self.scale_spin_box.value())
+        self.worker.set_scale_spin_box_value(round(self.scale_spin_box.value(), 5))
 
         super().thread_worker()
 
