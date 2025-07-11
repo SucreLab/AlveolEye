@@ -140,8 +140,8 @@ class PostprocessingWorker(WorkerParent):
     def run(self):
         try:
             if not self.terminate:
-                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
-                                                        self.callback)
+                image = layers_editor.get_layers_by_names(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
+                                                          self.callback)
 
             if not self.terminate:
                 grayscaled = convert_to_grayscale(image, self.callback)
@@ -162,8 +162,8 @@ class PostprocessingWorker(WorkerParent):
                 inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
             if not self.terminate:
-                masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
-                                                                 self.layer_names["PROCESSING_LAYER"], self.callback)
+                masks_labelmap = layers_editor.get_layers_by_names(self.napari_viewer,
+                                                                   self.layer_names["PROCESSING_LAYER"], self.callback)
 
             if not self.terminate:
                 labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels, self.callback)
@@ -217,8 +217,8 @@ class AssessmentsWorker(WorkerParent):
 
         try:
             if not self.terminate:
-                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
-                                                           self.callback)
+                labelmap = layers_editor.get_layers_by_names(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
+                                                             self.callback)
 
             if not self.terminate:
                 if self.asvd_check_box_state:

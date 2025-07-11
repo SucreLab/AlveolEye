@@ -1,10 +1,9 @@
+# models.py
+
 from __future__ import annotations
-
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, asdict, field
 from typing import Any, Dict, Optional, Tuple
-
 import numpy as np
-
 
 @dataclass
 class Result:
@@ -31,18 +30,21 @@ class Result:
     stdev: Optional[float] = None
     chords: Optional[int] = None
 
-    # — optional segmentation map (excluded from equality/comparison) —
-    labelmap: Optional[np.ndarray] = field(default=None, compare=False)
+    # — optional segmentation maps, keyed by layer name —
+    labelmaps: Optional[Dict[str, np.ndarray]] = field(default=None, compare=False)
 
     @classmethod
     def from_raw(
-            cls,
-            raw: Tuple[Any, ...],
-            labelmap: Optional[np.ndarray] = None
+        cls,
+        raw: Tuple[Any, ...],
+        labelmaps: Optional[Dict[str, np.ndarray]] = None
     ) -> Result:
+        """
+        Build a Result from the raw tuple of 19 items,
+        plus an optional dict of labelmaps keyed by layer-name.
+        """
         if len(raw) != 19:
             raise ValueError(f"Expected 19 items in raw tuple, got {len(raw)}")
-
         return cls(
             image_file_name=raw[0],
             use_computer_vision=raw[1],
@@ -63,10 +65,13 @@ class Result:
             mli=raw[16],
             stdev=raw[17],
             chords=raw[18],
-            labelmap=labelmap
+            labelmaps=labelmaps
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to a dict for CSV/JSON export; omit the labelmaps field.
+        """
         d = asdict(self)
-        d.pop("labelmap", None)
+        d.pop("labelmaps", None)
         return d

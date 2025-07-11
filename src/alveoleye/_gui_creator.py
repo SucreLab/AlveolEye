@@ -234,6 +234,7 @@ def toggle(state, elements):
             else:
                 current.setEnabled(state)
 
+
 class ExportDialog(QDialog):
     def __init__(self, parent=None, default_parent_folder: str = None, has_labelmaps: bool = True):
         super().__init__(parent)
@@ -320,6 +321,7 @@ class ExportDialog(QDialog):
             return
 
         self.accept()
+
 
 def get_export_params(parent=None, default_parent_folder: str = None, has_labelmaps: bool = True):
     dlg = ExportDialog(parent, default_parent_folder=default_parent_folder, has_labelmaps=has_labelmaps)

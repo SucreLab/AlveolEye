@@ -2,12 +2,11 @@ import csv
 import json
 import os
 import shutil
-from typing import Dict, List, Optional
+from typing import List, Optional, Dict
 
 import numpy as np
-from PIL import Image
-import tifffile
 import torch
+from PIL import Image
 
 from alveoleye._config_utils import Config
 from alveoleye._models import Result
@@ -49,35 +48,59 @@ def write_metrics(results: List[Result], out_path: str, fmt: str):
             json.dump(payload, fh, indent=2)
 
 
+# export_operations.py
+
 def write_labelmaps(results: List[Result], labelmap_dir: str, ext: str):
+    """
+    Write each case’s labelmaps into files named:
+        {case_id}_{layer_name}.{ext}
+
+    e.g.:
+      1_initial.tif
+      1_processing.tif
+      etc.
+    """
+    import os
+    import tifffile
+
     os.makedirs(labelmap_dir, exist_ok=True)
+
     for idx, r in enumerate(results, start=1):
-        if r.labelmap is None:
+        if not r.labelmaps:
             continue
-        fn = f"{idx}_labelmap.{ext}"
-        outp = os.path.join(labelmap_dir, fn)
-        tifffile.imwrite(outp, r.labelmap.astype("uint16"))
+
+        for layer_name, lm in r.labelmaps.items():
+            fn = f"{idx}_{layer_name}.{ext}"
+            outp = os.path.join(labelmap_dir, fn)
+            # ensure correct dtype
+            tifffile.imwrite(outp, lm.astype("uint16"))
 
 
 def write_images(results: List[Result], labelmap_dir: str, ext: str):
+    """
+    Convert each labelmap to RGB and save as {case_id}_{layer_name}.{ext}.
+    """
     os.makedirs(labelmap_dir, exist_ok=True)
-
+    # get the global colormap once
     colormap = _norm_to_rgb(Config.get_label_indexed_colormap())
 
     for idx, r in enumerate(results, start=1):
-        if r.labelmap is None:
+        if not r.labelmaps:
             continue
 
-        labelmap = r.labelmap.astype(np.uint8)
-        labelmap = np.squeeze(labelmap, axis=0)
-        h, w = labelmap.shape
-        rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+        for layer_name, lm in r.labelmaps.items():
+            # build RGB canvas
+            labelmap = lm.astype(np.uint8)
+            labelmap = np.squeeze(labelmap, axis=0)
+            h, w = labelmap.shape
+            rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
 
-        for label, color in colormap.items():
-            rgb_image[labelmap == label] = color
+            for label, color in colormap.items():
+                rgb_image[labelmap == label] = color
 
-        outp = os.path.join(labelmap_dir, f"{idx}_labelmap.{ext}")
-        Image.fromarray(rgb_image).save(outp)
+            fn = f"{idx}_{layer_name}.{ext}"
+            outp = os.path.join(labelmap_dir, fn)
+            Image.fromarray(rgb_image).save(outp)
 
 
 def zip_folder(src_folder: str, zip_target: str):
@@ -106,7 +129,7 @@ def export_results(
     write_metrics(results, metrics_fp, metrics_format)
 
     labelmaps_dir = None
-    if any(r.labelmap is not None for r in results):
+    if any(r.labelmaps is not None for r in results):
         labelmaps_dir = os.path.join(export_folder, "labelmaps")
 
         if export_as_rgb:

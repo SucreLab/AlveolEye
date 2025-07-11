@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Dict
 
 import cv2
 import numpy as np
@@ -182,7 +183,7 @@ class ProcessingActionBox(ActionBox):
                              self.box_config_data["WEIGHTS_FOLDER_PATH"])
 
     def set_image_threshold_value(self):
-        image = layers_editor.get_layer_by_name(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
+        image = layers_editor.get_layers_by_names(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
         grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
         threshold_value = round(otsu_value)
@@ -191,7 +192,7 @@ class ProcessingActionBox(ActionBox):
     def on_results_ready(self, model_output, inference_labelmap):
         ProcessingActionBox.model_output = model_output
 
-        layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
+        layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER"])
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["PROCESSING_LAYER"],
                                     inference_labelmap, self.colormap_config_data, self.labels_config_data, True, True)
@@ -300,7 +301,7 @@ class PostprocessingActionBox(ActionBox):
         super().create_ui_rules()
 
     def on_results_ready(self, labelmap):
-        layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER_NAME"])
+        layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
                                     self.colormap_config_data, self.labels_config_data, True, True)
 
@@ -464,7 +465,7 @@ class AssessmentsActionBox(ActionBox):
 
         if assessments_layer is not None:
             layers_editor.update_layers(self.napari_viewer,
-                                        self.layers_config_data["ASSESSMENTS_LAYER_NAME"], assessments_layer,
+                                        self.layers_config_data["ASSESSMENTS_LAYER"], assessments_layer,
                                         self.colormap_config_data, self.labels_config_data, True, False)
 
             self.napari_viewer.layers.selection.active = self.napari_viewer.layers[
@@ -686,26 +687,38 @@ class ExportActionBox(ActionBox):
         self.mli_stdev_line_edit.setText(str(stdev) if mli_on else "None")
         self.mli_chords_line_edit.setText(str(chords) if mli_on else "None")
 
+        # _boxes.py, inside class ExportActionBox
+
     def add_results(self):
         raw = tuple(ActionBox.current_results)
-        self.current_result = Result.from_raw(raw, labelmap=None)
-
+        self.current_result = Result.from_raw(raw, labelmaps=None)
         if not self.current_result:
             return
 
-        labelmap = None
+        all_layer_names = [
+            self.layers_config_data["INITIAL_LAYER"],
+            self.layers_config_data["PROCESSING_LAYER"],
+            self.layers_config_data["POSTPROCESSING_LAYER"],
+            self.layers_config_data["ASSESSMENTS_LAYER"]
+        ]
+
+        labelmaps: Dict[str, np.ndarray] = {}
         if self.export_labelmap_check_box.isChecked():
-            layer_data = layers_editor.get_layer_by_name(
+            # ask for all four layers in order
+            layers_data = layers_editor.get_layers_by_names(
                 self.napari_viewer,
-                self.layers_config_data["POSTPROCESSING_LAYER"]
+                all_layer_names
             )
-            if layer_data is not None:
-                labelmap = np.array(layer_data, copy=True)
+            for layer_name, layer_data in zip(all_layer_names, layers_data):
+                if layer_data is not None:
+                    labelmaps[layer_name] = np.array(layer_data, copy=True)
 
         full_r = Result(
             **self.current_result.to_dict(),
-            labelmap=labelmap
+            labelmaps=labelmaps or None
         )
+
+        # store and update UI
         self.accumulated_results.append(full_r)
         self.rules_engine.evaluate_rules()
         self.update_export_counter()
@@ -752,7 +765,7 @@ class ExportActionBox(ActionBox):
         if not is_real_writable_dir(export_location):
             export_location = os.getcwd()
 
-        has_labelmaps = any(r.labelmap is not None for r in self.accumulated_results)
+        has_labelmaps = any(r.labelmaps is not None for r in self.accumulated_results)
         params = gui_creator.get_export_params(self, export_location, has_labelmaps)
 
         if not params:
