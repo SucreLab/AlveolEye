@@ -78,25 +78,41 @@ def write_labelmaps(results: List[Result], labelmap_dir: str, ext: str):
 
 def write_images(results: List[Result], labelmap_dir: str, ext: str):
     """
-    Convert each labelmap to RGB and save as {case_id}_{layer_name}.{ext}.
+    Save each Result’s labelmaps as RGB images in {case_id}_{layer_name}.{ext}.
+    - If array is (H, W), we map labels→colors.
+    - If array is (1, H, W), we squeeze then map.
+    - If array is (H, W, 3), we assume it’s already RGB and save it directly.
     """
     os.makedirs(labelmap_dir, exist_ok=True)
-    # get the global colormap once
     colormap = _norm_to_rgb(Config.get_label_indexed_colormap())
 
     for idx, r in enumerate(results, start=1):
         if not r.labelmaps:
             continue
 
-        for layer_name, lm in r.labelmaps.items():
-            # build RGB canvas
-            labelmap = lm.astype(np.uint8)
-            labelmap = np.squeeze(labelmap, axis=0)
-            h, w = labelmap.shape
-            rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+        for layer_name, arr in r.labelmaps.items():
+            arr = np.asarray(arr)
 
-            for label, color in colormap.items():
-                rgb_image[labelmap == label] = color
+            # Case 1: already RGB
+            if arr.ndim == 3 and arr.shape[2] == 3:
+                rgb_image = arr.astype(np.uint8)
+
+            else:
+                # collapse (1, H, W) → (H, W)
+                if arr.ndim == 3 and arr.shape[0] == 1:
+                    lm = arr[0]
+                # already (H, W)
+                elif arr.ndim == 2:
+                    lm = arr
+                else:
+                    print(f"[!] Skipping {layer_name!r}: unsupported shape {arr.shape}")
+                    continue
+
+                # now lm is 2D labelmap → colorize
+                h, w = lm.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[lm == label] = color
 
             fn = f"{idx}_{layer_name}.{ext}"
             outp = os.path.join(labelmap_dir, fn)
