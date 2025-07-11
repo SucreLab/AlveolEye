@@ -809,4 +809,3 @@ class ExportActionBox(ActionBox):
             msg += f"\nArchive file:\n  {info['archive']}"
 
         QMessageBox.information(self, "Export Complete", msg)
-        print("ActionBox.step: ", ActionBox.step)
