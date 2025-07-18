@@ -23,6 +23,13 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
+class NoScrollSpinBox(QSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()
+
+class NoScrollDoubleSpinBox(QDoubleSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()
 
 def create_sub_layout(layout, elements):
     for element in elements:
@@ -39,14 +46,14 @@ def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spi
     label.setReadOnly(True)
     label.setObjectName("labelLineEdit")
 
-    spin_box_parameters = {
-        "minimum": spin_box_min,
-        "maximum": spin_box_max,
-        "value": spin_box_default,
-        "singleStep": spin_box_step,
-        "suffix": spin_box_suffix
-    }
-    spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
+    spin_box_cls = NoScrollDoubleSpinBox if value_type == "double" else NoScrollSpinBox
+    spin_box = spin_box_cls()
+    spin_box.setMinimum(spin_box_min)
+    spin_box.setMaximum(spin_box_max)
+    spin_box.setValue(spin_box_default)
+    spin_box.setSingleStep(spin_box_step)
+    spin_box.setSuffix(spin_box_suffix)
+
     if value_type == "double":
         spin_box.setDecimals(decimals)
 
@@ -78,14 +85,14 @@ def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text,
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
 
-    spin_box_parameters = {
-        "minimum": spin_box_min,
-        "maximum": spin_box_max,
-        "value": spin_box_default,
-        "singleStep": spin_box_step,
-        "suffix": spin_box_suffix
-    }
-    spin_box = QDoubleSpinBox(**spin_box_parameters) if value_type == "double" else QSpinBox(**spin_box_parameters)
+    spin_box_cls = NoScrollDoubleSpinBox if value_type == "double" else NoScrollSpinBox
+    spin_box = spin_box_cls()
+    spin_box.setMinimum(spin_box_min)
+    spin_box.setMaximum(spin_box_max)
+    spin_box.setValue(spin_box_default)
+    spin_box.setSingleStep(spin_box_step)
+    spin_box.setSuffix(spin_box_suffix)
+
     if value_type == "double":
         spin_box.setDecimals(decimals)
 
