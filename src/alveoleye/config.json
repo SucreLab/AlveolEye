@@ -110,6 +110,9 @@
     "ASVD_METRIC_LINE_EDIT": "None",
     "ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
     "ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT": "None",
+    "EXPORT_LABELMAP_CHECK_BOX_TEXT": "Include layer data with Add?",
+    "EXPORT_LABELMAP_CHECK_BOX_TOOLTIP_TEXT": "Exports segmented image (postprocessing layer)",
+    "EXPORT_LABELMAP_CHECK_BOX_DEFAULT_VALUE": 0,
     "ADD_PROMPT": "Add results",
     "ADD_BUTTON_TEXT": "Add",
     "REMOVE_PROMPT": "Remove last results",
@@ -138,7 +141,7 @@
     "INITIAL_LAYER": "Initial",
     "PROCESSING_LAYER": "Processing",
     "POSTPROCESSING_LAYER": "Postprocessing",
-    "ASSESSMENTS_LAYER_NAME": "Assessments"
+    "ASSESSMENTS_LAYER": "Assessments"
   },
   "Labels": {
     "BLOCKER": 1,
@@ -160,7 +163,7 @@
     "VESSEL_LUMEN": [0.337, 0.706, 0.914],
     "ALVEOLI": [0.996, 0.996, 0.996],
     "MLI_LINES_INSIDE": [0.741, 0.694, 0.059],
-    "MLI_LINES_OUTSIDE": [0.941, 0.894, 0.259]
+    "MLI_LINES_OUTSIDE": [0.847, 0.805, 0.233]
   },
   "SnapshotNames": {
     "CONVERT_TO_GRAYSCALE": "grayscaled.png",
