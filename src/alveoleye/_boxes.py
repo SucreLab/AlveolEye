@@ -134,14 +134,19 @@ class ProcessingActionBox(ActionBox):
 
         super().create_ui_rules()
 
-    def open_file_dialogue(self, title, accepted_extensions, parent_directory):
-        parent_directory = str(Path(__file__).resolve().parent.parent / parent_directory)
+    def open_file_dialogue(self, title: str, accepted_extensions: str) -> (str, str):
+        """Open a file dialog to select an image or weights file. Defaults to the home directory if no path is set."""
+        key = "weights" if "weights" in title.lower() else "image"
+        if ActionBox.import_paths[key] is None:
+            parent_directory = str(Path.home())
+        else:
+            parent_directory = str(Path(ActionBox.import_paths[key]).parent)
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
 
         return file_path, Path(file_path).name if file_path else (None, None)
 
-    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats, parent_directory):
-        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats, parent_directory)
+    def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats):
+        file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats)
 
         if not file_path:
             return False
@@ -157,8 +162,7 @@ class ProcessingActionBox(ActionBox):
     def on_import_image_press(self):
         if not self.on_import_press("image", self.import_image_line_edit,
                                     self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
-                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
-                                    self.box_config_data["IMAGES_FOLDER_PATH"]):
+                                    self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"]):
             return
         try:
             self.image = cv2.imread(ActionBox.import_paths["image"])
@@ -179,8 +183,7 @@ class ProcessingActionBox(ActionBox):
     def on_import_weights_press(self):
         self.on_import_press("weights", self.import_weights_line_edit,
                              self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
-                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
-                             self.box_config_data["WEIGHTS_FOLDER_PATH"])
+                             self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"])
 
     def set_image_threshold_value(self):
         image = layers_editor.get_layers_by_names(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"])
