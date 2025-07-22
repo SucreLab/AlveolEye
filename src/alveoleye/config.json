@@ -11,8 +11,6 @@
     "IMAGE_ACCEPTED_FILE_FORMATS": "*.png *.jpg *.jpeg *.bmp *.tiff *.tif",
     "WEIGHTS_ACCEPTED_FILE_FORMATS": "*.pth *.pth.gz",
     "DEFAULT_WEIGHTS_NAME": "default.pth",
-    "WEIGHTS_FOLDER_PATH": "default_weights",
-    "IMAGES_FOLDER_PATH": "example_images",
     "CONFIDENCE_THRESHOLD_LABEL_TEXT":  "Minimum confidence",
     "USE_AI_CHECK_BOX_DEFAULT_VALUE": 1,
     "CONFIDENCE_THRESHOLD_SPIN_BOX_MIN_VALUE": 0,
