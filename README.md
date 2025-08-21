@@ -166,7 +166,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ### Export Results: Save Assessment Results as a CSV or JSON File
 
- ![export diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/main/docs/EXPORT_FINAL.svg)
+ ![export diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/refs/heads/readme-update/docs/EXPORT_FINAL.svg)
 
 1. **Add results**
    - Click "Add" to include current assessment data in the export file.
