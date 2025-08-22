@@ -181,7 +181,7 @@ The goal of this process is to create a conda environment containing Napari and 
    - Click "Clear" to empty the export file.
 
 7. **Export results**
-   - Click "Export Results" to download the data. When clicked, a pop-up will appear with options to specify the download location, project name, and metrics format (`csv` or `json`). If you selected "Include layer data with Add," options to specify the labelmap format (`tif` or `png`), export the image as RGB, and determine whether to save the export as a zip file will also appear.
+   - Click "Export Results" to download the data. When clicked, a pop-up will appear with options to specify the download location, project name, and metrics format (`csv` or `json`). If you selected "Include layer data with Add," the following will also appear: an option to specify the layer formats (`tif` or `png`), export the image as RGB (as opposed to as a label map), and determine whether to save the export as a zip file.
 
 **Results Key**
 
