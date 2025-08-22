@@ -168,17 +168,20 @@ The goal of this process is to create a conda environment containing Napari and 
 
  ![export diagram](https://raw.githubusercontent.com/SucreLab/AlveolEye/refs/heads/readme-update/docs/EXPORT_FINAL.svg)
 
-1. **Add results**
+1. **Include new layer data with Add**
+   - Select this option to add the current image's layer data (processing, postprocessing, and assessments layers) to the export when Add is clicked.
+   
+3. **Add results**
    - Click "Add" to include current assessment data in the export file.
 
-3. **Remove last result**
+4. **Remove last result**
    - Click "Remove" to delete the last added results from the export file.
 
 5. **Clear export data**
    - Click "Clear" to empty the export file.
 
 7. **Export results**
-   - Click "Export Results" to save the data (`.csv` or `.json` format).
+   - Click "Export Results" to download the data. When clicked, a pop-up will appear with options to specify the download location, project name, and metrics format (`csv` or `json`). If you selected "Include new layer data with Add," options to specify the labelmap format (`tif` or `png`), export the image as RGB, and determine whether to save the export as a zip file will also appear. See below
 
 **Results Key**
 
