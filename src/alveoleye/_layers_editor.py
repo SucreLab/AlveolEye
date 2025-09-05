@@ -1,15 +1,40 @@
 from napari.utils.colormaps import DirectLabelColormap
 
+from collections.abc import Sequence
+from typing import Any, Callable, List, Optional, Union
 
-def get_layer_by_name(napari_viewer, layer_name, callback=None):
-    for layer in napari_viewer.layers:
-        if layer.name == layer_name:
-            if callback:
-                callback(layer.data, layer.name)
 
-            return layer.data
+def get_layers_by_names(
+        viewer,
+        layer_names: Union[str, Sequence[str]],
+        callback: Optional[Callable[[Any, str], None]] = None,
+        return_data: bool = True,
+        on_missing: str = "none"
+) -> Union[Any, List[Any], None]:
+    """
+    If layer_names is a str: return one array (or None).
+    If layer_names is a sequence: return a list in the same order.
+    """
+    single_input = isinstance(layer_names, str)
+    names = [layer_names] if single_input else list(layer_names)
 
-    return None
+    name2layer = {layer.name: layer for layer in viewer.layers}
+    results = []
+    for name in names:
+        layer = name2layer.get(name)
+        if layer is None:
+            if on_missing == "error":
+                raise KeyError(f"Layer {name!r} not found")
+            results.append(None)
+            continue
+        if callback is not None:
+            callback(layer.data, layer.name)
+        results.append(layer.data if return_data else layer)
+
+    # unwrap single
+    if single_input:
+        return results[0]
+    return results
 
 
 def remove_layer(napari_viewer, layer_name):
@@ -26,7 +51,6 @@ def remove_all_layers(napari_viewer):
         napari_viewer.layers.remove(layer)
 
 
-
 def _labels_dict_to_properties_array(labels_dict):
     max_index = max(labels_dict.values())
     result_array = ["undefined"] * (max_index + 1)
@@ -38,15 +62,14 @@ def _labels_dict_to_properties_array(labels_dict):
     return result_array
 
 
-
 def update_layers(
-    napari_viewer,
-    layer_name,
-    layer_data,
-    color_dict,
-    labels_dict,
-    is_labelmap,
-    editable=True,
+        napari_viewer,
+        layer_name,
+        layer_data,
+        color_dict,
+        labels_dict,
+        is_labelmap,
+        editable=True,
 ):
     existing_layers = {layer.name: layer for layer in napari_viewer.layers}
     if layer_name in existing_layers:

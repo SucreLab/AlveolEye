@@ -9,6 +9,7 @@ from qtpy.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -18,9 +19,8 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QVBoxLayout,
     QSpinBox,
-    QDoubleSpinBox
+    QVBoxLayout,
 )
 
 class NoScrollSpinBox(QSpinBox):
@@ -38,6 +38,7 @@ def create_sub_layout(layout, elements):
         else:
             layout.addWidget(element)
     return layout
+
 
 def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spin_box_max, spin_box_default,
                                      spin_box_step, spin_box_suffix, value_type="single", decimals=5):
@@ -67,6 +68,7 @@ def create_label_and_spin_box_layout(label_text, tooltip_text, spin_box_min, spi
 
     return label_and_spin_box_layout, label, spin_box
 
+
 def create_check_box_widget(check_box_text, on_check_box_checked, check_box_tooltip_text, default_checked=False):
     check_box = QCheckBox(check_box_text)
     check_box.setChecked(default_checked)
@@ -75,6 +77,7 @@ def create_check_box_widget(check_box_text, on_check_box_checked, check_box_tool
     check_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     return check_box
+
 
 def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text, spin_box_tooltip_text,
                                          on_check_box_checked, spin_box_min, spin_box_max, spin_box_default,
@@ -106,6 +109,7 @@ def create_check_box_and_spin_box_layout(check_box_text, check_box_tooltip_text,
 
     return check_box_and_spin_box_layout, check_box, spin_box
 
+
 def create_check_box_and_line_edit_layout(check_box_text, tooltip_text, on_check_box_checked, line_edit_text):
     check_box = QCheckBox(check_box_text)
     check_box.stateChanged.connect(on_check_box_checked)
@@ -123,6 +127,7 @@ def create_check_box_and_line_edit_layout(check_box_text, tooltip_text, on_check
     line_edit.setCursorPosition(0)
 
     return check_box_and_line_edit_layout, check_box, line_edit
+
 
 def create_button_and_line_edit_layout(button_text, tooltip_text, on_button_pressed, line_edit_text):
     button = QPushButton(button_text)
@@ -144,6 +149,7 @@ def create_button_and_line_edit_layout(button_text, tooltip_text, on_button_pres
 
     return button_and_line_edit_layout, button, line_edit
 
+
 def create_label_and_button_layout(label_text, button_text, tooltip_text, on_button_pressed):
     label = QLineEdit(label_text)
     label.setObjectName("labelLineEdit")
@@ -160,6 +166,7 @@ def create_label_and_button_layout(label_text, button_text, tooltip_text, on_but
     label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     return label_and_button_layout, label, button
+
 
 def create_label_and_line_edit_layout(label_text, line_edit_text):
     label = QLineEdit(label_text)
@@ -178,17 +185,20 @@ def create_label_and_line_edit_layout(label_text, line_edit_text):
 
     return label_and_line_edit_layout, label, line_edit
 
+
 def update_line_edit(line_edit, value, default, condition):
     if condition:
         line_edit.setText(value)
     else:
         line_edit.setText(default)
 
+
 def create_horizontal_line_widget():
     horizontal_line = QLabel()
     horizontal_line.setFixedHeight(1)
     horizontal_line.setObjectName("divider")
     return horizontal_line
+
 
 def create_confirmation_message_box(parent, message):
     message_box = QMessageBox(parent)
@@ -216,6 +226,7 @@ def create_confirmation_message_box(parent, message):
 
     return clicked_button == button_objects["Yes"]
 
+
 def toggle(state, elements):
     if not isinstance(elements, list):
         elements = [elements]
@@ -229,6 +240,7 @@ def toggle(state, elements):
                     stack.append(current.itemAt(i).widget())
             else:
                 current.setEnabled(state)
+
 
 class ExportDialog(QDialog):
     def __init__(self, parent=None, default_parent_folder: str = None, has_labelmaps: bool = True):
@@ -316,6 +328,7 @@ class ExportDialog(QDialog):
             return
 
         self.accept()
+
 
 def get_export_params(parent=None, default_parent_folder: str = None, has_labelmaps: bool = True):
     dlg = ExportDialog(parent, default_parent_folder=default_parent_folder, has_labelmaps=has_labelmaps)

@@ -1,136 +1,152 @@
 import csv
-import io
 import json
 import os
-import re
+import shutil
+from typing import List, Optional, Dict
+
+import os
+import tifffile
 
 import numpy as np
-from PIL import Image
 import torch
+from PIL import Image
+
 from alveoleye._config_utils import Config
+from alveoleye._models import Result
 
 
-def format_results(result):
-    (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-     lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = result
+def get_unique_export_folder(base_dir: str, desired_name: str) -> str:
+    root = os.path.abspath(base_dir)
+    folder = desired_name
+    candidate = os.path.join(root, folder)
+    count = 1
 
-    asvd = None if not asvd else float(asvd)
-    mli = None if not mli else float(mli)
-    stdev = None if stdev in ('', 'NA') else float(stdev)
-    chords = None if not chords else int(chords)
-    airspace_pixels = None if not airspace_pixels else int(airspace_pixels)
-    non_airspace_pixels = None if not non_airspace_pixels else int(non_airspace_pixels)
+    while os.path.exists(candidate):
+        folder = f"{desired_name}({count})"
+        candidate = os.path.join(root, folder)
+        count += 1
 
-    return (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-            lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value)
-
-
-def create_json_data(accumulated_results):
-    data = {}
-
-    for result in accumulated_results:
-        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
-        data[str(image_file_name)] = {
-            "Weights": weights_file_name,
-            "ASVD": {
-                "asvd": asvd,
-                "airspace_pixels": airspace_pixels,
-                "non_airspace_pixels": non_airspace_pixels
-            },
-            "MLI": {
-                "mli": mli,
-                "standard_deviation": stdev,
-                "number_of_chords": chords,
-                "settings": {
-                    "lines": lines_spin_box_value,
-                    "minimum_length": min_length_spin_box_value,
-                    "scale": scale_spin_box_value
-                }
-            }
-        }
-
-    return json.dumps(data, indent=2)
+    return candidate
 
 
-def create_csv_data(accumulated_results, field_names=("Image", "Weights", "ASVD", "Airspace Pixels",
-                                                      "Non-Airspace Pixels", "MLI", "Standard Deviation",
-                                                      "Number of Chords", "Number of Lines", "Minimum Length",
-                                                      "Scale")):
-    csv_buffer = io.StringIO()
-    writer = csv.DictWriter(csv_buffer, fieldnames=field_names)
-    writer.writeheader()
+def write_metrics(results: List[Result], out_path: str, fmt: str):
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    rows = []
 
-    for result in accumulated_results:
-        (image_file_name, weights_file_name, asvd, mli, stdev, chords, airspace_pixels, non_airspace_pixels,
-         lines_spin_box_value, min_length_spin_box_value, scale_spin_box_value) = format_results(result)
+    for idx, r in enumerate(results, start=1):
+        d = r.to_dict()
+        d["case_id"] = idx
+        rows.append(d)
 
-        writer.writerow({
-            "Image": image_file_name,
-            "Weights": weights_file_name,
-            "ASVD": asvd,
-            "Airspace Pixels": airspace_pixels,
-            "Non-Airspace Pixels": non_airspace_pixels,
-            "MLI": mli,
-            "Standard Deviation": stdev,
-            "Number of Chords": chords,
-            "Number of Lines": lines_spin_box_value,
-            "Minimum Length": min_length_spin_box_value,
-            "Scale": scale_spin_box_value
-        })
-
-    csv_data = csv_buffer.getvalue()
-    csv_buffer.close()
-
-    return csv_data
+    if fmt.lower() == "csv":
+        fieldnames = ["case_id"] + [k for k in rows[0] if k != "case_id"] if rows else []
+        with open(out_path, "w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+    else:
+        payload = {str(idx): {**r.to_dict(), "case_id": idx}
+                   for idx, r in enumerate(results, start=1)}
+        with open(out_path, "w") as fh:
+            json.dump(payload, fh, indent=2)
 
 
-def append_csv_data(accumulated_results, export_file):
-    csv_data = create_csv_data(accumulated_results)
+def write_labelmaps(results: List[Result], labelmap_dir: str, ext: str):
+    for idx, r in enumerate(results, start=1):
+        if not r.labelmaps:
+            continue
 
-    file_exists = os.path.exists(export_file)
-    mode = 'a' if file_exists else 'w'
+        result_dir = os.path.join(labelmap_dir, str(idx))
+        os.makedirs(result_dir, exist_ok=True)
 
-    with open(export_file, mode) as file:
-        if file_exists:
-            csv_lines = csv_data.splitlines()[1:]
-            file.write('\n'.join(csv_lines) + '\n')
+        for layer_name, lm in r.labelmaps.items():
+            fn = f"{layer_name}.{ext}"
+            outp = os.path.join(result_dir, fn)
+            tifffile.imwrite(outp, lm.astype("uint16"))
+
+
+def write_images(results: List[Result], labelmap_dir: str, ext: str):
+    colormap = _norm_to_rgb(Config.get_label_indexed_colormap())
+
+    for idx, r in enumerate(results, start=1):
+        if not r.labelmaps:
+            continue
+
+        result_dir = os.path.join(labelmap_dir, str(idx))
+        os.makedirs(result_dir, exist_ok=True)
+
+        for layer_name, arr in r.labelmaps.items():
+            arr = np.asarray(arr)
+
+            if arr.ndim == 3 and arr.shape[2] == 3:
+                rgb_image = arr.astype(np.uint8)
+
+            else:
+                if arr.ndim == 3 and arr.shape[0] == 1:
+                    lm = arr[0]
+                elif arr.ndim == 2:
+                    lm = arr
+                else:
+                    print(f"[!] Skipping {layer_name!r}: unsupported shape {arr.shape}")
+                    continue
+
+                h, w = lm.shape
+                rgb_image = np.zeros((h, w, 3), dtype=np.uint8)
+                for label, color in colormap.items():
+                    rgb_image[lm == label] = color
+
+            fn = f"{layer_name}.{ext}"
+            outp = os.path.join(result_dir, fn)
+            Image.fromarray(rgb_image).save(outp)
+            
+
+def zip_folder(src_folder: str, zip_target: str):
+    root, folder = os.path.split(src_folder.rstrip("/\\"))
+    temp_archive = shutil.make_archive(os.path.join(root, folder), 'zip', root, folder)
+
+    if os.path.abspath(temp_archive) != os.path.abspath(zip_target):
+        if os.path.exists(zip_target):
+            os.remove(zip_target)
+        os.replace(temp_archive, zip_target)
+
+
+def export_results(
+    results: List[Result],
+    base_dir: str,
+    project_name: str,
+    metrics_format: str = "csv",
+    labelmap_ext: str = "tif",
+    zip_it: bool = False,
+    export_as_rgb: bool = False,
+) -> Dict[str, Optional[str]]:
+    export_folder = get_unique_export_folder(base_dir, project_name)
+    os.makedirs(export_folder, exist_ok=True)
+
+    metrics_fp = os.path.join(export_folder, f"metrics.{metrics_format}")
+    write_metrics(results, metrics_fp, metrics_format)
+
+    labelmaps_dir = None
+    if any(r.labelmaps is not None for r in results):
+        labelmaps_dir = os.path.join(export_folder, "labelmaps")
+
+        if export_as_rgb:
+            write_images(results, labelmaps_dir, labelmap_ext)
         else:
-            file.write(csv_data)
+            write_labelmaps(results, labelmaps_dir, labelmap_ext)
+
+    archive_fp = None
+    if zip_it:
+        archive_fp = os.path.join(base_dir, f"{os.path.basename(export_folder)}.zip")
+        zip_folder(export_folder, archive_fp)
+
+    return {
+        "export_folder": export_folder,
+        "metrics": metrics_fp,
+        "labelmaps": labelmaps_dir,
+        "archive": archive_fp,
+    }
 
 
-def get_unique_filename(output_dir, file_name):
-    base_name, ext = os.path.splitext(file_name)
-    pattern = re.compile(rf"{re.escape(base_name)}\((\d+)\){re.escape(ext)}")
-
-    existing_files = os.listdir(output_dir)
-    matching_numbers = [int(match.group(1)) for f in existing_files if (match := pattern.match(f))]
-
-    if os.path.exists(os.path.join(output_dir, file_name)):
-        if not matching_numbers:
-            return f"{base_name}(1){ext}"
-        else:
-            return f"{base_name}({max(matching_numbers) + 1}){ext}"
-
-    return file_name
-
-
-def export_accumulated_results(accumulated_results, output_dir, file_name="test_results.csv"):
-    if not output_dir:
-        return
-
-    csv_data = create_csv_data(accumulated_results)
-
-    os.makedirs(output_dir, exist_ok=True)
-    unique_file_name = get_unique_filename(output_dir, file_name)
-    complete_export_path = os.path.join(output_dir, unique_file_name)
-
-    with open(complete_export_path, "w", newline="") as results_file:
-        results_file.write(csv_data)
-
-    return unique_file_name
-
-  
 def is_real_writable_dir(path):
     return os.path.isdir(path) and os.access(path, os.W_OK | os.X_OK)
 
@@ -213,3 +229,4 @@ def make_save_image_callback(save_dir, get_colormap_function=None):
         save_image(data, name, snapshots_dir, get_colormap_function)
 
     return save_image_callback
+
