@@ -18,8 +18,7 @@ def calculate_airspace_volume_density(labelmap, labels):
     return alveolar_density, alveoli_pixels, alveoli_and_parenchyma_pixels
 
 
-def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False,
-                                    callback=None):
+def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labels, randomized_distribution=False, callback=None):
     labelmap = np.squeeze(labelmap)
     labelmap_shape = labelmap.shape
 
@@ -57,7 +56,7 @@ def calculate_mean_linear_intercept(labelmap, num_lines, min_length, scale, labe
     stdev_chord_lengths = "NA" if len(chord_lengths) == 0 else np.std(chord_lengths)
 
     kernel = np.array([[0, 1, 0], [0, 1, 0], [0, 1, 0]], np.uint8)
-    chords_highlighted_labelmap = cv2.dilate(chords_labelmap, kernel, iterations=6)
+    chords_highlighted_labelmap = cv2.dilate(chords_labelmap, kernel, iterations=5)
     chords_highlighted_labelmap = np.where(chords_labelmap, labels["MLI_LINES_INSIDE"], chords_highlighted_labelmap)
 
     if callback:

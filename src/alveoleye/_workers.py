@@ -1,27 +1,19 @@
-import json
-import pathlib
 import traceback
 
 import numpy as np
 from qtpy.QtCore import QObject, Signal
 
 from alveoleye.lungcv import model_operations
-from alveoleye.lungcv.assessments import (
-    calculate_airspace_volume_density,
-    calculate_mean_linear_intercept,
-)
-from alveoleye.lungcv.postprocessor import (
-    apply_dynamic_threshold,
-    apply_manual_threshold,
-    convert_to_grayscale,
-    generate_postprocessing_labelmap,
-    generate_processing_labelmap,
-    invert_image_binary,
-    remove_small_components,
-)
-import alveoleye._export_operations as export_operations
+from alveoleye.lungcv.postprocessor import (apply_manual_threshold, apply_dynamic_threshold,
+                                            generate_postprocessing_labelmap, remove_small_components,
+                                            convert_to_grayscale,
+                                            invert_image_binary, generate_processing_labelmap)
+from alveoleye.lungcv.assessments import (calculate_mean_linear_intercept,
+                                          calculate_airspace_volume_density)
+import pathlib
+import json
 import alveoleye._layers_editor as layers_editor
-from alveoleye._models import Result
+import alveoleye._export_operations as export_operations
 
 
 class WorkerParent(QObject):
@@ -92,12 +84,13 @@ class ProcessingWorker(WorkerParent):
                 if not self.terminate:
                     model = model_operations.init_trained_model(self.weights)
 
+
                 if not self.terminate:
                     model_output = model_operations.run_prediction(self.image_path, model)
 
                 if not self.terminate:
                     inference_labelmap = generate_processing_labelmap(model_output, self.image_shape,
-                                                                      self.confidence_threshold_value, self.labels)
+                                                                  self.confidence_threshold_value, self.labels)
 
                 if not self.terminate:
                     self.results_ready.emit(model_output, inference_labelmap)
@@ -140,8 +133,8 @@ class PostprocessingWorker(WorkerParent):
     def run(self):
         try:
             if not self.terminate:
-                image = layers_editor.get_layers_by_names(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
-                                                          self.callback)
+                image = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["INITIAL_LAYER"],
+                                                        self.callback)
 
             if not self.terminate:
                 grayscaled = convert_to_grayscale(image, self.callback)
@@ -162,8 +155,8 @@ class PostprocessingWorker(WorkerParent):
                 inverted_back = invert_image_binary(alveoli_cleaned, self.callback)
 
             if not self.terminate:
-                masks_labelmap = layers_editor.get_layers_by_names(self.napari_viewer,
-                                                                   self.layer_names["PROCESSING_LAYER"], self.callback)
+                masks_labelmap = layers_editor.get_layer_by_name(self.napari_viewer,
+                                                                 self.layer_names["PROCESSING_LAYER"], self.callback)
 
             if not self.terminate:
                 labelmap = generate_postprocessing_labelmap(masks_labelmap, inverted_back, self.labels, self.callback)
@@ -217,8 +210,8 @@ class AssessmentsWorker(WorkerParent):
 
         try:
             if not self.terminate:
-                labelmap = layers_editor.get_layers_by_names(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
-                                                             self.callback)
+                labelmap = layers_editor.get_layer_by_name(self.napari_viewer, self.layer_names["POSTPROCESSING_LAYER"],
+                                                           self.callback)
 
             if not self.terminate:
                 if self.asvd_check_box_state:
@@ -248,54 +241,30 @@ class ExportWorker(WorkerParent):
 
     def __init__(self):
         super().__init__()
-        self.file_path = None # TODO: do we need?
-        self.selected_filter = None  # TODO: do we need?
-        self.parent_folder = ""
-        self.project_name = ""
-        self.metrics_ext = "csv"
-        self.labelmap_ext = "tif"
-        self.zip_it = False
-        self.accumulated_results: list[Result] = []
+        self.file_path = None
+        self.selected_filter = None
+        self.accumulated_results = None
 
-    def set_parent_folder(self, f: str):
-        self.parent_folder = f
+    def set_file_path(self, file_path):
+        self.file_path = file_path
 
-    def set_project_name(self, n: str):
-        self.project_name = n
+    def set_selected_filter(self, selected_filter):
+        self.selected_filter = selected_filter
 
-    def set_metrics_format(self, e: str):
-        self.metrics_ext = e
-
-    def set_labelmap_format(self, e: str):
-        self.labelmap_ext = e
-
-    def set_zip(self, z: bool):
-        self.zip_it = z
-        
-    def set_exp_rgb(self, r: bool):
-        self.exp_rgb_colors = r
-
-    def set_accumulated_results(self, res: list[Result]):
-        self.accumulated_results = res
+    def set_accumulated_results(self, accumulated_results):
+        self.accumulated_results = accumulated_results
 
     def run(self):
-        try:
-            if self.terminate:
-                return
+        data = None
 
-            info = export_operations.export_results(
-                results=self.accumulated_results,
-                base_dir=self.parent_folder,
-                project_name=self.project_name,
-                metrics_format=self.metrics_ext,
-                labelmap_ext=self.labelmap_ext,
-                export_as_rgb=self.exp_rgb_colors,
-                zip_it=self.zip_it,
-            )
+        if not self.terminate:
+            if self.selected_filter == "JSON Files (*.json)":
+                data = export_operations.create_json_data(self.accumulated_results)
+            elif self.selected_filter == "CSV Files (*.csv)":
+                data = export_operations.create_csv_data(self.accumulated_results)
 
-            self.results_ready.emit(info, "")
-        except Exception as e:
-            traceback.print_exc()
-            self.results_ready.emit({}, str(e))
-        finally:
-            self.finished.emit()
+        if not self.terminate and data:
+            with open(self.file_path, 'w') as file:
+                file.write(data)
+
+        self.finished.emit()

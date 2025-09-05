@@ -19,14 +19,6 @@ class ActionBox(QGroupBox):
         "weights": None
     }
 
-    # new shared state for export
-    current_use_computer_vision: bool = False
-    current_min_confidence: float = 0.0
-    current_used_manual_threshold: bool = False
-    current_threshold_value: float = 0.0
-    current_remove_small_particles: int = False
-    current_remove_small_holes: int = False
-
     all_action_boxes = []
     step = 0
 
