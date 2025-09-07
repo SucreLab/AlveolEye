@@ -49,7 +49,6 @@ def verify_png_or_tiff(
     decode_first_frame: bool = True,
     max_image_pixels: Optional[int] = DEFAULT_MAX_IMAGE_PIXELS,
 ) -> Tuple[bool, Optional[str], Optional[str], Dict[str, object]]:
-    print("CHECKING")
     """
     Returns (ok, format, error, info)
       - format: 'PNG' or 'TIFF' when ok; otherwise best guess or None
