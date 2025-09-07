@@ -770,15 +770,6 @@ class ExportActionBox(ActionBox):
                                    [lambda: gui_creator.toggle(True, [self.add_button, self.export_labelmap_check_box]),
                                     lambda: self.set_results()])
 
-        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(False, self.mli_metrics))
-        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() == self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(False, self.asvd_metrics))
-        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() != self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(True, self.mli_metrics))
-        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(True, self.asvd_metrics))
-
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
                                 lambda: gui_creator.toggle(False, [self.add_button, self.export_labelmap_check_box]))
 
