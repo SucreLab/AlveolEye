@@ -252,6 +252,7 @@ class ProcessingActionBox(ActionBox):
                 raise RuntimeError(f"cv2.imread failed for: {pstr}")
 
             self._suppress_layer_event = True
+
             try:
                 layers_editor.remove_all_layers(self.napari_viewer)
                 layers_editor.update_layers(
@@ -265,17 +266,29 @@ class ProcessingActionBox(ActionBox):
                 )
             finally:
                 self._suppress_layer_event = False
-
-            ActionBox.current_results = []
+            
+            layers_editor.remove_all_layers(self.napari_viewer)
+            layers_editor.update_layers(self.napari_viewer, self.layers_config_data["INITIAL_LAYER"], self.image,
+                                    self.colormap_config_data, self.labels_config_data, False, False)
+        
+            self._clear_results_after_new_image()
 
             self.set_image_threshold_value()
             self.broadcast_cancel_message()
             self.broadcast_step_change_message(0)
 
+
         except Exception as e:
             print(f"[-] Failed preparing image: {e}")
             self.broadcast_cancel_message()
             self.broadcast_step_change_message(0)
+
+    
+    def _clear_results_after_new_image(self): # Not a good way of doing this, will fix with refactor
+        ActionBox.current_results = []
+
+        for box in ActionBox.all_action_boxes:
+            box.rules_engine.evaluate_rules()
 
     def on_import_weights_press(self):
         self.on_import_press(
@@ -307,6 +320,8 @@ class ProcessingActionBox(ActionBox):
             True,
             True,
         )
+
+        ActionBox.current_results = []
 
         super().on_results_ready()
 
@@ -417,6 +432,8 @@ class PostprocessingActionBox(ActionBox):
         layers_editor.remove_layer(self.napari_viewer, self.layers_config_data["ASSESSMENTS_LAYER"])
         layers_editor.update_layers(self.napari_viewer, self.layers_config_data["POSTPROCESSING_LAYER"], labelmap,
                                     self.colormap_config_data, self.labels_config_data, True, True)
+
+        ActionBox.current_results = []
 
         super().on_results_ready()
 
@@ -564,6 +581,13 @@ class AssessmentsActionBox(ActionBox):
                                    lambda: gui_creator.toggle(False, [self.lines_spin_box,
                                                                                  self.min_length_spin_box,
                                                                                  self.scale_spin_box]))
+        self.rules_engine.add_rule(
+            lambda: not ActionBox.current_results,
+            lambda: (
+                self.asvd_line_edit.setText(self.box_config_data["ASVD_RESULT_LINE_EDIT_DEFAULT"]),
+                self.mli_line_edit.setText(self.box_config_data["MLI_RESULT_LINE_EDIT_DEFAULT"])
+            )
+        )
 
         super().create_ui_rules()
 
@@ -746,15 +770,6 @@ class ExportActionBox(ActionBox):
                                    [lambda: gui_creator.toggle(True, [self.add_button, self.export_labelmap_check_box]),
                                     lambda: self.set_results()])
 
-        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() == self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(False, self.mli_metrics))
-        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() == self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(False, self.asvd_metrics))
-        self.rules_engine.add_rule(lambda: self.mli_line_edit.text() != self.box_config_data["MLI_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(True, self.mli_metrics))
-        self.rules_engine.add_rule(lambda: self.asvd_line_edit.text() != self.box_config_data["ASVD_METRIC_LINE_EDIT"],
-                                   lambda: gui_creator.toggle(True, self.asvd_metrics))
-
         self.rules_engine.add_rule(lambda: not ActionBox.current_results,
                                 lambda: gui_creator.toggle(False, [self.add_button, self.export_labelmap_check_box]))
 
@@ -779,6 +794,18 @@ class ExportActionBox(ActionBox):
                                    lambda: gui_creator.toggle(True, self.action_button))
         self.rules_engine.add_rule(lambda: len(self.accumulated_results) == 0,
                                    lambda: gui_creator.toggle(False, self.action_button))
+        
+        self.rules_engine.add_rule(
+            lambda: not ActionBox.current_results,
+            lambda: (
+                self.asvd_line_edit.setText(self.box_config_data["ASVD_METRIC_LINE_EDIT"]),
+                self.asvd_airspace_pixels_line_edit.setText(self.box_config_data["ASVD_AIRSPACE_PIXELS_METRIC_LINE_EDIT"]),
+                self.asvd_non_airspace_pixels_line_edit.setText(self.box_config_data["ASVD_NON_AIRSPACE_PIXELS_METRIC_LINE_EDIT"]),
+                self.mli_line_edit.setText(self.box_config_data["MLI_METRIC_LINE_EDIT"]),
+                self.mli_stdev_line_edit.setText(self.box_config_data["MLI_STDEV_METRIC_LINE_EDIT"]),
+                self.mli_chords_line_edit.setText(self.box_config_data["MLI_CHORDS_METRIC_LINE_EDIT"])
+            )
+        )
 
         super().create_ui_rules()
 
