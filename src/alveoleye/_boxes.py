@@ -13,6 +13,7 @@ import alveoleye._gui_creator as gui_creator
 import alveoleye._layers_editor as layers_editor
 from alveoleye._export_operations import is_real_writable_dir
 from alveoleye._models import Result
+from alveoleye._verifiers import verify_png_or_tiff
 from alveoleye._workers import (
     AssessmentsWorker,
     ExportWorker,
@@ -171,17 +172,23 @@ class ProcessingActionBox(ActionBox):
 
     def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats):
         file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats)
-        
+
         if not file_path:
             return False
-        
+
+        # Silent format check for images
+        if file_type == "image":
+            ok, _, _, _ = verify_png_or_tiff(file_path)
+            if not ok:
+                return False  # silently ignore
+
         if self.state == 1:
             self.cancel_action()
-        
+
         ActionBox.import_paths[file_type] = file_path
         file_line_edit.setText(file_name)
         self.rules_engine.evaluate_rules()
-        
+
         return True
 
     def on_import_image_press(self):
@@ -197,21 +204,21 @@ class ProcessingActionBox(ActionBox):
 
     def _handle_new_image_from_path(self, path: str):
         try:
+            # Silent check: only proceed for valid PNG/TIFF
+            ok, _, _, _ = verify_png_or_tiff(path)
+            if not ok:
+                return
+
             if self.state == 1:
                 self.cancel_action()
-
             pstr = str(path)
             ActionBox.import_paths["image"] = pstr
             self.import_image_line_edit.setText(Path(pstr).name)
             self.rules_engine.evaluate_rules()
-
             self.image = cv2.imread(pstr)
-
             if self.image is None:
                 raise RuntimeError(f"cv2.imread failed for: {pstr}")
-
             self._suppress_layer_event = True
-
             try:
                 layers_editor.remove_all_layers(self.napari_viewer)
                 layers_editor.update_layers(
@@ -225,11 +232,9 @@ class ProcessingActionBox(ActionBox):
                 )
             finally:
                 self._suppress_layer_event = False
-
             self.set_image_threshold_value()
             self.broadcast_cancel_message()
             self.broadcast_step_change_message(0)
-
         except Exception as e:
             print(f"[-] Failed preparing image: {e}")
             self.broadcast_cancel_message()
@@ -250,6 +255,10 @@ class ProcessingActionBox(ActionBox):
             path = path[0]
 
         if not path or not Path(path).exists():
+            return
+
+        ok, format_, error, info = verify_png_or_tiff(path)
+        if not ok:
             return
 
         def consume_dropped_layer():
