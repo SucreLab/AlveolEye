@@ -21,6 +21,8 @@ from alveoleye._workers import (
     ProcessingWorker,
 )
 
+import functools
+
 
 class ProcessingActionBox(ActionBox):
     model_output = None
@@ -58,7 +60,6 @@ class ProcessingActionBox(ActionBox):
         self.worker.set_labels(self.labels_config_data)
         self.worker.set_image_shape(self.image.shape)
         self.worker.set_confidence_threshold_value(self.confidence_threshold_spin_box.value())
-        
         super().thread_worker()
 
     def create_ui_elements(self):
@@ -110,13 +111,13 @@ class ProcessingActionBox(ActionBox):
             horizontal_line,
             use_ai_check_box,
             import_weights_button_and_line_edit_layout,
-            confidence_threshold_label_and_spin_box_layout
+            confidence_threshold_label_and_spin_box_layout,
         ]
 
         self.create_action_box_layout(
             ui_elements,
             self.box_config_data["ACTION_BUTTON_TEXT"],
-            self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"]
+            self.box_config_data["ACTION_BUTTON_TOOLTIP_TEXT"],
         )
 
     def create_ui_rules(self):
@@ -145,42 +146,35 @@ class ProcessingActionBox(ActionBox):
             lambda: self.use_ai_check_box.isChecked(),
             lambda: gui_creator.toggle(True, [
                 self.import_weights_button_and_line_edit_layout,
-                self.confidence_threshold_label_and_spin_box_layout
+                self.confidence_threshold_label_and_spin_box_layout,
             ])
         )
         self.rules_engine.add_rule(
             lambda: not self.use_ai_check_box.isChecked(),
             lambda: gui_creator.toggle(False, [
                 self.import_weights_button_and_line_edit_layout,
-                self.confidence_threshold_label_and_spin_box_layout
+                self.confidence_threshold_label_and_spin_box_layout,
             ])
         )
 
         super().create_ui_rules()
 
-    def open_file_dialogue(self, title: str, accepted_extensions: str) -> (str, str):
+    def open_file_dialogue(self, title, accepted_extensions):
         key = "weights" if "weights" in title.lower() else "image"
-        
-        if ActionBox.import_paths[key] is None:
-            parent_directory = str(Path.home())
-        else:
-            parent_directory = str(Path(ActionBox.import_paths[key]).parent)
-        
+        parent_directory = str(Path.home()) if ActionBox.import_paths[key] is None else str(Path(ActionBox.import_paths[key]).parent)
         file_path = QFileDialog.getOpenFileName(self, title, parent_directory, accepted_extensions)[0]
-        
+
         return file_path, Path(file_path).name if file_path else (None, None)
 
     def on_import_press(self, file_type, file_line_edit, dialogue_text, accepted_file_formats):
         file_path, file_name = self.open_file_dialogue(dialogue_text, accepted_file_formats)
-
         if not file_path:
             return False
 
-        # Silent format check for images
         if file_type == "image":
             ok, _, _, _ = verify_png_or_tiff(file_path)
             if not ok:
-                return False  # silently ignore
+                return False
 
         if self.state == 1:
             self.cancel_action()
@@ -188,7 +182,7 @@ class ProcessingActionBox(ActionBox):
         ActionBox.import_paths[file_type] = file_path
         file_line_edit.setText(file_name)
         self.rules_engine.evaluate_rules()
-
+        
         return True
 
     def on_import_image_press(self):
@@ -196,49 +190,23 @@ class ProcessingActionBox(ActionBox):
             "image",
             self.import_image_line_edit,
             self.box_config_data["IMAGE_FILE_DIALOGUE_TEXT"],
-            self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"]
+            self.box_config_data["IMAGE_ACCEPTED_FILE_FORMATS"],
         ):
             return
 
         self._handle_new_image_from_path(ActionBox.import_paths["image"])
 
-    def _handle_new_image_from_path(self, path: str):
+    def _remove_layer(self, layer):
+        self._suppress_layer_event = True
         try:
-            # Silent check: only proceed for valid PNG/TIFF
-            ok, _, _, _ = verify_png_or_tiff(path)
-            if not ok:
-                return
+            if layer in self.napari_viewer.layers:
+                self.napari_viewer.layers.remove(layer)
+        finally:
+            self._suppress_layer_event = False
 
-            if self.state == 1:
-                self.cancel_action()
-            pstr = str(path)
-            ActionBox.import_paths["image"] = pstr
-            self.import_image_line_edit.setText(Path(pstr).name)
-            self.rules_engine.evaluate_rules()
-            self.image = cv2.imread(pstr)
-            if self.image is None:
-                raise RuntimeError(f"cv2.imread failed for: {pstr}")
-            self._suppress_layer_event = True
-            try:
-                layers_editor.remove_all_layers(self.napari_viewer)
-                layers_editor.update_layers(
-                    self.napari_viewer,
-                    self.layers_config_data["INITIAL_LAYER"],
-                    self.image,
-                    self.colormap_config_data,
-                    self.labels_config_data,
-                    False,
-                    False
-                )
-            finally:
-                self._suppress_layer_event = False
-            self.set_image_threshold_value()
-            self.broadcast_cancel_message()
-            self.broadcast_step_change_message(0)
-        except Exception as e:
-            print(f"[-] Failed preparing image: {e}")
-            self.broadcast_cancel_message()
-            self.broadcast_step_change_message(0)
+    def _consume_and_load(self, path, layer):
+        self._remove_layer(layer)
+        self._handle_new_image_from_path(path)
 
     def _on_layer_inserted(self, event):
         if self._suppress_layer_event:
@@ -257,28 +225,64 @@ class ProcessingActionBox(ActionBox):
         if not path or not Path(path).exists():
             return
 
-        ok, format_, error, info = verify_png_or_tiff(path)
+        ok, _, _, _ = verify_png_or_tiff(path)
+
         if not ok:
+            QTimer.singleShot(0, functools.partial(self._remove_layer, layer))
             return
 
-        def consume_dropped_layer():
+        QTimer.singleShot(0, functools.partial(self._consume_and_load, path, layer))
+
+    def _handle_new_image_from_path(self, path: str):
+        try:
+            ok, _, _, _ = verify_png_or_tiff(path)
+            if not ok:
+                return
+
+            if self.state == 1:
+                self.cancel_action()
+
+            pstr = str(path)
+            ActionBox.import_paths["image"] = pstr
+            self.import_image_line_edit.setText(Path(pstr).name)
+            self.rules_engine.evaluate_rules()
+
+            self.image = cv2.imread(pstr)
+            if self.image is None:
+                raise RuntimeError(f"cv2.imread failed for: {pstr}")
+
             self._suppress_layer_event = True
             try:
-                if layer in self.napari_viewer.layers:
-                    self.napari_viewer.layers.remove(layer)
+                layers_editor.remove_all_layers(self.napari_viewer)
+                layers_editor.update_layers(
+                    self.napari_viewer,
+                    self.layers_config_data["INITIAL_LAYER"],
+                    self.image,
+                    self.colormap_config_data,
+                    self.labels_config_data,
+                    False,
+                    False,
+                )
             finally:
                 self._suppress_layer_event = False
 
-            self._handle_new_image_from_path(path)
+            ActionBox.current_results = []
 
-        QTimer.singleShot(0, consume_dropped_layer)
+            self.set_image_threshold_value()
+            self.broadcast_cancel_message()
+            self.broadcast_step_change_message(0)
+
+        except Exception as e:
+            print(f"[-] Failed preparing image: {e}")
+            self.broadcast_cancel_message()
+            self.broadcast_step_change_message(0)
 
     def on_import_weights_press(self):
         self.on_import_press(
             "weights",
             self.import_weights_line_edit,
             self.box_config_data["WEIGHTS_FILE_DIALOGUE_TEXT"],
-            self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"]
+            self.box_config_data["WEIGHTS_ACCEPTED_FILE_FORMATS"],
         )
 
     def set_image_threshold_value(self):
@@ -286,7 +290,7 @@ class ProcessingActionBox(ActionBox):
         grayscaled = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         otsu_value = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_OTSU)[0] + 20
         threshold_value = round(otsu_value)
-        
+
         PostprocessingActionBox.threshold_value = threshold_value
 
     def on_results_ready(self, model_output, inference_labelmap):
@@ -301,7 +305,7 @@ class ProcessingActionBox(ActionBox):
             self.colormap_config_data,
             self.labels_config_data,
             True,
-            True
+            True,
         )
 
         super().on_results_ready()
