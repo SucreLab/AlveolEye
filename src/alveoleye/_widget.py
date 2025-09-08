@@ -6,8 +6,11 @@ from qtpy.QtWidgets import QVBoxLayout, QWidget, QScrollArea
 from napari.utils.theme import get_system_theme
 from typing import Union
 
-from alveoleye._boxes import (ProcessingActionBox, PostprocessingActionBox,
-                                               AssessmentsActionBox, ExportActionBox)
+from alveoleye.boxes import (
+    ProcessingActionBox, 
+    PostprocessingActionBox,
+    AssessmentsActionBox, 
+    ExportActionBox)
 import alveoleye._gui_creator as gui_creator
 
 
