@@ -61,6 +61,6 @@ class WidgetMain(QWidget):
     def apply_theme(self):
         theme = get_system_theme() if self.napari_viewer.theme == "system" else self.napari_viewer.theme
         theme_file = "light_theme.css" if theme == "light" else "dark_theme.css"
-        theme_path = pathlib.Path(__file__).resolve().parent / theme_file
+        theme_path = pathlib.Path(__file__).resolve().parent / "themes" / theme_file
 
         self.setStyleSheet(open(theme_path).read())
