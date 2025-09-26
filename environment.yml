@@ -1,4 +1,4 @@
-name: AlveolEye
+name: AlveolEye_test
 channels:
   - defaults
   - conda-forge
@@ -6,7 +6,7 @@ channels:
 dependencies:
   - python>=3.10, <=3.12
   - pydantic>=2.7.4
-  - torchvision>=0.16.2, <=0.17.2
+  - torchvision>=0.17.2
   - napari>=0.4.17
   - pyqt<5.16.0
   - qtpy
