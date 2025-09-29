@@ -1,4 +1,4 @@
-name: AlveolEye_test
+name: AlveolEye
 channels:
   - defaults
   - conda-forge
