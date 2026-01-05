@@ -4,15 +4,15 @@ import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
-from automated_lung_morphometry.lungcv.mrcnn import utils
-from automated_lung_morphometry.lungcv.mrcnn.coco_eval import CocoEvaluator
-from automated_lung_morphometry.lungcv.mrcnn.coco_utils import get_coco_api_from_dataset
+from alveoleye.lungcv.mrcnn.utils import MetricLogger, SmoothedValue, reduce_dict
+from alveoleye.lungcv.mrcnn.coco_eval import CocoEvaluator
+from alveoleye.lungcv.mrcnn.coco_utils import get_coco_api_from_dataset
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
     model.train()
-    metric_logger = utils.MetricLogger(delimiter="  ")
-    metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
+    metric_logger = MetricLogger(delimiter="  ")
+    metric_logger.add_meter("lr", SmoothedValue(window_size=1, fmt="{value:.6f}"))
     header = f"Epoch: [{epoch}]"
 
     lr_scheduler = None
@@ -32,7 +32,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
             losses = sum(loss for loss in loss_dict.values())
 
         # reduce losses over all GPUs for logging purposes
-        loss_dict_reduced = utils.reduce_dict(loss_dict)
+        loss_dict_reduced = reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
         loss_value = losses_reduced.item()
@@ -67,8 +67,6 @@ def _get_iou_types(model):
     iou_types = ["bbox"]
     if isinstance(model_without_ddp, torchvision.models.detection.MaskRCNN):
         iou_types.append("segm")
-    if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
-        iou_types.append("keypoints")
     return iou_types
 
 
@@ -79,7 +77,7 @@ def evaluate(model, data_loader, device):
     torch.set_num_threads(1)
     cpu_device = torch.device("cpu")
     model.eval()
-    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger = MetricLogger(delimiter="  ")
     header = "Test:"
 
     coco = get_coco_api_from_dataset(data_loader.dataset)

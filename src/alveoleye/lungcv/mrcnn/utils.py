@@ -1,11 +1,9 @@
 import datetime
-import errno
 import os
 import time
 from collections import defaultdict, deque, OrderedDict
 
 import torch
-import torchvision
 import torch.distributed as dist
 
 from typing import Tuple, List, Dict, Optional
@@ -210,30 +208,6 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-def mkdir(path):
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
-
-def setup_for_distributed(is_master):
-    """
-    This function disables printing when not in master process
-    """
-    import builtins as __builtin__
-
-    builtin_print = __builtin__.print
-
-    def print(*args, **kwargs):
-        force = kwargs.pop("force", False)
-        if is_master or force:
-            builtin_print(*args, **kwargs)
-
-    __builtin__.print = print
-
-
 def is_dist_avail_and_initialized():
     if not dist.is_available():
         return False
@@ -261,6 +235,22 @@ def is_main_process():
 def save_on_master(*args, **kwargs):
     if is_main_process():
         torch.save(*args, **kwargs)
+
+
+def setup_for_distributed(is_master):
+    """
+    This function disables printing when not in master process
+    """
+    import builtins as __builtin__
+
+    builtin_print = __builtin__.print
+
+    def print(*args, **kwargs):
+        force = kwargs.pop("force", False)
+        if is_master or force:
+            builtin_print(*args, **kwargs)
+
+    __builtin__.print = print
 
 
 def init_distributed_mode(args):

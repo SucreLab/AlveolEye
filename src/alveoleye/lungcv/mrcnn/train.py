@@ -1,3 +1,9 @@
+"""LungDataset class for loading lung segmentation data.
+
+This module provides the LungDataset class for loading training and validation
+data from a structured directory format.
+"""
+
 import os
 import numpy as np
 import torch
@@ -5,13 +11,6 @@ from PIL import Image
 from PIL import ImageOps
 import json
 import cv2
-
-import automated_lung_morphometry.lungcv.mrcnn.utils as utils
-from alveoleye.lungcv.mrcnn.engine import train_one_epoch
-from alveoleye.lungcv.model_operations import init_untrained_model, get_transform
-
-from torch.utils.tensorboard import SummaryWriter
-from torchvision.utils import make_grid
 
 
 class LungDataset(torch.utils.data.Dataset):
@@ -161,86 +160,3 @@ class LungDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.imgs)
-
-
-def train_model(num_classes=3):
-    dataset = LungDataset('png_dataset', get_transform(train=True), train=True, n_repeat_images=2)
-    dataset_val = LungDataset('png_dataset', get_transform(train=False), train=False, n_repeat_images=2)
-
-    data_loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=10,
-        shuffle=True,
-        num_workers=0,
-        collate_fn=utils.collate_fn
-    )
-
-    data_loader_test = torch.utils.data.DataLoader(
-        dataset_val,
-        batch_size=10,
-        shuffle=False,
-        num_workers=0,
-        collate_fn=utils.collate_fn
-    )
-
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    model = init_untrained_model(num_classes)
-    model.to(device)
-
-    params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(
-        params,
-        lr=0.005,
-        momentum=0.9,
-        weight_decay=0.0005
-    )
-
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer,
-        step_size=20,
-        gamma=0.1
-    )
-
-    num_epochs = 1000
-
-    writer = SummaryWriter()
-    images, labels = next(iter(data_loader))
-    grid = make_grid(list(images))
-    writer.add_image('train_images', grid, 0)
-    val_images, val_labels = next(iter(data_loader_test))
-    val_grid = make_grid(list(val_images))
-    writer.add_image('val_images', val_grid, 0)
-
-    for epoch in range(num_epochs):
-        # Run training
-        model.train(True)
-        train_metrics = train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
-        if epoch % 50 == 0 and epoch != 0:
-            print(f"Saving intermediate model to: pytorch_trained_model_{epoch}_of_{num_epochs}.pth")
-            torch.save(model, f'pytorch_trained_model_{epoch}_of_{num_epochs}.pth')
-        lr_scheduler.step()
-
-        # Run validation
-        val_metrics = utils.eval_forward(model, data_loader_test, device)[0]
-
-        for metric in train_metrics.meters.keys():
-            if isinstance(train_metrics.meters[metric], utils.SmoothedValue):
-                value = train_metrics.meters[metric].value
-            else:
-                value = train_metrics.meters[metric]
-            writer.add_scalar(f"{metric}/train", value, epoch)
-
-        for metric in val_metrics.keys():
-            if isinstance(val_metrics[metric], utils.SmoothedValue):
-                value = val_metrics[metric].value
-            else:
-                value = val_metrics[metric]
-            writer.add_scalar(f"{metric}/val", value, epoch)
-        writer.flush()
-
-    print("[+] Training completed")
-
-    torch.save(model, 'pytorch_trained_model.pth')
-
-
-train_model()
