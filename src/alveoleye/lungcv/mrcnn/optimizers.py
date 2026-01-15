@@ -164,19 +164,40 @@ class WarmupScheduler(_LRScheduler):
         self.warmup_epochs = warmup_epochs
         self.warmup_factor = warmup_factor
         self._step_count = 0
+        # Flag to skip auto-step during parent's __init__
+        self._initializing = True
+        # Store original base LRs (from initial_lr set by base_scheduler)
+        self._warmup_base_lrs = [group['initial_lr'] for group in optimizer.param_groups]
+        # Initialize parent (this will try to call step(), but we skip it)
         super().__init__(optimizer, last_epoch=-1)
+        self._initializing = False
+        # Override base_lrs with our stored values
+        self.base_lrs = self._warmup_base_lrs
+        # Set initial warmup LR (at step 0, factor = warmup_factor)
+        for param_group, base_lr in zip(optimizer.param_groups, self.base_lrs):
+            param_group['lr'] = base_lr * warmup_factor
 
     def get_lr(self):
         if self._step_count < self.warmup_epochs:
-            # Linear warmup
+            # Linear warmup: interpolate from warmup_factor to 1.0
             alpha = self._step_count / self.warmup_epochs
             factor = self.warmup_factor * (1 - alpha) + alpha
             return [base_lr * factor for base_lr in self.base_lrs]
         return self.base_scheduler.get_last_lr()
 
     def step(self, epoch=None):
+        # Skip step during parent's __init__ (auto-step prevention)
+        if getattr(self, '_initializing', False):
+            return
         self._step_count += 1
-        if self._step_count <= self.warmup_epochs:
-            super().step(epoch)
+        if self._step_count < self.warmup_epochs:
+            # During warmup, use our custom LR calculation
+            for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
+                param_group['lr'] = lr
+        elif self._step_count == self.warmup_epochs:
+            # End of warmup - restore base LR
+            for param_group, base_lr in zip(self.optimizer.param_groups, self.base_lrs):
+                param_group['lr'] = base_lr
         else:
+            # After warmup, delegate to base scheduler
             self.base_scheduler.step(epoch)

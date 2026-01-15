@@ -291,10 +291,18 @@ class TrainingConfig:
         if 'data' in d and isinstance(d['data'], dict):
             data_dict = d['data'].copy()
             if 'image_selection' in data_dict and isinstance(data_dict['image_selection'], dict):
-                data_dict['image_selection'] = ImageSelectionConfig(**data_dict['image_selection'])
+                img_sel = data_dict['image_selection'].copy()
+                # Convert list back to tuple for index_range
+                if 'index_range' in img_sel and isinstance(img_sel['index_range'], list):
+                    img_sel['index_range'] = tuple(img_sel['index_range'])
+                data_dict['image_selection'] = ImageSelectionConfig(**img_sel)
             d['data'] = DataConfig(**data_dict)
         if 'optimizer' in d and isinstance(d['optimizer'], dict):
-            d['optimizer'] = OptimizerConfig(**d['optimizer'])
+            opt_dict = d['optimizer'].copy()
+            # Convert list back to tuple for betas
+            if 'betas' in opt_dict and isinstance(opt_dict['betas'], list):
+                opt_dict['betas'] = tuple(opt_dict['betas'])
+            d['optimizer'] = OptimizerConfig(**opt_dict)
         if 'scheduler' in d and isinstance(d['scheduler'], dict):
             d['scheduler'] = SchedulerConfig(**d['scheduler'])
         if 'augmentation' in d and isinstance(d['augmentation'], dict):
@@ -320,5 +328,14 @@ class TrainingConfig:
     def to_yaml(self, path: Union[str, Path]) -> None:
         """Save config to YAML file."""
         import yaml
+
+        def convert_tuples_to_lists(obj):
+            """Recursively convert tuples to lists for YAML compatibility."""
+            if isinstance(obj, dict):
+                return {k: convert_tuples_to_lists(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [convert_tuples_to_lists(item) for item in obj]
+            return obj
+
         with open(path, 'w') as f:
-            yaml.dump(self.to_dict(), f, default_flow_style=False, sort_keys=False)
+            yaml.dump(convert_tuples_to_lists(self.to_dict()), f, default_flow_style=False, sort_keys=False)

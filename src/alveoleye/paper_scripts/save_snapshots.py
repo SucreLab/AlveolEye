@@ -2,7 +2,7 @@ import argparse
 import os
 import time
 
-from alveoleye.figure_scripts._combined_workers import CombinedWorker
+from alveoleye.paper_scripts._combined_workers import CombinedWorker
 from alveoleye._export_operations import make_save_image_callback
 
 
