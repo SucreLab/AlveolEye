@@ -66,7 +66,7 @@ from alveoleye.lungcv.mrcnn.callbacks import (
 )
 from alveoleye.lungcv.mrcnn.optimizers import create_optimizer, create_scheduler
 from alveoleye.lungcv.mrcnn.augmentations import build_transforms
-from alveoleye.lungcv.mrcnn.train import LungDataset
+from alveoleye.lungcv.mrcnn.dataset import LungDataset, DEFAULT_SEED
 from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, SmoothedValue
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
 from alveoleye.lungcv.model_operations import init_untrained_model
@@ -182,6 +182,7 @@ def _build_config_from_kwargs(
     num_workers: Optional[int] = None,
     n_repeat_images: Optional[int] = None,
     img_extension: Optional[str] = None,
+    val_split: Optional[float] = None,
     # Optimizer
     optimizer: Optional[str] = None,
     lr: Optional[float] = None,
@@ -228,6 +229,8 @@ def _build_config_from_kwargs(
         data_config.n_repeat_images = n_repeat_images
     if img_extension is not None:
         data_config.img_extension = img_extension
+    if val_split is not None:
+        data_config.val_split = val_split
 
     # Image selection
     if n_images is not None or image_range is not None:
@@ -337,12 +340,16 @@ def _run_training(
 
     # Create datasets
     dataset_path = str(config.data.dataset_path)
+    # Use default seed if not specified to ensure reproducible train/val splits
+    dataset_seed = config.seed if config.seed is not None else DEFAULT_SEED
     dataset = LungDataset(
         root=dataset_path,
         transforms=train_transforms,
         train=True,
         n_repeat_images=config.data.n_repeat_images,
         img_extension=config.data.img_extension,
+        val_split=config.data.val_split,
+        seed=dataset_seed,
     )
     dataset_val = LungDataset(
         root=dataset_path,
@@ -350,6 +357,8 @@ def _run_training(
         train=False,
         n_repeat_images=config.data.n_repeat_images,
         img_extension=config.data.img_extension,
+        val_split=config.data.val_split,
+        seed=dataset_seed,
     )
 
     # Apply image selection
@@ -586,6 +595,7 @@ def train(
     num_workers: Optional[int] = None,
     n_repeat_images: Optional[int] = None,
     img_extension: Optional[str] = None,
+    val_split: Optional[float] = None,
     # Optimizer kwargs
     optimizer: Optional[str] = None,
     lr: Optional[float] = None,
@@ -745,6 +755,7 @@ def train(
             num_workers=num_workers,
             n_repeat_images=n_repeat_images,
             img_extension=img_extension,
+            val_split=val_split,
             optimizer=optimizer,
             lr=lr,
             momentum=momentum,

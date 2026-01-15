@@ -1,33 +1,85 @@
-import torch
-import os.path
-import requests
+"""Model initialization and inference operations for lung segmentation.
+
+This module provides functions for initializing, loading, and running
+inference with Mask R-CNN models for lung tissue segmentation.
+"""
+
 from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
+import torch
+from PIL import Image
+from torchvision.models.detection import MaskRCNN, maskrcnn_resnet50_fpn, MaskRCNN_ResNet50_FPN_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
-from torchvision.models.detection import maskrcnn_resnet50_fpn, MaskRCNN_ResNet50_FPN_Weights
 from torchvision.transforms import v2 as T
-from torchvision.models.detection import MaskRCNN
-from PIL import Image
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+# Google Drive URL for default model weights
+DEFAULT_WEIGHTS_DRIVE_URL = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
+
+# Default path for model weights relative to this file
+DEFAULT_WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"
+
+# Default number of output classes (background + 2 tissue types)
+DEFAULT_NUM_CLASSES = 3
+
+# Hidden layer size for mask predictor
+MASK_PREDICTOR_HIDDEN_LAYER = 256
+
+# Default augmentation probability
+DEFAULT_AUGMENTATION_PROBABILITY = 0.15
 
 
-def get_transform(train=True):
-    transform_list = [
-        T.PILToTensor(),
-    ]
+# =============================================================================
+# Device Utilities
+# =============================================================================
+
+def get_device() -> torch.device:
+    """Get the best available compute device.
+
+    Returns:
+        torch.device for CUDA if available, otherwise CPU.
+        MPS (Apple Silicon) support is commented out pending testing.
+    """
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    # elif torch.backends.mps.is_available():
+    #     return torch.device("mps")
+    return torch.device("cpu")
+
+
+# =============================================================================
+# Transforms
+# =============================================================================
+
+def get_transform(train: bool = True) -> T.Compose:
+    """Get image transforms for training or inference.
+
+    Args:
+        train: If True, includes data augmentation transforms.
+
+    Returns:
+        Composed transform pipeline.
+    """
+    transform_list = [T.PILToTensor()]
 
     if train:
-        apply_prob = 0.15
+        prob = DEFAULT_AUGMENTATION_PROBABILITY
         transform_list.extend([
-            T.RandomHorizontalFlip(apply_prob),
-            T.RandomVerticalFlip(apply_prob),
-            T.RandomApply([T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)], p=apply_prob),
-            T.RandomApply([T.RandomRotation(degrees=(-5, 5))], p=apply_prob),
-            T.RandomApply([T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))], p=apply_prob),
-            # T.RandomApply([T.RandomResizedCrop(size=(256, 256), scale=(0.8, 1.0))], p=apply_prob),
-            T.RandomApply([T.RandomAffine(degrees=0, translate=(0.2, 0.2),
-                                          scale=(0.8, 1.2), shear=(-5, 5))], p=apply_prob),
-            # T.RandomPerspective(distortion_scale=0.25, p=apply_prob),
-            # T.RandomErasing(p=apply_prob, scale=(0.02, 0.2), ratio=(0.3, 3.3), value='random'),
+            T.RandomHorizontalFlip(prob),
+            T.RandomVerticalFlip(prob),
+            T.RandomApply([
+                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)
+            ], p=prob),
+            T.RandomApply([T.RandomRotation(degrees=(-5, 5))], p=prob),
+            T.RandomApply([T.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))], p=prob),
+            T.RandomApply([
+                T.RandomAffine(degrees=0, translate=(0.2, 0.2), scale=(0.8, 1.2), shear=(-5, 5))
+            ], p=prob),
         ])
 
     transform_list.extend([
@@ -38,84 +90,126 @@ def get_transform(train=True):
     return T.Compose(transform_list)
 
 
-def init_untrained_model(num_classes) -> MaskRCNN:
+# =============================================================================
+# Model Initialization
+# =============================================================================
+
+def init_untrained_model(num_classes: int = DEFAULT_NUM_CLASSES) -> MaskRCNN:
+    """Initialize a Mask R-CNN model with custom number of classes.
+
+    Creates a model pre-trained on COCO and replaces the prediction
+    heads for the specified number of classes.
+
+    Args:
+        num_classes: Number of output classes including background.
+
+    Returns:
+        Initialized MaskRCNN model (not trained on custom data).
+    """
     model = maskrcnn_resnet50_fpn(weights=MaskRCNN_ResNet50_FPN_Weights.COCO_V1)
 
+    # Replace box predictor
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
+    # Replace mask predictor
     in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
-    hidden_layer = 256
     model.roi_heads.mask_predictor = MaskRCNNPredictor(
         in_features_mask,
-        hidden_layer,
-        num_classes
+        MASK_PREDICTOR_HIDDEN_LAYER,
+        num_classes,
     )
 
     return model
 
 
-def download_file(url, out_file):
-    # local_filename = url.split('/')[-1]
-    # NOTE the stream=True parameter below
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(out_file, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                # If you have chunk encoded response uncomment if
-                # and set chunk_size parameter to None.
-                # if chunk:
-                f.write(chunk)
-    return out_file
+def init_trained_model(
+    model_path: Optional[Union[str, Path]] = None,
+    num_classes: int = DEFAULT_NUM_CLASSES,
+) -> MaskRCNN:
+    """Initialize a trained Mask R-CNN model.
 
+    Loads model weights from the specified path, or downloads default
+    weights from Google Drive if not available locally.
 
-def init_trained_model(model_path=None):
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+    Args:
+        model_path: Path to model weights file. If None or doesn't exist,
+                   uses/downloads default weights.
+        num_classes: Number of output classes including background.
 
-    model = init_untrained_model(3)
+    Returns:
+        Trained MaskRCNN model ready for inference.
+    """
+    device = get_device()
+    model = init_untrained_model(num_classes)
 
-    if model_path is None or not Path(model_path).exists():
-        model_path = Path(__file__).resolve().parent.parent.parent / "default_weights" / "default.pth"
+    # Determine weights path
+    weights_path = Path(model_path) if model_path else DEFAULT_WEIGHTS_PATH
 
-        if not os.path.exists(str(Path(model_path))):
-            if not os.path.exists(str(Path(model_path).parent)):
-                os.makedirs(str(Path(model_path).parent), exist_ok=True)
+    if not weights_path.exists():
+        weights_path = DEFAULT_WEIGHTS_PATH
 
-            import gdown
-            url = "https://drive.google.com/file/d/1LjmKvnzBfVsicHCvHccWYkMP3ouOx2m6/view?usp=sharing"
-            gdown.download(url=url, output=str(model_path), fuzzy=True)
+        if not weights_path.exists():
+            # Create directory and download weights
+            weights_path.parent.mkdir(parents=True, exist_ok=True)
 
-    loaded_model = torch.load(model_path, map_location=torch.device(device))
-    state_dictionary = loaded_model.state_dict()
-    model.load_state_dict(state_dictionary)
+            try:
+                import gdown
+            except ImportError as e:
+                raise ImportError(
+                    "gdown is required for downloading model weights. "
+                    "Install it with: pip install gdown"
+                ) from e
+
+            gdown.download(
+                url=DEFAULT_WEIGHTS_DRIVE_URL,
+                output=str(weights_path),
+                fuzzy=True,
+            )
+
+    # Load weights
+    loaded_model = torch.load(weights_path, map_location=device)
+    model.load_state_dict(loaded_model.state_dict())
     model.to(device)
 
     return model
 
 
-def run_prediction(image_path, model):
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+# =============================================================================
+# Inference
+# =============================================================================
 
-    image = T.PILToTensor()(Image.open(image_path).convert('RGB'))
+def run_prediction(
+    image_path: Union[str, Path],
+    model: MaskRCNN,
+) -> Dict[str, Any]:
+    """Run inference on a single image.
+
+    Args:
+        image_path: Path to the input image.
+        model: Trained MaskRCNN model.
+
+    Returns:
+        Dictionary containing prediction results with keys:
+        - boxes: Bounding boxes [N, 4]
+        - labels: Class labels [N]
+        - scores: Confidence scores [N]
+        - masks: Segmentation masks [N, 1, H, W]
+    """
+    device = get_device()
+
+    image = T.PILToTensor()(Image.open(image_path).convert("RGB"))
     eval_transform = get_transform(train=False)
+
     model.eval()
 
     with torch.no_grad():
         x = eval_transform(image)
         x = x.to(device)
-        predictions = model([x, ])
+        predictions = model([x])
         prediction = predictions[0]
         del x
 
     torch.cuda.empty_cache()
+
     return prediction

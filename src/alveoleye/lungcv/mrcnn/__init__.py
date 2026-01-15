@@ -39,8 +39,8 @@ from alveoleye.lungcv.mrcnn.optimizers import (
 # Training engine
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch, evaluate
 
-# Dataset
-from alveoleye.lungcv.mrcnn.train import LungDataset
+# Dataset (lung segmentation)
+from alveoleye.lungcv.mrcnn.dataset import LungDataset
 
 # COCO dataset utilities
 from alveoleye.lungcv.mrcnn.coco_utils import (

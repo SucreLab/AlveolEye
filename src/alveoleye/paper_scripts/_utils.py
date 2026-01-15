@@ -1,7 +1,25 @@
+"""Utility functions for paper scripts.
+
+This module provides shared utilities for dataset handling, file operations,
+and result processing used across the paper scripts.
+"""
+
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, List, Tuple, Any, Literal
 
+# Re-export dataset utilities from shared module for convenience
+from alveoleye._dataset_utils import (
+    detect_dataset_structure,
+    is_valid_dataset_structure,
+    count_dataset_images,
+    DatasetStructure,
+    SUPPORTED_IMAGE_EXTENSIONS,
+)
+
+# =============================================================================
+# Constants
+# =============================================================================
 
 # Google Drive folder containing the training dataset
 TRAINING_DATASET_DRIVE_URL = "https://drive.google.com/drive/folders/1fH7Qm6I9udircffEEqUmef8TM7baYz2-?usp=drive_link"
@@ -9,20 +27,15 @@ TRAINING_DATASET_DRIVE_URL = "https://drive.google.com/drive/folders/1fH7Qm6I9ud
 # Default location for training dataset
 DEFAULT_TRAINING_DATASET_DIR = Path(__file__).parent.parent.parent / "training_dataset"
 
-
-def _is_valid_dataset_structure(path: Path) -> bool:
-    """Check if a path contains a valid dataset structure."""
-    required = [
-        path / "images" / "train",
-        path / "images" / "val",
-        path / "masks" / "train",
-        path / "masks" / "val",
-        path / "classes.json",
-    ]
-    return all(p.exists() for p in required)
+# Default image extensions for file listing
+DEFAULT_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".gif")
 
 
-def find_training_dataset(search_dir: Optional[str] = None) -> Optional[str]:
+# =============================================================================
+# Dataset Discovery and Download
+# =============================================================================
+
+def find_training_dataset(search_dir: Optional[Union[str, Path]] = None) -> Optional[str]:
     """Find a valid training dataset directory.
 
     Searches for a valid dataset structure in the given directory. If the directory
@@ -33,10 +46,10 @@ def find_training_dataset(search_dir: Optional[str] = None) -> Optional[str]:
         search_dir: Directory to search in. Defaults to src/training_dataset/.
 
     Returns:
-        Path to the dataset directory, or None if not found.
+        Path to the dataset directory as a string, or None if not found.
     """
     if search_dir is None:
-        search_dir = str(DEFAULT_TRAINING_DATASET_DIR)
+        search_dir = DEFAULT_TRAINING_DATASET_DIR
 
     search_path = Path(search_dir)
 
@@ -44,18 +57,24 @@ def find_training_dataset(search_dir: Optional[str] = None) -> Optional[str]:
         return None
 
     # Check if the directory itself is a valid dataset
-    if _is_valid_dataset_structure(search_path):
+    if is_valid_dataset_structure(search_path):
         return str(search_path)
 
     # Check immediate subdirectories (handles gdown subfolder case)
-    for subdir in search_path.iterdir():
-        if subdir.is_dir() and _is_valid_dataset_structure(subdir):
-            return str(subdir)
+    try:
+        for subdir in search_path.iterdir():
+            if subdir.is_dir() and is_valid_dataset_structure(subdir):
+                return str(subdir)
+    except PermissionError:
+        pass
 
     return None
 
 
-def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = False) -> str:
+def download_training_dataset(
+    output_dir: Optional[Union[str, Path]] = None,
+    quiet: bool = False,
+) -> str:
     """Download the training dataset from Google Drive.
 
     Downloads the dataset folder to the specified output directory. The Google Drive
@@ -72,47 +91,48 @@ def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = Fa
 
     Raises:
         RuntimeError: If the download fails or the dataset structure is invalid.
+        ImportError: If gdown is not installed.
     """
-    import gdown
+    try:
+        import gdown
+    except ImportError as e:
+        raise ImportError(
+            "gdown is required for downloading datasets. "
+            "Install it with: pip install gdown"
+        ) from e
 
     if output_dir is None:
-        output_dir = str(DEFAULT_TRAINING_DATASET_DIR)
+        output_dir = DEFAULT_TRAINING_DATASET_DIR
 
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     if not quiet:
         print(f"[+] Downloading training dataset from Google Drive...")
         print(f"    Destination directory: {output_dir}")
 
     # gdown.download_folder returns the path to the downloaded folder
-    # (output_dir/<folder_name_from_drive>)
     downloaded_path = gdown.download_folder(
         url=TRAINING_DATASET_DRIVE_URL,
-        output=output_dir,
+        output=str(output_dir),
         quiet=quiet,
     )
 
     if downloaded_path is None:
         raise RuntimeError("Failed to download dataset from Google Drive")
 
-    # Validate the downloaded dataset has the expected structure
     dataset_path = Path(downloaded_path)
     if not dataset_path.exists():
-        raise RuntimeError(f"Download reported success but path does not exist: {downloaded_path}")
-
-    required_paths = [
-        dataset_path / "images" / "train",
-        dataset_path / "images" / "val",
-        dataset_path / "masks" / "train",
-        dataset_path / "masks" / "val",
-        dataset_path / "classes.json",
-    ]
-
-    missing = [str(p) for p in required_paths if not p.exists()]
-    if missing:
         raise RuntimeError(
-            f"Downloaded dataset is missing required paths: {missing}. "
-            f"Expected standard dataset structure in {downloaded_path}"
+            f"Download reported success but path does not exist: {downloaded_path}"
+        )
+
+    if not is_valid_dataset_structure(dataset_path):
+        raise RuntimeError(
+            f"Downloaded dataset has invalid structure in {downloaded_path}. "
+            "Expected either:\n"
+            "  1. Split structure: images/train/, images/val/, masks/train/, masks/val/, classes.json\n"
+            "  2. Flat structure: images/*.png, masks/*.png, classes.json"
         )
 
     if not quiet:
@@ -121,40 +141,85 @@ def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = Fa
     return str(downloaded_path)
 
 
-def get_image_paths(directory_path, extensions=('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif')):
+# =============================================================================
+# File Path Utilities
+# =============================================================================
+
+def get_image_paths(
+    directory_path: Union[str, Path],
+    extensions: Tuple[str, ...] = DEFAULT_IMAGE_EXTENSIONS,
+) -> List[str]:
+    """Get paths to all image files in a directory.
+
+    Args:
+        directory_path: Path to the directory to search.
+        extensions: Tuple of file extensions to include (case-insensitive).
+
+    Returns:
+        List of absolute paths to image files as strings.
+    """
+    directory = Path(directory_path)
     return [
-        str(file)
-        for file in Path(directory_path).glob('*')
-        if file.suffix.lower() in extensions
+        str(file.absolute())
+        for file in directory.glob("*")
+        if file.is_file() and file.suffix.lower() in extensions
     ]
 
 
-def get_directory_paths(folder_path):
+def get_directory_paths(folder_path: Union[str, Path]) -> List[str]:
+    """Get paths to all subdirectories recursively.
+
+    Args:
+        folder_path: Root directory to search.
+
+    Returns:
+        List of directory paths including the root.
+    """
     return [root for root, _, _ in os.walk(folder_path)]
 
 
-def add_range_column(accumulated_results, metric_index):
-    image_mli_ranges = {}
+# =============================================================================
+# Result Processing Utilities
+# =============================================================================
+
+def add_range_column(
+    accumulated_results: List[List[Any]],
+    metric_index: int,
+) -> List[List[Any]]:
+    """Add a range column to accumulated results based on a metric.
+
+    Calculates the range (max - min) of a metric for each unique image
+    and appends it to each result row.
+
+    Args:
+        accumulated_results: List of result rows, where each row is a list
+                            with image name at index 0.
+        metric_index: Index of the metric column to calculate range for.
+
+    Returns:
+        New list with range values appended to each row.
+    """
+    # Calculate min/max for each image
+    image_metrics: dict[str, dict[str, float]] = {}
 
     for result in accumulated_results:
         image_name = result[0]
         metric = result[metric_index]
 
-        if image_name not in image_mli_ranges:
-            image_mli_ranges[image_name] = {"least": metric, "greatest": metric}
+        if image_name not in image_metrics:
+            image_metrics[image_name] = {"min": metric, "max": metric}
         else:
-            image_mli_ranges[image_name]["least"] = min(image_mli_ranges[image_name]["least"], metric)
-            image_mli_ranges[image_name]["greatest"] = max(image_mli_ranges[image_name]["greatest"], metric)
+            image_metrics[image_name]["min"] = min(image_metrics[image_name]["min"], metric)
+            image_metrics[image_name]["max"] = max(image_metrics[image_name]["max"], metric)
 
-    for image_name in image_mli_ranges:
-        least = image_mli_ranges[image_name]["least"]
-        greatest = image_mli_ranges[image_name]["greatest"]
-        image_mli_ranges[image_name]["range"] = greatest - least
+    # Calculate ranges
+    image_ranges = {
+        name: data["max"] - data["min"]
+        for name, data in image_metrics.items()
+    }
 
-    updated_accumulated_results = []
-    for result in accumulated_results:
-        image_name = result[0]
-        range_value = image_mli_ranges[image_name]["range"]
-        updated_accumulated_results.append(result + [range_value])
-
-    return updated_accumulated_results
+    # Append range to each result
+    return [
+        result + [image_ranges[result[0]]]
+        for result in accumulated_results
+    ]

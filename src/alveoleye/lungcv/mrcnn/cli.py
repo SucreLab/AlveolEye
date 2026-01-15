@@ -143,6 +143,12 @@ def create_parser() -> argparse.ArgumentParser:
         default=".png",
         help="Image file extension",
     )
+    data_group.add_argument(
+        "--val-split",
+        type=float,
+        default=0.2,
+        help="Fraction of data for validation when using flat dataset structure (default: 0.2 for 80/20 train/val split)",
+    )
 
     # Image selection (mutually exclusive)
     selection_group = parser.add_mutually_exclusive_group()
@@ -312,6 +318,7 @@ def build_config_from_args(args) -> TrainingConfig:
         n_repeat_images=args.n_repeat_images,
         img_extension=args.img_extension,
         image_selection=image_selection,
+        val_split=args.val_split,
     )
 
     # Optimizer config
@@ -422,6 +429,8 @@ def load_config(args) -> TrainingConfig:
             config.data.batch_size = args.batch_size
         if args.num_workers != defaults['num_workers']:
             config.data.num_workers = args.num_workers
+        if args.val_split != defaults['val_split']:
+            config.data.val_split = args.val_split
 
         # Optimizer overrides
         if args.optimizer != defaults['optimizer']:

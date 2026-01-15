@@ -13,6 +13,36 @@ dataset_path = download_training_dataset()
 
 By default, the dataset is downloaded to `src/training_dataset/`. When running without arguments, the script automatically searches this directory for a valid dataset. This directory is in `.gitignore` to prevent accidentally committing large dataset files.
 
+### Supported Dataset Structures
+
+The training scripts support two dataset structures:
+
+**1. Flat structure (auto-split)** - Images are automatically split for training/validation (default 80/20, configurable via `--val-split`):
+```
+dataset/
+├── images/
+│   ├── image1.png
+│   ├── image2.png
+│   └── ...
+├── masks/
+│   ├── image1.png
+│   ├── image2.png
+│   └── ...
+└── classes.json
+```
+
+**2. Split structure (manual train/val)** - You control the exact train/val split:
+```
+dataset/
+├── images/
+│   ├── train/
+│   └── val/
+├── masks/
+│   ├── train/
+│   └── val/
+└── classes.json
+```
+
 The other scripts (`confidence_maps.py`, `trials.py`, `save_snapshots.py`) only require input images for inference and will use the default model weights unless a custom weights path is specified.
 
 ## Scripts
@@ -38,6 +68,7 @@ python -m alveoleye.paper_scripts.optimal_training_size [dataset_path] [options]
 | `--epochs` | int | 100 | Number of training epochs per run. |
 | `--device` | str | auto | Device to train on. Choices: `auto`, `cuda`, `cpu`, `mps`. |
 | `--seed` | int | 42 | Random seed for reproducibility. |
+| `--val-split` | float | 0.2 | Fraction of data for validation when using flat dataset structure (0.2 = 80/20 train/val split). |
 | `--output-dir` | str | None | Directory to save results CSV and checkpoints. |
 | `--save-checkpoints` | flag | - | Save model checkpoints for each run (requires `--output-dir`). |
 

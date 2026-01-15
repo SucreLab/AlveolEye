@@ -181,8 +181,9 @@ class DataConfig:
         img_extension: Image file extension (default: '.png')
         pin_memory: Whether to pin memory in DataLoader (default: True if CUDA)
         image_selection: Configuration for image subset selection (default: None for all)
+        val_split: Fraction of data for validation when using flat dataset structure (default: 0.2)
     """
-    dataset_path: Union[str, Path] = 'png_dataset'
+    dataset_path: Union[str, Path] = 'training_dataset'
     batch_size: int = 10
     num_workers: int = 0
     val_batch_size: Optional[int] = None
@@ -190,6 +191,7 @@ class DataConfig:
     img_extension: str = '.png'
     pin_memory: bool = True
     image_selection: Optional[ImageSelectionConfig] = None
+    val_split: float = 0.2
 
 
 @dataclass

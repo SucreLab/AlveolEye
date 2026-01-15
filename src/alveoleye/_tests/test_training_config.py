@@ -202,7 +202,7 @@ class TestDataConfig:
     def test_default_values(self):
         """Test default instantiation."""
         config = DataConfig()
-        assert config.dataset_path == "png_dataset"
+        assert config.dataset_path == "training_dataset"
         assert config.batch_size == 10
         assert config.num_workers == 0
         assert config.img_extension == ".png"

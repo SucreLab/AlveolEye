@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Determine the optimal number of training images for maximum performance.
 
 This script trains models with increasing numbers of images (50, 100, 150, etc.)
@@ -42,6 +43,8 @@ from alveoleye.lungcv.mrcnn.config import AugmentationConfig
 from alveoleye.paper_scripts._utils import (
     download_training_dataset,
     find_training_dataset,
+    detect_dataset_structure,
+    count_dataset_images,
     DEFAULT_TRAINING_DATASET_DIR,
 )
 
@@ -56,21 +59,25 @@ class TrainingRun:
     meets_threshold: bool
 
 
-def validate_dataset(dataset_path: str) -> Tuple[bool, str]:
+def validate_dataset(dataset_path: str, val_split: float = 0.2) -> Tuple[bool, str]:
     """Validate that the dataset has the required structure.
 
-    Expected structure:
+    Supports two structures:
+    1. Split structure:
         dataset_path/
-            images/
-                train/
-                val/
-            masks/
-                train/
-                val/
+            images/train/, images/val/
+            masks/train/, masks/val/
+            classes.json
+
+    2. Flat structure:
+        dataset_path/
+            images/*.png
+            masks/*.png
             classes.json
 
     Args:
         dataset_path: Path to the dataset directory
+        val_split: Fraction for validation split (used for flat structure)
 
     Returns:
         Tuple of (is_valid, error_message)
@@ -80,35 +87,26 @@ def validate_dataset(dataset_path: str) -> Tuple[bool, str]:
     if not path.exists():
         return False, f"Dataset path does not exist: {dataset_path}"
 
-    required_dirs = [
-        "images/train",
-        "images/val",
-        "masks/train",
-        "masks/val",
-    ]
-
-    for subdir in required_dirs:
-        if not (path / subdir).exists():
-            return False, f"Missing required directory: {subdir}"
-
     if not (path / "classes.json").exists():
         return False, "Missing classes.json file"
 
+    structure = detect_dataset_structure(path)
+
+    if structure is None:
+        return False, (
+            "Invalid dataset structure. Expected either:\n"
+            "  1. Split: images/train/, images/val/, masks/train/, masks/val/\n"
+            "  2. Flat: images/*.png, masks/*.png"
+        )
+
     # Count available training images
-    train_images = list((path / "images" / "train").glob("*.png"))
-    train_images.extend((path / "images" / "train").glob("*.jpg"))
+    n_images = count_dataset_images(path, split="train", val_split=val_split)
 
-    if len(train_images) == 0:
-        return False, "No training images found in images/train/"
+    if n_images == 0:
+        return False, "No training images found"
 
-    return True, f"Found {len(train_images)} training images"
-
-
-def count_training_images(dataset_path: str) -> int:
-    """Count the number of training images in the dataset."""
-    path = Path(dataset_path) / "images" / "train"
-    images = list(path.glob("*.png")) + list(path.glob("*.jpg"))
-    return len(images)
+    structure_desc = "split (train/val)" if structure == "split" else "flat (auto-split)"
+    return True, f"Found {n_images} training images ({structure_desc} structure)"
 
 
 def run_training_experiment(
@@ -118,6 +116,7 @@ def run_training_experiment(
     device: str,
     seed: Optional[int],
     save_dir: Optional[str],
+    val_split: float = 0.2,
 ) -> TrainingRun:
     """Run a single training experiment with a specified number of images.
 
@@ -145,6 +144,7 @@ def run_training_experiment(
         n_images=n_images,
         device=device,
         seed=seed,
+        val_split=val_split,
         save_dir=save_dir if save_dir else ".",
         save_frequency=0 if not save_dir else 50,  # Disable periodic saves if no save_dir
         save_best=bool(save_dir),  # Only save best if save_dir provided
@@ -173,6 +173,7 @@ def run_optimal_size_experiment(
     device: str,
     seed: Optional[int],
     save_dir: Optional[str],
+    val_split: float = 0.2,
 ) -> Tuple[List[TrainingRun], Optional[int]]:
     """Run the full experiment to find optimal training size.
 
@@ -190,7 +191,7 @@ def run_optimal_size_experiment(
     Returns:
         Tuple of (list of all TrainingRuns, optimal number of images or None)
     """
-    available_images = count_training_images(dataset_path)
+    available_images = count_dataset_images(dataset_path, split="train", val_split=val_split)
 
     if max_images is None:
         max_images = available_images
@@ -222,6 +223,7 @@ def run_optimal_size_experiment(
             device=device,
             seed=seed,
             save_dir=save_dir,
+            val_split=val_split,
         )
 
         # Check if threshold is met
@@ -445,6 +447,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--val-split",
+        type=float,
+        default=0.2,
+        help="Fraction of data for validation when using flat dataset structure (default: 0.2 for 80/20 train/val split)",
+    )
+
+    parser.add_argument(
         "--output-dir",
         type=str,
         default=None,
@@ -514,6 +523,7 @@ def main():
             device=args.device,
             seed=args.seed,
             save_dir=save_dir,
+            val_split=args.val_split,
         )
 
         # Print summary
