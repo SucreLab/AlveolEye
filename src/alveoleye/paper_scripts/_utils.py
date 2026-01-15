@@ -6,6 +6,54 @@ from typing import Optional
 # Google Drive folder containing the training dataset
 TRAINING_DATASET_DRIVE_URL = "https://drive.google.com/drive/folders/1fH7Qm6I9udircffEEqUmef8TM7baYz2-?usp=drive_link"
 
+# Default location for training dataset
+DEFAULT_TRAINING_DATASET_DIR = Path(__file__).parent.parent.parent / "training_dataset"
+
+
+def _is_valid_dataset_structure(path: Path) -> bool:
+    """Check if a path contains a valid dataset structure."""
+    required = [
+        path / "images" / "train",
+        path / "images" / "val",
+        path / "masks" / "train",
+        path / "masks" / "val",
+        path / "classes.json",
+    ]
+    return all(p.exists() for p in required)
+
+
+def find_training_dataset(search_dir: Optional[str] = None) -> Optional[str]:
+    """Find a valid training dataset directory.
+
+    Searches for a valid dataset structure in the given directory. If the directory
+    itself has the required structure, returns it. Otherwise, searches immediate
+    subdirectories (useful when gdown creates a subfolder).
+
+    Args:
+        search_dir: Directory to search in. Defaults to src/training_dataset/.
+
+    Returns:
+        Path to the dataset directory, or None if not found.
+    """
+    if search_dir is None:
+        search_dir = str(DEFAULT_TRAINING_DATASET_DIR)
+
+    search_path = Path(search_dir)
+
+    if not search_path.exists():
+        return None
+
+    # Check if the directory itself is a valid dataset
+    if _is_valid_dataset_structure(search_path):
+        return str(search_path)
+
+    # Check immediate subdirectories (handles gdown subfolder case)
+    for subdir in search_path.iterdir():
+        if subdir.is_dir() and _is_valid_dataset_structure(subdir):
+            return str(subdir)
+
+    return None
+
 
 def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = False) -> str:
     """Download the training dataset from Google Drive.
@@ -15,7 +63,7 @@ def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = Fa
 
     Args:
         output_dir: Parent directory where the dataset folder will be created.
-                    Defaults to a 'datasets' folder in the paper_scripts directory.
+                    Defaults to 'src/training_dataset'.
         quiet: If True, suppress download progress output.
 
     Returns:
@@ -28,7 +76,7 @@ def download_training_dataset(output_dir: Optional[str] = None, quiet: bool = Fa
     import gdown
 
     if output_dir is None:
-        output_dir = str(Path(__file__).parent / "datasets")
+        output_dir = str(DEFAULT_TRAINING_DATASET_DIR)
 
     os.makedirs(output_dir, exist_ok=True)
 

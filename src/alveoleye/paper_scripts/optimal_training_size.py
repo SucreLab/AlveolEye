@@ -5,10 +5,13 @@ until the validation loss meets a target threshold, helping identify the minimum
 dataset size needed for effective training.
 
 Usage:
+    # Run with default dataset location (src/training_dataset/)
+    python -m alveoleye.paper_scripts.optimal_training_size
+
     # Download dataset from Google Drive and run
     python -m alveoleye.paper_scripts.optimal_training_size --download-dataset
 
-    # Use local dataset
+    # Use custom dataset location
     python -m alveoleye.paper_scripts.optimal_training_size /path/to/dataset
 
     # With custom parameters
@@ -36,7 +39,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from alveoleye.lungcv.mrcnn.api import train, TrainingResult
 from alveoleye.lungcv.mrcnn.config import AugmentationConfig
-from alveoleye.paper_scripts._utils import download_training_dataset
+from alveoleye.paper_scripts._utils import (
+    download_training_dataset,
+    find_training_dataset,
+    DEFAULT_TRAINING_DATASET_DIR,
+)
 
 
 @dataclass
@@ -351,18 +358,17 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    # Download dataset and run with defaults
+    # Run with default dataset (src/training_dataset/)
+    python -m alveoleye.paper_scripts.optimal_training_size
+
+    # Download dataset first, then run
     python -m alveoleye.paper_scripts.optimal_training_size --download-dataset
 
-    # Download dataset to specific directory
-    python -m alveoleye.paper_scripts.optimal_training_size /path/to/download --download-dataset
-
-    # Use existing local dataset
+    # Use custom dataset location
     python -m alveoleye.paper_scripts.optimal_training_size /path/to/dataset
 
     # Custom threshold and step size
-    python -m alveoleye.paper_scripts.optimal_training_size /path/to/dataset \\
-        --threshold 0.3 --step-size 25
+    python -m alveoleye.paper_scripts.optimal_training_size --threshold 0.3 --step-size 25
 
     # Full customization
     python -m alveoleye.paper_scripts.optimal_training_size /path/to/dataset \\
@@ -377,15 +383,15 @@ Examples:
         nargs="?",
         default=None,
         help="Path to the dataset directory (must contain images/, masks/, and classes.json). "
-             "When used with --download-dataset, this is the parent directory where the "
-             "dataset will be downloaded. Can be omitted if --download-dataset is used.",
+             "Defaults to src/training_dataset/. When used with --download-dataset, this is "
+             "the parent directory where the dataset will be downloaded.",
     )
 
     parser.add_argument(
         "--download-dataset",
         action="store_true",
         help="Download the training dataset from Google Drive before running the experiment. "
-             "Downloads to dataset_path (or a default location if not provided).",
+             "Downloads to dataset_path if provided, otherwise to src/training_dataset/.",
     )
 
     parser.add_argument(
@@ -471,10 +477,16 @@ def main():
             print(f"[-] Error downloading dataset: {e}")
             sys.exit(1)
 
-    # Ensure dataset_path is provided
+    # Use default dataset path if not provided
     if args.dataset_path is None:
-        print("[-] Error: dataset_path is required. Provide a path or use --download-dataset.")
-        sys.exit(1)
+        found_path = find_training_dataset()
+        if found_path:
+            args.dataset_path = found_path
+            print(f"[+] Found dataset at: {args.dataset_path}")
+        else:
+            print(f"[-] Error: No dataset found in {DEFAULT_TRAINING_DATASET_DIR}")
+            print("    Run with --download-dataset to download it, or provide a path.")
+            sys.exit(1)
 
     try:
         validate_arguments(args)

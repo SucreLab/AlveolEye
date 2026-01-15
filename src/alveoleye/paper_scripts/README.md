@@ -11,6 +11,8 @@ from alveoleye.paper_scripts._utils import download_training_dataset
 dataset_path = download_training_dataset()
 ```
 
+By default, the dataset is downloaded to `src/training_dataset/`. When running without arguments, the script automatically searches this directory for a valid dataset. This directory is in `.gitignore` to prevent accidentally committing large dataset files.
+
 The other scripts (`confidence_maps.py`, `trials.py`, `save_snapshots.py`) only require input images for inference and will use the default model weights unless a custom weights path is specified.
 
 ## Scripts
@@ -42,10 +44,13 @@ python -m alveoleye.paper_scripts.optimal_training_size [dataset_path] [options]
 **Examples:**
 
 ```bash
-# Download dataset and run with defaults
+# Run with default dataset (src/training_dataset/)
+python -m alveoleye.paper_scripts.optimal_training_size
+
+# Download dataset first, then run
 python -m alveoleye.paper_scripts.optimal_training_size --download-dataset
 
-# Use local dataset with custom parameters
+# Use custom dataset with parameters
 python -m alveoleye.paper_scripts.optimal_training_size /path/to/dataset \
     --threshold 0.3 --step-size 25 --epochs 50 --output-dir ./results
 ```
