@@ -222,13 +222,16 @@ def _build_zoom_out(params: dict) -> T.Transform:
 
 def build_transforms(
     config: AugmentationConfig,
-    train: bool = True
+    train: bool = True,
+    target_size: tuple = None,
 ) -> T.Compose:
     """Build a transform pipeline from augmentation configuration.
 
     Args:
         config: AugmentationConfig instance
         train: Whether this is for training (augmentations applied) or validation
+        target_size: Optional (height, width) tuple to resize all images to.
+                     Required when batch_size > 1 with variable-sized images.
 
     Returns:
         Composed transform pipeline
@@ -241,9 +244,13 @@ def build_transforms(
             AugmentationItem('horizontal_flip', probability=0.5),
             AugmentationItem('color_jitter', probability=0.3, params={'brightness': 0.2}),
         ])
-        transforms = build_transforms(aug_config, train=True)
+        transforms = build_transforms(aug_config, train=True, target_size=(1440, 1920))
     """
     transform_list = [T.PILToTensor()]
+
+    # Add resize transform if target_size is specified
+    if target_size is not None:
+        transform_list.append(T.Resize(target_size, antialias=True))
 
     if train and config.enabled:
         for aug_item in config.augmentations:

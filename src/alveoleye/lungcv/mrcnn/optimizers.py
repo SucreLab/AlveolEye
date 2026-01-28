@@ -185,7 +185,7 @@ class WarmupScheduler(_LRScheduler):
             return [base_lr * factor for base_lr in self.base_lrs]
         return self.base_scheduler.get_last_lr()
 
-    def step(self, epoch=None):
+    def step(self, metrics=None):
         # Skip step during parent's __init__ (auto-step prevention)
         if getattr(self, '_initializing', False):
             return
@@ -200,4 +200,8 @@ class WarmupScheduler(_LRScheduler):
                 param_group['lr'] = base_lr
         else:
             # After warmup, delegate to base scheduler
-            self.base_scheduler.step(epoch)
+            # ReduceLROnPlateau requires the metric, others don't
+            if isinstance(self.base_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.base_scheduler.step(metrics)
+            else:
+                self.base_scheduler.step()

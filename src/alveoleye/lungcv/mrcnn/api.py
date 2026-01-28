@@ -67,9 +67,39 @@ from alveoleye.lungcv.mrcnn.callbacks import (
 from alveoleye.lungcv.mrcnn.optimizers import create_optimizer, create_scheduler
 from alveoleye.lungcv.mrcnn.augmentations import build_transforms
 from alveoleye.lungcv.mrcnn.dataset import LungDataset, DEFAULT_SEED
-from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, SmoothedValue
+from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, SmoothedValue, _safe_torch_save
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
 from alveoleye.lungcv.model_operations import init_untrained_model
+from PIL import Image
+from collections import Counter
+
+
+# ANSI formatting codes
+class _Colors:
+    BOLD = '\033[1m'
+    RESET = '\033[0m'
+
+
+def _format_number(n: int) -> str:
+    """Format a number with commas for readability."""
+    return f"{n:,}"
+
+
+def _count_parameters(model: torch.nn.Module) -> Tuple[int, int]:
+    """Count total and trainable parameters in a model."""
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return total, trainable
+
+
+def _print_header(title: str) -> None:
+    """Print a bold header."""
+    print(f"\n{_Colors.BOLD}[ {title} ]{_Colors.RESET}")
+
+
+def _print_kv(key: str, value: Any, indent: int = 2) -> None:
+    """Print a key-value pair."""
+    print(f"{' ' * indent}{key}: {value}")
 
 
 @dataclass
@@ -95,8 +125,8 @@ class TrainingResult:
         Args:
             path: Path to save the model
         """
-        torch.save(self.model, path)
-        print(f"Model saved to: {path}")
+        _safe_torch_save(self.model, path)
+        print(f"  [+] Model saved: {path}")
 
     def save_checkpoint(self, path: Union[str, Path]) -> None:
         """Save a full checkpoint with model state dict and training info.
@@ -112,8 +142,8 @@ class TrainingResult:
         }
         if self.config is not None:
             checkpoint['config'] = self.config.to_dict()
-        torch.save(checkpoint, path)
-        print(f"Checkpoint saved to: {path}")
+        _safe_torch_save(checkpoint, path)
+        print(f"  [+] Checkpoint saved: {path}")
 
 
 def _get_device(device_str: str) -> torch.device:
@@ -133,6 +163,54 @@ def _get_device(device_str: str) -> torch.device:
         else:
             return torch.device('cpu')
     return torch.device(device_str)
+
+
+def _detect_target_size(dataset_path: str, img_extension: str = '.png') -> tuple:
+    """Detect the most common image size in the dataset.
+
+    Args:
+        dataset_path: Path to the dataset directory
+        img_extension: Image file extension
+
+    Returns:
+        Tuple of (height, width) for the most common size
+    """
+    from alveoleye._dataset_utils import detect_dataset_structure
+
+    dataset_path = Path(dataset_path)
+    structure = detect_dataset_structure(str(dataset_path), img_extension)
+
+    # Find image directories based on structure
+    if structure == "split":
+        image_dirs = [
+            dataset_path / "images" / "train",
+            dataset_path / "images" / "val",
+        ]
+    else:
+        image_dirs = [dataset_path / "images"]
+
+    sizes = Counter()
+    for img_dir in image_dirs:
+        if img_dir.exists():
+            for img_path in img_dir.glob(f"*{img_extension}"):
+                with Image.open(img_path) as img:
+                    # Store as (height, width) for PyTorch convention
+                    sizes[(img.height, img.width)] += 1
+
+    if not sizes:
+        raise ValueError(f"No images found in dataset: {dataset_path}")
+
+    # Get most common size
+    most_common_size, count = sizes.most_common(1)[0]
+    total_images = sum(sizes.values())
+
+    if len(sizes) > 1:
+        print(f"[Training] Found {len(sizes)} different image sizes:")
+        for size, cnt in sizes.most_common():
+            print(f"  {size[1]}x{size[0]}: {cnt} images")
+        print(f"[Training] Resizing all images to {most_common_size[1]}x{most_common_size[0]} (most common)")
+
+    return most_common_size
 
 
 def _apply_image_selection(
@@ -161,14 +239,12 @@ def _apply_image_selection(
             indices = torch.randperm(total_images, generator=generator)[:config.n_random].tolist()
         else:
             indices = torch.randperm(total_images)[:config.n_random].tolist()
-        print(f"[Image Selection] Randomly selected {len(indices)} images (seed={config.seed})")
         return Subset(dataset, indices)
 
     elif config.index_range is not None:
         start, end = config.index_range
         end = min(end + 1, total_images)  # +1 to make it inclusive, clamp to dataset size
         indices = list(range(start, end))
-        print(f"[Image Selection] Using images {start} to {end - 1} ({len(indices)} images)")
         return Subset(dataset, indices)
 
     return dataset
@@ -332,11 +408,21 @@ def _run_training(
 
     # Determine device
     device = _get_device(config.device)
-    print(f"[Training] Using device: {device}")
+
+    # Determine target size for resizing
+    target_size = None
+    if config.data.batch_size > 1:
+        if config.data.target_size == 'auto':
+            target_size = _detect_target_size(
+                str(config.data.dataset_path),
+                config.data.img_extension,
+            )
+        elif config.data.target_size is not None:
+            target_size = config.data.target_size
 
     # Build transforms
-    train_transforms = build_transforms(config.augmentation, train=True)
-    val_transforms = build_transforms(config.augmentation, train=False)
+    train_transforms = build_transforms(config.augmentation, train=True, target_size=target_size)
+    val_transforms = build_transforms(config.augmentation, train=False, target_size=target_size)
 
     # Create datasets
     dataset_path = str(config.data.dataset_path)
@@ -364,8 +450,20 @@ def _run_training(
     # Apply image selection
     dataset = _apply_image_selection(dataset, config.data.image_selection)
 
-    print(f"[Training] Training images: {len(dataset)}")
-    print(f"[Training] Validation images: {len(dataset_val)}")
+    _print_header("DATA")
+    _print_kv("Dataset", dataset_path)
+    train_count = _format_number(len(dataset))
+    if config.data.image_selection is not None:
+        sel = config.data.image_selection
+        if sel.n_random is not None:
+            train_count += f" (random selection, seed={sel.seed})"
+        elif sel.index_range is not None:
+            train_count += f" (range {sel.index_range[0]}-{sel.index_range[1]})"
+    _print_kv("Train images", train_count)
+    _print_kv("Val images", _format_number(len(dataset_val)))
+    _print_kv("Batch size", config.data.batch_size)
+    aug_str = f"{len(config.augmentation.augmentations)} transforms" if config.augmentation.enabled else "Disabled"
+    _print_kv("Augmentation", aug_str)
 
     # Create data loaders
     data_loader = DataLoader(
@@ -390,13 +488,44 @@ def _run_training(
     # Initialize model
     model = init_untrained_model(config.num_classes)
     model.to(device)
+    _, trainable_params = _count_parameters(model)
+
+    _print_header("MODEL")
+    _print_kv("Architecture", "Mask R-CNN (ResNet-50 FPN)")
+    _print_kv("Classes", config.num_classes)
+    _print_kv("Parameters", f"{_format_number(trainable_params)} trainable")
 
     # Create optimizer
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = create_optimizer(params, config.optimizer)
 
+    _print_header("TRAINING")
+    device_str = str(device)
+    if device.type == 'cuda':
+        device_str = f"{device} ({torch.cuda.get_device_name(device)})"
+    _print_kv("Device", device_str)
+    _print_kv("Epochs", config.epochs)
+    _print_kv("Optimizer", config.optimizer.name.upper())
+    _print_kv("Learning rate", config.optimizer.lr)
+    _print_kv("Weight decay", config.optimizer.weight_decay)
+    _print_kv("Momentum", config.optimizer.momentum)
+
     # Create scheduler
     lr_scheduler = create_scheduler(optimizer, config.scheduler, config.epochs)
+
+    _print_kv("Scheduler", config.scheduler.name.upper())
+    if config.scheduler.name.lower() == 'step':
+        _print_kv("Step size", f"{config.scheduler.step_size} epochs")
+        _print_kv("Gamma", config.scheduler.gamma)
+    elif config.scheduler.name.lower() == 'cosine':
+        _print_kv("T_max", config.scheduler.T_max or config.epochs)
+    elif config.scheduler.name.lower() == 'plateau':
+        _print_kv("Patience", config.scheduler.patience)
+    warmup_str = f"{config.scheduler.warmup_epochs} epochs" if config.scheduler.warmup_epochs > 0 else "None"
+    _print_kv("Warmup", warmup_str)
+    _print_kv("Gradient clip", config.gradient_clip_val if config.gradient_clip_val is not None else "None")
+    _print_kv("Mixed precision", "Yes" if config.mixed_precision else "No")
+    _print_kv("Seed", config.seed if config.seed is not None else "None")
 
     # Resume from checkpoint if specified
     start_epoch = 0
@@ -408,7 +537,7 @@ def _run_training(
     }
 
     if resume_from is not None:
-        print(f"[Training] Resuming from checkpoint: {resume_from}")
+        print(f"\n[+] Resuming from: {resume_from}")
         checkpoint = torch.load(resume_from, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         if 'optimizer_state_dict' in checkpoint:
@@ -419,36 +548,42 @@ def _run_training(
             best_val_loss = checkpoint['best_val_loss']
         if 'history' in checkpoint:
             history = checkpoint['history']
-        print(f"[Training] Resumed from epoch {start_epoch}")
+        print(f"    Epoch {start_epoch}, best val loss: {best_val_loss:.4f}")
 
     # Setup mixed precision if enabled
     scaler = None
-    if config.mixed_precision and torch.cuda.is_available():
-        scaler = torch.cuda.amp.GradScaler()
-        print("[Training] Mixed precision training enabled")
+    if config.mixed_precision:
+        if torch.cuda.is_available():
+            scaler = torch.cuda.amp.GradScaler()
+        else:
+            print(f"[-] Mixed precision unavailable (no CUDA)")
 
     # Setup TensorBoard
     writer = None
     if config.logging.use_tensorboard:
-        if not TENSORBOARD_AVAILABLE:
-            print("[Training] Warning: TensorBoard not available, logging disabled")
-        else:
+        if TENSORBOARD_AVAILABLE:
             log_dir = config.logging.log_dir
             writer = SummaryWriter(log_dir=log_dir)
-            print(f"[Training] TensorBoard logging to: {writer.log_dir}")
 
-            # Log sample images
-            if config.logging.log_images and len(data_loader) > 0:
-                try:
-                    images, _ = next(iter(data_loader))
-                    grid = make_grid(list(images)[:8])  # Limit to 8 images
-                    writer.add_image('train_images', grid, 0)
+    _print_header("OUTPUT")
+    _print_kv("TensorBoard", writer.log_dir if writer else "Disabled")
+    checkpoint_dir = os.path.abspath(config.checkpoint.save_dir)
+    _print_kv("Checkpoints", checkpoint_dir)
+    _print_kv("Save frequency", f"Every {config.checkpoint.save_frequency} epochs" if config.checkpoint.save_frequency > 0 else "Disabled")
+    _print_kv("Save best", "Yes" if config.checkpoint.save_best else "No")
 
-                    val_images, _ = next(iter(data_loader_val))
-                    val_grid = make_grid(list(val_images)[:8])
-                    writer.add_image('val_images', val_grid, 0)
-                except StopIteration:
-                    pass
+    # Log sample images to TensorBoard
+    if writer is not None and config.logging.log_images and len(data_loader) > 0:
+        try:
+            images, _ = next(iter(data_loader))
+            grid = make_grid(list(images)[:8])  # Limit to 8 images
+            writer.add_image('train_images', grid, 0)
+
+            val_images, _ = next(iter(data_loader_val))
+            val_grid = make_grid(list(val_images)[:8])
+            writer.add_image('val_images', val_grid, 0)
+        except StopIteration:
+            pass
 
     # Create training state for callbacks
     state = TrainingState(
@@ -466,10 +601,16 @@ def _run_training(
     callbacks.on_train_start(state)
 
     # Training loop
+    print(f"\n{_Colors.BOLD}[ PROGRESS ]{_Colors.RESET}")
+    print(f"  [+] Starting {config.epochs - start_epoch} epochs...")
+
     final_epoch = start_epoch
     early_stopped = False
+    import time as time_module
+    training_start_time = time_module.time()
 
     for epoch in range(start_epoch, config.epochs):
+        epoch_start_time = time_module.time()
         state.epoch = epoch
         callbacks.on_epoch_start(state)
 
@@ -477,7 +618,8 @@ def _run_training(
         model.train()
         train_metrics = train_one_epoch(
             model, optimizer, data_loader, device, epoch,
-            print_freq=config.logging.print_freq, scaler=scaler
+            print_freq=config.logging.print_freq, scaler=scaler,
+            gradient_clip_val=config.gradient_clip_val
         )
 
         # Extract training loss
@@ -488,10 +630,6 @@ def _run_training(
                 train_loss = train_metrics.meters['loss']
         else:
             train_loss = 0.0
-
-        # Step scheduler
-        if lr_scheduler is not None:
-            lr_scheduler.step()
 
         # Run validation
         val_metrics_raw = eval_forward(model, data_loader_val, device)[0]
@@ -509,6 +647,37 @@ def _run_training(
                 for k, v in val_metrics_raw.items()
                 if 'loss' in k.lower()
             ) if isinstance(val_metrics_raw, dict) else 0.0
+
+        # Calculate epoch time
+        epoch_time = time_module.time() - epoch_start_time
+        epoch_mins, epoch_secs = divmod(int(epoch_time), 60)
+
+        # Print epoch summary
+        is_best = val_loss < best_val_loss
+        if is_best:
+            print(f"  [+] Epoch {epoch + 1}/{config.epochs}  "
+                  f"train={train_loss:.4f}  "
+                  f"val={val_loss:.4f} (best)  "
+                  f"lr={optimizer.param_groups[0]['lr']:.6f}  "
+                  f"({epoch_mins}m {epoch_secs}s)")
+        else:
+            print(f"  [ ] Epoch {epoch + 1}/{config.epochs}  "
+                  f"train={train_loss:.4f}  "
+                  f"val={val_loss:.4f}  "
+                  f"lr={optimizer.param_groups[0]['lr']:.6f}  "
+                  f"({epoch_mins}m {epoch_secs}s)")
+
+        # Step scheduler (after validation so ReduceLROnPlateau has the val_loss)
+        if lr_scheduler is not None:
+            # Check if it's ReduceLROnPlateau (possibly wrapped in WarmupScheduler)
+            is_plateau = isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+            if hasattr(lr_scheduler, 'base_scheduler'):
+                is_plateau = isinstance(lr_scheduler.base_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+
+            if is_plateau:
+                lr_scheduler.step(val_loss)
+            else:
+                lr_scheduler.step()
 
         # Update history
         history['train_loss'].append(train_loss)
@@ -557,14 +726,10 @@ def _run_training(
                 break
 
         if early_stopped:
-            print(f"[Training] Early stopping at epoch {epoch}")
+            print(f"  [-] Early stopping triggered")
             break
 
         final_epoch = epoch
-
-        # Apply gradient clipping if configured
-        if config.gradient_clip_val is not None:
-            torch.nn.utils.clip_grad_norm_(params, config.gradient_clip_val)
 
     # Call on_train_end
     callbacks.on_train_end(state)
@@ -573,7 +738,17 @@ def _run_training(
     if writer is not None:
         writer.close()
 
-    print(f"[Training] Completed at epoch {final_epoch + 1}/{config.epochs}")
+    # Final summary
+    total_time = time_module.time() - training_start_time
+    total_mins, total_secs = divmod(int(total_time), 60)
+    total_hours, total_mins = divmod(total_mins, 60)
+
+    time_str = f"{total_hours}h {total_mins}m {total_secs}s" if total_hours > 0 else f"{total_mins}m {total_secs}s"
+
+    print(f"\n{_Colors.BOLD}[ COMPLETE ]{_Colors.RESET}")
+    _print_kv("Epochs", f"{final_epoch + 1}/{config.epochs}")
+    _print_kv("Time", time_str)
+    _print_kv("Best val loss", f"{best_val_loss:.4f}")
 
     return TrainingResult(
         model=model,

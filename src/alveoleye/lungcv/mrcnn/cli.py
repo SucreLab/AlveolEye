@@ -22,15 +22,11 @@ Example:
 
 import argparse
 import sys
-import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 from alveoleye.lungcv.mrcnn.cli_utils import (
     validate_arguments,
     parse_image_range,
-    format_time,
-    print_arguments,
 )
 from alveoleye.lungcv.mrcnn.config import (
     TrainingConfig,
@@ -148,6 +144,12 @@ def create_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.2,
         help="Fraction of data for validation when using flat dataset structure (default: 0.2 for 80/20 train/val split)",
+    )
+    data_group.add_argument(
+        "--target-size",
+        type=str,
+        default="auto",
+        help="Target image size as 'HEIGHTxWIDTH' (e.g., '1440x1920'), 'auto' to detect, or 'none' to disable resizing",
     )
 
     # Image selection (mutually exclusive)
@@ -310,6 +312,21 @@ def build_config_from_args(args) -> TrainingConfig:
             seed=args.seed,
         )
 
+    # Parse target size
+    target_size = args.target_size
+    if target_size == 'none':
+        target_size = None
+    elif target_size != 'auto':
+        # Parse 'HEIGHTxWIDTH' format
+        try:
+            h, w = target_size.lower().split('x')
+            target_size = (int(h), int(w))
+        except ValueError:
+            raise ValueError(
+                f"Invalid target-size format: '{args.target_size}'. "
+                "Use 'HEIGHTxWIDTH' (e.g., '1440x1920'), 'auto', or 'none'"
+            )
+
     # Data config
     data_config = DataConfig(
         dataset_path=args.dataset_path,
@@ -319,6 +336,7 @@ def build_config_from_args(args) -> TrainingConfig:
         img_extension=args.img_extension,
         image_selection=image_selection,
         val_split=args.val_split,
+        target_size=target_size,
     )
 
     # Optimizer config
@@ -499,21 +517,13 @@ def run_training(args) -> None:
     # Save config if requested
     if args.save_config:
         config.to_yaml(args.save_config)
-        print(f"[CLI] Configuration saved to: {args.save_config}")
+        print(f"\033[92m[+]\033[0m Config saved to: {args.save_config}")
 
     # Run training
-    print("[CLI] Starting training...")
-    start_time = time.time()
-
     result = train(
         config=config,
         resume_from=args.resume_from,
     )
-
-    elapsed = time.time() - start_time
-    print(f"\n[CLI] Training completed in {format_time(elapsed)}")
-    print(f"[CLI] Best validation loss: {result.best_val_loss:.4f}")
-    print(f"[CLI] Final epoch: {result.final_epoch + 1}/{config.epochs}")
 
     # Save final model
     final_path = Path(config.checkpoint.save_dir) / "final_model.pth"
@@ -528,10 +538,8 @@ def main() -> None:
     try:
         validate_arguments(args)
     except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"\033[91mError:\033[0m {e}", file=sys.stderr)
         sys.exit(1)
-
-    print_arguments(args)
 
     try:
         run_training(args)

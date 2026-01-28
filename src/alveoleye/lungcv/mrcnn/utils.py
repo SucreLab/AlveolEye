@@ -1,12 +1,13 @@
 import datetime
 import os
+import shutil
+import tempfile
 import time
 from collections import defaultdict, deque, OrderedDict
+from typing import Any, Tuple, List, Dict, Optional
 
 import torch
 import torch.distributed as dist
-
-from typing import Tuple, List, Dict, Optional
 from torch import Tensor
 from torchvision.models.detection.roi_heads import fastrcnn_loss
 from torchvision.models.detection.rpn import concat_box_prediction_layers
@@ -155,8 +156,9 @@ class MetricLogger:
         iter_time = SmoothedValue(fmt="{avg:.4f}")
         data_time = SmoothedValue(fmt="{avg:.4f}")
         space_fmt = ":" + str(len(str(len(iterable)))) + "d"
+        prefix = "  [+] "
         if torch.cuda.is_available():
-            log_msg = self.delimiter.join(
+            log_msg = prefix + self.delimiter.join(
                 [
                     header,
                     "[{0" + space_fmt + "}/{1}]",
@@ -168,7 +170,7 @@ class MetricLogger:
                 ]
             )
         else:
-            log_msg = self.delimiter.join(
+            log_msg = prefix + self.delimiter.join(
                 [header, "[{0" + space_fmt + "}/{1}]", "eta: {eta}", "{meters}", "time: {time}", "data: {data}"]
             )
         MB = 1024.0 * 1024.0
@@ -201,7 +203,7 @@ class MetricLogger:
             end = time.time()
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print(f"{header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
+        print(f"  [+] {header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
 
 
 def collate_fn(batch):
@@ -232,9 +234,30 @@ def is_main_process():
     return get_rank() == 0
 
 
-def save_on_master(*args, **kwargs):
+def _safe_torch_save(obj: Any, path: str) -> None:
+    """Save a PyTorch object safely using atomic write.
+
+    This works around a known PyTorch bug on macOS where torch.save()
+    can fail with 'unexpected pos' errors when writing large models.
+    """
+    dir_path = os.path.dirname(path) or '.'
+    os.makedirs(dir_path, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(dir=dir_path, suffix='.tmp')
+    try:
+        os.close(fd)
+        torch.save(obj, temp_path)
+        shutil.move(temp_path, path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+
+
+def save_on_master(obj: Any, path: str, **kwargs):
+    """Save on master process only, using atomic write for safety."""
     if is_main_process():
-        torch.save(*args, **kwargs)
+        _safe_torch_save(obj, path)
 
 
 def setup_for_distributed(is_master):

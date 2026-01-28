@@ -182,6 +182,9 @@ class DataConfig:
         pin_memory: Whether to pin memory in DataLoader (default: True if CUDA)
         image_selection: Configuration for image subset selection (default: None for all)
         val_split: Fraction of data for validation when using flat dataset structure (default: 0.2)
+        target_size: Target size (height, width) for resizing images. Required when batch_size > 1
+                     with variable-sized images. Set to 'auto' to detect from dataset, or None
+                     to disable resizing (default: 'auto')
     """
     dataset_path: Union[str, Path] = 'training_dataset'
     batch_size: int = 10
@@ -192,6 +195,7 @@ class DataConfig:
     pin_memory: bool = True
     image_selection: Optional[ImageSelectionConfig] = None
     val_split: float = 0.2
+    target_size: Optional[Union[Tuple[int, int], Literal['auto']]] = 'auto'
 
 
 @dataclass

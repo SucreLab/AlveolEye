@@ -19,6 +19,8 @@ import os
 
 import torch
 
+from alveoleye.lungcv.mrcnn.utils import _safe_torch_save
+
 
 @dataclass
 class TrainingState:
@@ -186,22 +188,22 @@ class ModelCheckpointCallback(Callback):
                 val_loss=state.val_metrics.get('loss', 0)
             )
             path = os.path.join(self.save_dir, filename)
-            torch.save({
+            _safe_torch_save({
                 'epoch': state.epoch,
                 'model_state_dict': state.model.state_dict(),
                 'optimizer_state_dict': state.optimizer.state_dict(),
                 'val_metrics': state.val_metrics,
                 'train_metrics': state.train_metrics,
             }, path)
-            print(f"[Checkpoint] Saved: {path}")
+            print(f"  [+] Checkpoint saved: {path}")
 
         # Save best
         val_loss = state.val_metrics.get('loss', float('inf'))
         if self.save_best and val_loss < self.best_loss:
             self.best_loss = val_loss
             path = os.path.join(self.save_dir, 'best_model.pth')
-            torch.save(state.model, path)
-            print(f"[Checkpoint] New best model saved: {path} (loss: {val_loss:.4f})")
+            _safe_torch_save(state.model, path)
+            print(f"  [+] Best model saved: {path}")
 
 
 class LambdaCallback(Callback):
