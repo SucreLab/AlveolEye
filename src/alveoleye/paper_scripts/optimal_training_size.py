@@ -54,6 +54,10 @@ class TrainingRun:
     """Results from a single training run."""
     n_images: int
     best_val_loss: float
+    best_val_f1: float
+    best_val_precision: float
+    best_val_recall: float
+    best_val_f1_agnostic: float
     final_epoch: int
     training_time: float
     meets_threshold: bool
@@ -150,6 +154,7 @@ def run_training_experiment(
         save_best=bool(save_dir),  # Only save best if save_dir provided
         use_tensorboard=False,  # Disable tensorboard for cleaner output
         print_freq=50,  # Less verbose output
+        compute_metrics=True,  # Enable F1 metrics
     )
 
     training_time = time.time() - start_time
@@ -157,6 +162,10 @@ def run_training_experiment(
     return TrainingRun(
         n_images=n_images,
         best_val_loss=result.best_val_loss,
+        best_val_f1=result.best_val_f1,
+        best_val_precision=result.best_val_precision,
+        best_val_recall=result.best_val_recall,
+        best_val_f1_agnostic=result.best_val_f1_agnostic,
         final_epoch=result.final_epoch,
         training_time=training_time,
         meets_threshold=False,  # Will be set by caller
@@ -174,12 +183,13 @@ def run_optimal_size_experiment(
     seed: Optional[int],
     save_dir: Optional[str],
     val_split: float = 0.2,
+    metric: str = "f1",
 ) -> Tuple[List[TrainingRun], Optional[int]]:
     """Run the full experiment to find optimal training size.
 
     Args:
         dataset_path: Path to the dataset
-        threshold: Target validation loss threshold
+        threshold: Target metric threshold (F1 score by default)
         start_images: Initial number of images to train with
         step_size: Increment for each subsequent training run
         max_images: Maximum images to try (None = use all available)
@@ -187,6 +197,8 @@ def run_optimal_size_experiment(
         device: Device to train on
         seed: Random seed for reproducibility
         save_dir: Directory to save results and checkpoints
+        val_split: Validation split fraction
+        metric: Metric to use for threshold ('f1', 'f1_agnostic', 'loss')
 
     Returns:
         Tuple of (list of all TrainingRuns, optimal number of images or None)
@@ -198,12 +210,19 @@ def run_optimal_size_experiment(
     else:
         max_images = min(max_images, available_images)
 
+    # Determine metric description
+    metric_desc = {
+        'f1': 'F1 (class-aware)',
+        'f1_agnostic': 'F1 (class-agnostic)',
+        'loss': 'validation loss',
+    }.get(metric, metric)
+
     print(f"\n{'#'*60}")
     print(f"# Optimal Training Size Experiment")
     print(f"{'#'*60}")
     print(f"  Dataset: {dataset_path}")
     print(f"  Available training images: {available_images}")
-    print(f"  Target validation loss threshold: {threshold}")
+    print(f"  Target metric: {metric_desc} >= {threshold}")
     print(f"  Image range: {start_images} to {max_images} (step: {step_size})")
     print(f"  Epochs per run: {epochs}")
     print(f"  Device: {device}")
@@ -226,14 +245,30 @@ def run_optimal_size_experiment(
             val_split=val_split,
         )
 
-        # Check if threshold is met
-        run.meets_threshold = run.best_val_loss <= threshold
+        # Get the metric value for comparison
+        if metric == 'f1':
+            metric_value = run.best_val_f1
+        elif metric == 'f1_agnostic':
+            metric_value = run.best_val_f1_agnostic
+        elif metric == 'loss':
+            metric_value = run.best_val_loss
+        else:
+            metric_value = run.best_val_f1  # Default to class-aware F1
+
+        # Check if threshold is met (for F1 metrics, higher is better; for loss, lower is better)
+        if metric == 'loss':
+            run.meets_threshold = metric_value <= threshold
+        else:
+            run.meets_threshold = metric_value >= threshold
         results.append(run)
 
         print(f"\n  Results for {n_images} images:")
         print(f"    Best validation loss: {run.best_val_loss:.6f}")
+        print(f"    Best F1 (class-aware): {run.best_val_f1:.4f}")
+        print(f"    Best F1 (class-agnostic): {run.best_val_f1_agnostic:.4f}")
+        print(f"    Precision: {run.best_val_precision:.4f}, Recall: {run.best_val_recall:.4f}")
         print(f"    Training time: {run.training_time:.1f}s")
-        print(f"    Meets threshold ({threshold}): {'YES' if run.meets_threshold else 'NO'}")
+        print(f"    Meets threshold ({metric_desc} >= {threshold}): {'YES' if run.meets_threshold else 'NO'}")
 
         if run.meets_threshold:
             optimal_n_images = n_images
@@ -250,6 +285,7 @@ def export_results(
     optimal_n_images: Optional[int],
     output_path: str,
     threshold: float,
+    metric: str = "f1",
 ) -> str:
     """Export experiment results to a CSV file.
 
@@ -258,6 +294,7 @@ def export_results(
         optimal_n_images: The optimal number found (or None)
         output_path: Directory to save the results
         threshold: The target threshold used
+        metric: The metric used for threshold
 
     Returns:
         Path to the exported file
@@ -274,6 +311,7 @@ def export_results(
 
         # Write header with metadata
         writer.writerow(["# Optimal Training Size Experiment Results"])
+        writer.writerow([f"# Metric: {metric}"])
         writer.writerow([f"# Threshold: {threshold}"])
         writer.writerow([f"# Optimal N Images: {optimal_n_images if optimal_n_images else 'Not found'}"])
         writer.writerow([])
@@ -282,6 +320,10 @@ def export_results(
         writer.writerow([
             "n_images",
             "best_val_loss",
+            "best_val_f1",
+            "best_val_precision",
+            "best_val_recall",
+            "best_val_f1_agnostic",
             "final_epoch",
             "training_time_seconds",
             "meets_threshold",
@@ -292,6 +334,10 @@ def export_results(
             writer.writerow([
                 run.n_images,
                 f"{run.best_val_loss:.6f}",
+                f"{run.best_val_f1:.4f}",
+                f"{run.best_val_precision:.4f}",
+                f"{run.best_val_recall:.4f}",
+                f"{run.best_val_f1_agnostic:.4f}",
                 run.final_epoch,
                 f"{run.training_time:.1f}",
                 run.meets_threshold,
@@ -304,27 +350,37 @@ def print_summary(
     results: List[TrainingRun],
     optimal_n_images: Optional[int],
     threshold: float,
+    metric: str = "f1",
 ):
     """Print a summary of the experiment results."""
-    print(f"\n{'='*60}")
+    print(f"\n{'='*80}")
     print("EXPERIMENT SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'='*80}")
 
-    print(f"\n{'N Images':<12} {'Val Loss':<12} {'Time (s)':<12} {'Meets Threshold'}")
-    print("-" * 50)
+    print(f"\n{'N Images':<10} {'Val Loss':<10} {'F1':<8} {'F1 Agnos':<10} {'Prec':<8} {'Recall':<8} {'Time(s)':<8} {'Pass'}")
+    print("-" * 80)
     for run in results:
         status = "YES" if run.meets_threshold else "NO"
-        print(f"{run.n_images:<12} {run.best_val_loss:<12.6f} {run.training_time:<12.1f} {status}")
+        print(f"{run.n_images:<10} {run.best_val_loss:<10.4f} {run.best_val_f1:<8.4f} "
+              f"{run.best_val_f1_agnostic:<10.4f} {run.best_val_precision:<8.4f} "
+              f"{run.best_val_recall:<8.4f} {run.training_time:<8.1f} {status}")
 
-    print(f"\n{'-'*50}")
+    # Determine metric description
+    metric_desc = {
+        'f1': 'F1 (class-aware)',
+        'f1_agnostic': 'F1 (class-agnostic)',
+        'loss': 'validation loss',
+    }.get(metric, metric)
+
+    print(f"\n{'-'*80}")
     if optimal_n_images:
         print(f"OPTIMAL NUMBER OF IMAGES: {optimal_n_images}")
-        print(f"  (First to achieve validation loss <= {threshold})")
+        print(f"  (First to achieve {metric_desc} >= {threshold})")
     else:
-        print(f"Threshold ({threshold}) was NOT met with any tested configuration.")
+        print(f"Threshold ({metric_desc} >= {threshold}) was NOT met with any tested configuration.")
         if results:
-            best_run = min(results, key=lambda r: r.best_val_loss)
-            print(f"  Best result: {best_run.n_images} images with loss {best_run.best_val_loss:.6f}")
+            best_run = max(results, key=lambda r: r.best_val_f1)
+            print(f"  Best result: {best_run.n_images} images with F1 {best_run.best_val_f1:.4f}")
 
     total_time = sum(r.training_time for r in results)
     print(f"\nTotal experiment time: {total_time:.1f}s ({total_time/60:.1f} minutes)")
@@ -399,8 +455,16 @@ Examples:
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.5,
-        help="Target validation loss threshold to achieve (default: 0.5)",
+        default=0.7,
+        help="Target metric threshold to achieve (default: 0.7 for F1)",
+    )
+
+    parser.add_argument(
+        "--metric",
+        type=str,
+        default="f1",
+        choices=["f1", "f1_agnostic", "loss"],
+        help="Metric to use for threshold comparison (default: f1 = class-aware F1 score)",
     )
 
     parser.add_argument(
@@ -524,10 +588,11 @@ def main():
             seed=args.seed,
             save_dir=save_dir,
             val_split=args.val_split,
+            metric=args.metric,
         )
 
         # Print summary
-        print_summary(results, optimal_n_images, args.threshold)
+        print_summary(results, optimal_n_images, args.threshold, metric=args.metric)
 
         # Export results if output directory specified
         if args.output_dir:
@@ -536,6 +601,7 @@ def main():
                 optimal_n_images=optimal_n_images,
                 output_path=args.output_dir,
                 threshold=args.threshold,
+                metric=args.metric,
             )
             print(f"\n[+] Results exported to: {filepath}")
 

@@ -67,7 +67,8 @@ from alveoleye.lungcv.mrcnn.callbacks import (
 from alveoleye.lungcv.mrcnn.optimizers import create_optimizer, create_scheduler
 from alveoleye.lungcv.mrcnn.augmentations import build_transforms
 from alveoleye.lungcv.mrcnn.dataset import LungDataset, DEFAULT_SEED
-from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, SmoothedValue, _safe_torch_save
+from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, eval_with_metrics, SmoothedValue, _safe_torch_save
+from alveoleye.lungcv.mrcnn.metrics import SegmentationMetrics
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
 from alveoleye.lungcv.model_operations import init_untrained_model
 from PIL import Image
@@ -110,12 +111,20 @@ class TrainingResult:
         model: The trained model
         history: Dictionary mapping metric names to lists of values per epoch
         best_val_loss: Best validation loss achieved during training
+        best_val_f1: Best class-aware F1 score (strictest metric)
+        best_val_precision: Best class-aware precision
+        best_val_recall: Best class-aware recall
+        best_val_f1_agnostic: Best class-agnostic F1 score
         config: The TrainingConfig used for training
         final_epoch: The final epoch number (may be less than total if early stopped)
     """
     model: torch.nn.Module
     history: Dict[str, List[float]] = field(default_factory=dict)
     best_val_loss: float = float('inf')
+    best_val_f1: float = 0.0
+    best_val_precision: float = 0.0
+    best_val_recall: float = 0.0
+    best_val_f1_agnostic: float = 0.0
     config: Optional[TrainingConfig] = None
     final_epoch: int = 0
 
@@ -138,6 +147,10 @@ class TrainingResult:
             'model_state_dict': self.model.state_dict(),
             'history': self.history,
             'best_val_loss': self.best_val_loss,
+            'best_val_f1': self.best_val_f1,
+            'best_val_precision': self.best_val_precision,
+            'best_val_recall': self.best_val_recall,
+            'best_val_f1_agnostic': self.best_val_f1_agnostic,
             'final_epoch': self.final_epoch,
         }
         if self.config is not None:
@@ -389,6 +402,7 @@ def _run_training(
     config: TrainingConfig,
     callbacks: CallbackList,
     resume_from: Optional[str] = None,
+    compute_metrics: bool = True,
 ) -> TrainingResult:
     """Run the training loop.
 
@@ -396,6 +410,7 @@ def _run_training(
         config: Complete training configuration
         callbacks: List of callbacks
         resume_from: Optional path to checkpoint to resume from
+        compute_metrics: Whether to compute pixel-level F1 metrics during validation
 
     Returns:
         TrainingResult with trained model and metrics
@@ -530,11 +545,23 @@ def _run_training(
     # Resume from checkpoint if specified
     start_epoch = 0
     best_val_loss = float('inf')
+    best_val_f1 = 0.0
+    best_val_precision = 0.0
+    best_val_recall = 0.0
+    best_val_f1_agnostic = 0.0
     history: Dict[str, List[float]] = {
         'train_loss': [],
         'val_loss': [],
         'lr': [],
     }
+    # Add metrics history keys if computing metrics
+    if compute_metrics:
+        history.update({
+            'val_f1': [],
+            'val_precision': [],
+            'val_recall': [],
+            'val_f1_agnostic': [],
+        })
 
     if resume_from is not None:
         print(f"\n[+] Resuming from: {resume_from}")
@@ -546,6 +573,14 @@ def _run_training(
             start_epoch = checkpoint['epoch'] + 1
         if 'best_val_loss' in checkpoint:
             best_val_loss = checkpoint['best_val_loss']
+        if 'best_val_f1' in checkpoint:
+            best_val_f1 = checkpoint['best_val_f1']
+        if 'best_val_precision' in checkpoint:
+            best_val_precision = checkpoint['best_val_precision']
+        if 'best_val_recall' in checkpoint:
+            best_val_recall = checkpoint['best_val_recall']
+        if 'best_val_f1_agnostic' in checkpoint:
+            best_val_f1_agnostic = checkpoint['best_val_f1_agnostic']
         if 'history' in checkpoint:
             history = checkpoint['history']
         print(f"    Epoch {start_epoch}, best val loss: {best_val_loss:.4f}")
@@ -594,6 +629,7 @@ def _run_training(
         train_metrics={},
         val_metrics={},
         best_val_loss=best_val_loss,
+        best_val_f1=best_val_f1,
         device=device,
     )
 
@@ -632,7 +668,11 @@ def _run_training(
             train_loss = 0.0
 
         # Run validation
-        val_metrics_raw = eval_forward(model, data_loader_val, device)[0]
+        val_seg_metrics: Optional[SegmentationMetrics] = None
+        if compute_metrics:
+            val_metrics_raw, val_seg_metrics = eval_with_metrics(model, data_loader_val, device)
+        else:
+            val_metrics_raw = eval_forward(model, data_loader_val, device)[0]
 
         # Extract validation loss
         if isinstance(val_metrics_raw, dict) and 'loss' in val_metrics_raw:
@@ -648,24 +688,49 @@ def _run_training(
                 if 'loss' in k.lower()
             ) if isinstance(val_metrics_raw, dict) else 0.0
 
+        # Extract F1 metrics
+        val_f1 = val_seg_metrics.f1_score if val_seg_metrics else 0.0
+        val_precision = val_seg_metrics.precision if val_seg_metrics else 0.0
+        val_recall = val_seg_metrics.recall if val_seg_metrics else 0.0
+        val_f1_agnostic = val_seg_metrics.f1_agnostic if val_seg_metrics else 0.0
+
         # Calculate epoch time
         epoch_time = time_module.time() - epoch_start_time
         epoch_mins, epoch_secs = divmod(int(epoch_time), 60)
 
         # Print epoch summary
-        is_best = val_loss < best_val_loss
-        if is_best:
-            print(f"  [+] Epoch {epoch + 1}/{config.epochs}  "
+        is_best_loss = val_loss < best_val_loss
+        is_best_f1 = val_f1 > best_val_f1
+
+        if compute_metrics:
+            best_marker = ""
+            if is_best_loss and is_best_f1:
+                best_marker = " (best loss & F1)"
+            elif is_best_loss:
+                best_marker = " (best loss)"
+            elif is_best_f1:
+                best_marker = " (best F1)"
+
+            prefix = "  [+]" if is_best_f1 else "  [ ]"
+            print(f"{prefix} Epoch {epoch + 1}/{config.epochs}  "
                   f"train={train_loss:.4f}  "
-                  f"val={val_loss:.4f} (best)  "
+                  f"val={val_loss:.4f}  "
+                  f"F1={val_f1:.4f}{best_marker}  "
                   f"lr={optimizer.param_groups[0]['lr']:.6f}  "
                   f"({epoch_mins}m {epoch_secs}s)")
         else:
-            print(f"  [ ] Epoch {epoch + 1}/{config.epochs}  "
-                  f"train={train_loss:.4f}  "
-                  f"val={val_loss:.4f}  "
-                  f"lr={optimizer.param_groups[0]['lr']:.6f}  "
-                  f"({epoch_mins}m {epoch_secs}s)")
+            if is_best_loss:
+                print(f"  [+] Epoch {epoch + 1}/{config.epochs}  "
+                      f"train={train_loss:.4f}  "
+                      f"val={val_loss:.4f} (best)  "
+                      f"lr={optimizer.param_groups[0]['lr']:.6f}  "
+                      f"({epoch_mins}m {epoch_secs}s)")
+            else:
+                print(f"  [ ] Epoch {epoch + 1}/{config.epochs}  "
+                      f"train={train_loss:.4f}  "
+                      f"val={val_loss:.4f}  "
+                      f"lr={optimizer.param_groups[0]['lr']:.6f}  "
+                      f"({epoch_mins}m {epoch_secs}s)")
 
         # Step scheduler (after validation so ReduceLROnPlateau has the val_loss)
         if lr_scheduler is not None:
@@ -684,11 +749,40 @@ def _run_training(
         history['val_loss'].append(val_loss)
         history['lr'].append(optimizer.param_groups[0]['lr'])
 
+        # Update metrics history if computing metrics
+        if compute_metrics:
+            history['val_f1'].append(val_f1)
+            history['val_precision'].append(val_precision)
+            history['val_recall'].append(val_recall)
+            history['val_f1_agnostic'].append(val_f1_agnostic)
+
+            # Add per-class metrics to history
+            if val_seg_metrics and val_seg_metrics.per_class:
+                for cls_id, cls_metrics in val_seg_metrics.per_class.items():
+                    key = f'val_f1_class_{cls_id}'
+                    if key not in history:
+                        history[key] = []
+                    history[key].append(cls_metrics['f1'])
+
         # Log to TensorBoard
         if writer is not None:
             writer.add_scalar('loss/train', train_loss, epoch)
             writer.add_scalar('loss/val', val_loss, epoch)
             writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch)
+
+            # Log metrics if computed
+            if compute_metrics and val_seg_metrics:
+                writer.add_scalar('f1/val', val_f1, epoch)
+                writer.add_scalar('precision/val', val_precision, epoch)
+                writer.add_scalar('recall/val', val_recall, epoch)
+                writer.add_scalar('f1_agnostic/val', val_f1_agnostic, epoch)
+                writer.add_scalar('iou/val', val_seg_metrics.iou, epoch)
+
+                # Log per-class metrics
+                for cls_id, cls_metrics in val_seg_metrics.per_class.items():
+                    writer.add_scalar(f'f1_class_{cls_id}/val', cls_metrics['f1'], epoch)
+                    writer.add_scalar(f'precision_class_{cls_id}/val', cls_metrics['precision'], epoch)
+                    writer.add_scalar(f'recall_class_{cls_id}/val', cls_metrics['recall'], epoch)
 
             # Log individual loss components
             if hasattr(train_metrics, 'meters'):
@@ -712,9 +806,18 @@ def _run_training(
             best_val_loss = val_loss
             state.best_val_loss = best_val_loss
 
+        # Update best F1 metrics
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
+            best_val_precision = val_precision
+            best_val_recall = val_recall
+            state.best_val_f1 = best_val_f1
+        if val_f1_agnostic > best_val_f1_agnostic:
+            best_val_f1_agnostic = val_f1_agnostic
+
         # Update state for callbacks
         state.train_metrics = {'loss': train_loss}
-        state.val_metrics = {'loss': val_loss}
+        state.val_metrics = {'loss': val_loss, 'f1': val_f1} if compute_metrics else {'loss': val_loss}
 
         # Call on_epoch_end
         callbacks.on_epoch_end(state)
@@ -749,11 +852,18 @@ def _run_training(
     _print_kv("Epochs", f"{final_epoch + 1}/{config.epochs}")
     _print_kv("Time", time_str)
     _print_kv("Best val loss", f"{best_val_loss:.4f}")
+    if compute_metrics:
+        _print_kv("Best val F1", f"{best_val_f1:.4f}")
+        _print_kv("Best val F1 (agnostic)", f"{best_val_f1_agnostic:.4f}")
 
     return TrainingResult(
         model=model,
         history=history,
         best_val_loss=best_val_loss,
+        best_val_f1=best_val_f1,
+        best_val_precision=best_val_precision,
+        best_val_recall=best_val_recall,
+        best_val_f1_agnostic=best_val_f1_agnostic,
         config=config,
         final_epoch=final_epoch,
     )
@@ -805,6 +915,8 @@ def train(
     on_train_end: Optional[Callable[[Dict[str, Any]], None]] = None,
     # Resume
     resume_from: Optional[str] = None,
+    # Metrics
+    compute_metrics: bool = True,
 ) -> TrainingResult:
     """Train a Mask R-CNN model.
 
@@ -880,6 +992,9 @@ def train(
 
         # Resume
         resume_from: Path to checkpoint to resume training from
+
+        # Metrics
+        compute_metrics: Compute pixel-level F1 metrics during validation (default: True)
 
     Returns:
         TrainingResult containing trained model, history, and configuration
@@ -971,18 +1086,25 @@ def train(
     if on_epoch_end is not None or on_train_end is not None:
         def _on_epoch_end(state: TrainingState):
             if on_epoch_end is not None:
-                on_epoch_end(state.epoch, {
+                metrics_dict = {
                     'loss': state.train_metrics.get('loss'),
                     'val_loss': state.val_metrics.get('loss'),
                     'best_val_loss': state.best_val_loss,
-                })
+                }
+                if compute_metrics:
+                    metrics_dict['val_f1'] = state.val_metrics.get('f1')
+                    metrics_dict['best_val_f1'] = state.best_val_f1
+                on_epoch_end(state.epoch, metrics_dict)
 
         def _on_train_end(state: TrainingState):
             if on_train_end is not None:
-                on_train_end({
+                final_dict = {
                     'final_epoch': state.epoch,
                     'best_val_loss': state.best_val_loss,
-                })
+                }
+                if compute_metrics:
+                    final_dict['best_val_f1'] = state.best_val_f1
+                on_train_end(final_dict)
 
         lambda_callback = LambdaCallback(
             on_epoch_end=_on_epoch_end if on_epoch_end else None,
@@ -991,4 +1113,4 @@ def train(
         callback_list.add(lambda_callback)
 
     # Run training
-    return _run_training(config, callback_list, resume_from=resume_from)
+    return _run_training(config, callback_list, resume_from=resume_from, compute_metrics=compute_metrics)

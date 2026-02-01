@@ -12,6 +12,8 @@ from torch import Tensor
 from torchvision.models.detection.roi_heads import fastrcnn_loss
 from torchvision.models.detection.rpn import concat_box_prediction_layers
 
+from alveoleye.lungcv.mrcnn.metrics import SegmentationMetrics, compute_batch_metrics
+
 
 class SmoothedValue:
     """Track a series of values and provide access to smoothed values over a
@@ -406,3 +408,44 @@ def eval_forward(model: List[Tensor],
     losses.update(detector_losses)
     losses.update(proposal_losses)
     return losses, detections
+
+
+@torch.no_grad()
+def eval_with_metrics(
+    model,
+    data_loader,
+    device,
+    threshold: float = 0.5,
+) -> Tuple[Dict[str, Tensor], SegmentationMetrics]:
+    """Evaluate model and compute both losses and pixel-level metrics.
+
+    Args:
+        model: The Mask R-CNN model
+        data_loader: Validation data loader
+        device: Device to run on
+        threshold: Threshold for binarizing predicted masks
+
+    Returns:
+        Tuple of (losses_dict, SegmentationMetrics)
+    """
+    losses, _ = eval_forward(model, data_loader, device)
+
+    model.eval()
+    batch_predictions = []
+    batch_targets = []
+
+    # Match the data access pattern from eval_forward
+    for batch in data_loader:
+        # batch is ((img1, img2, ...), (target1, target2, ...)) from collate_fn
+        images_tuple, targets_tuple = batch
+        images = [img.to(device) for img in images_tuple]
+        targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v
+                    for k, v in t.items()} for t in targets_tuple]
+
+        predictions = model(images)
+        batch_predictions.extend(predictions)
+        batch_targets.extend(targets)
+
+    metrics = compute_batch_metrics(batch_predictions, batch_targets, threshold=threshold)
+
+    return losses, metrics

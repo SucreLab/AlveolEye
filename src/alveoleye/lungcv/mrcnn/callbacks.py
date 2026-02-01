@@ -34,6 +34,7 @@ class TrainingState:
         train_metrics: Metrics from training (loss, etc.)
         val_metrics: Metrics from validation
         best_val_loss: Best validation loss so far
+        best_val_f1: Best validation F1 score (class-aware) so far
         device: Device being used
     """
     epoch: int
@@ -44,6 +45,7 @@ class TrainingState:
     val_metrics: Dict[str, Any]
     best_val_loss: float
     device: torch.device
+    best_val_f1: float = 0.0
 
 
 class Callback(ABC):
