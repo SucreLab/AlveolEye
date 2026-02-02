@@ -328,7 +328,7 @@ def eval_forward(model: List[Tensor],
         assert len(val) == 2
         original_image_sizes.append((val[0], val[1]))
 
-    images, targets = model.transform(images, targets)
+    images, targets = model.module.transform(images, targets)
 
     # Check for degenerate boxes
     if targets is not None:
@@ -344,16 +344,16 @@ def eval_forward(model: List[Tensor],
                     f" Found invalid box {degen_bb} for target at index {target_idx}."
                 )
 
-    features = model.backbone(images.tensors)
+    features = model.module.backbone(images.tensors)
     if isinstance(features, torch.Tensor):
         features = OrderedDict([("0", features)])
-    model.rpn.training = True
+    model.module.rpn.training = True
     # model.roi_heads.training=True
 
     # ####proposals, proposal_losses = model.rpn(images, features, targets)
     features_rpn = list(features.values())
-    objectness, pred_bbox_deltas = model.rpn.head(features_rpn)
-    anchors = model.rpn.anchor_generator(images, features_rpn)
+    objectness, pred_bbox_deltas = model.module.rpn.head(features_rpn)
+    anchors = model.module.rpn.anchor_generator(images, features_rpn)
 
     num_images = len(anchors)
     num_anchors_per_level_shape_tensors = [o[0].shape for o in objectness]
@@ -362,15 +362,15 @@ def eval_forward(model: List[Tensor],
     # apply pred_bbox_deltas to anchors to obtain the decoded proposals
     # note that we detach the deltas because Faster R-CNN do not backprop through
     # the proposals
-    proposals = model.rpn.box_coder.decode(pred_bbox_deltas.detach(), anchors)
+    proposals = model.module.rpn.box_coder.decode(pred_bbox_deltas.detach(), anchors)
     proposals = proposals.view(num_images, -1, 4)
-    proposals, scores = model.rpn.filter_proposals(proposals, objectness, images.image_sizes, num_anchors_per_level)
+    proposals, scores = model.module.rpn.filter_proposals(proposals, objectness, images.image_sizes, num_anchors_per_level)
 
     proposal_losses = {}
     assert targets is not None
-    labels, matched_gt_boxes = model.rpn.assign_targets_to_anchors(anchors, targets)
-    regression_targets = model.rpn.box_coder.encode(matched_gt_boxes, anchors)
-    loss_objectness, loss_rpn_box_reg = model.rpn.compute_loss(
+    labels, matched_gt_boxes = model.module.rpn.assign_targets_to_anchors(anchors, targets)
+    regression_targets = model.module.rpn.box_coder.encode(matched_gt_boxes, anchors)
+    loss_objectness, loss_rpn_box_reg = model.module.rpn.compute_loss(
         objectness, pred_bbox_deltas, labels, regression_targets
     )
     proposal_losses = {
@@ -380,16 +380,16 @@ def eval_forward(model: List[Tensor],
 
     # ####detections, detector_losses = model.roi_heads(features, proposals, images.image_sizes, targets)
     image_shapes = images.image_sizes
-    proposals, matched_idxs, labels, regression_targets = model.roi_heads.select_training_samples(proposals, targets)
-    box_features = model.roi_heads.box_roi_pool(features, proposals, image_shapes)
-    box_features = model.roi_heads.box_head(box_features)
-    class_logits, box_regression = model.roi_heads.box_predictor(box_features)
+    proposals, matched_idxs, labels, regression_targets = model.module.roi_heads.select_training_samples(proposals, targets)
+    box_features = model.module.roi_heads.box_roi_pool(features, proposals, image_shapes)
+    box_features = model.module.roi_heads.box_head(box_features)
+    class_logits, box_regression = model.module.roi_heads.box_predictor(box_features)
 
     result: List[Dict[str, torch.Tensor]] = []
     detector_losses = {}
     loss_classifier, loss_box_reg = fastrcnn_loss(class_logits, box_regression, labels, regression_targets)
     detector_losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
-    boxes, scores, labels = model.roi_heads.postprocess_detections(class_logits, box_regression,
+    boxes, scores, labels = model.module.roi_heads.postprocess_detections(class_logits, box_regression,
                                                                    proposals, image_shapes)
     num_images = len(boxes)
     for i in range(num_images):
@@ -401,9 +401,9 @@ def eval_forward(model: List[Tensor],
             }
         )
     detections = result
-    detections = model.transform.postprocess(detections, images.image_sizes, original_image_sizes)
-    model.rpn.training = False
-    model.roi_heads.training = False
+    detections = model.module.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+    model.module.rpn.training = False
+    model.module.roi_heads.training = False
     losses = {}
     losses.update(detector_losses)
     losses.update(proposal_losses)

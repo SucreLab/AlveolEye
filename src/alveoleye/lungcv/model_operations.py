@@ -119,6 +119,7 @@ def init_untrained_model(num_classes: int = DEFAULT_NUM_CLASSES) -> MaskRCNN:
         MASK_PREDICTOR_HIDDEN_LAYER,
         num_classes,
     )
+    model = torch.nn.DataParallel(model) if torch.cuda.device_count() > 1 else model
 
     return model
 
