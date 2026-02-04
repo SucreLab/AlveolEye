@@ -3,6 +3,7 @@ channels:
   - defaults
   - conda-forge
   - pytorch
+  - nvidia
 dependencies:
   - python>=3.10, <=3.12
   - pydantic>=2.7.4
@@ -17,6 +18,5 @@ dependencies:
   - numpy<2.0.0
   - matplotlib
   - typeguard
-  - pip:
-      - opencv-python>=4.1.1.26
+  - opencv
 
