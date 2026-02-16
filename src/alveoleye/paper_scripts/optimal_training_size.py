@@ -141,6 +141,10 @@ def run_training_experiment(
 
     start_time = time.time()
 
+    actual_save_dir = save_dir
+    if save_dir:
+        actual_save_dir = os.path.join(save_dir, f"n_images_{n_images}")
+
     # Disable checkpoint saving during experiments unless explicitly requested
     result = train(
         dataset_path=dataset_path,
@@ -149,13 +153,14 @@ def run_training_experiment(
         device=device,
         seed=seed,
         val_split=val_split,
-        save_dir=save_dir if save_dir else ".",
+        save_dir=actual_save_dir if actual_save_dir else ".",
         save_frequency=0 if not save_dir else 50,  # Disable periodic saves if no save_dir
         save_best=bool(save_dir),  # Only save best if save_dir provided
         use_tensorboard=False,  # Disable tensorboard for cleaner output
         print_freq=50,  # Less verbose output
         compute_metrics=True,  # Enable F1 metrics
     )
+
 
     training_time = time.time() - start_time
 

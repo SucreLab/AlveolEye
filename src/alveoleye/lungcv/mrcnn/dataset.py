@@ -269,7 +269,6 @@ class LungDataset(torch.utils.data.Dataset):
         img_path, mask_path = self._get_image_paths(idx)
 
         img = Image.open(img_path).convert("RGB")
-        img = ImageOps.mirror(img)
 
         masks, labels = self._rgb_to_class_mask_list(mask_path, self.class_dict)
 
@@ -307,6 +306,12 @@ class LungDataset(torch.utils.data.Dataset):
             mask for i, mask in enumerate(masks)
             if i not in exclude_indices
         ])
+
+        # If masks is empty, np.array([]) creates a 1D array of shape (0,)
+        # Mask R-CNN transform requires (N, H, W), so we need (0, H, W)
+        if len(masks) == 0:
+            width, height = img.size
+            masks = np.zeros((0, height, width), dtype=np.uint8)
 
         # Convert to tensors
         boxes = torch.as_tensor(boxes, dtype=torch.float32) if len(boxes) > 0 else torch.zeros((0, 4), dtype=torch.float32)

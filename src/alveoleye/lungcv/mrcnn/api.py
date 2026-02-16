@@ -67,7 +67,7 @@ from alveoleye.lungcv.mrcnn.callbacks import (
 from alveoleye.lungcv.mrcnn.optimizers import create_optimizer, create_scheduler
 from alveoleye.lungcv.mrcnn.augmentations import build_transforms
 from alveoleye.lungcv.mrcnn.dataset import LungDataset, DEFAULT_SEED
-from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, eval_with_metrics, SmoothedValue, _safe_torch_save
+from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, eval_with_metrics, SmoothedValue, _safe_torch_save, is_main_process, setup_for_distributed, get_rank
 from alveoleye.lungcv.mrcnn.metrics import SegmentationMetrics
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
 from alveoleye.lungcv.model_operations import init_untrained_model
@@ -421,8 +421,32 @@ def _run_training(
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(config.seed)
 
-    # Determine device
+    # Determine device and (optionally) initialize distributed
     device = _get_device(config.device)
+    distributed = False
+    local_rank = 0
+    world_size_env = os.environ.get("WORLD_SIZE")
+    try:
+        world_size = int(world_size_env) if world_size_env is not None else 1
+    except ValueError:
+        world_size = 1
+    if world_size > 1 and torch.cuda.is_available():
+        distributed = True
+        # Initialize process group once
+        if not torch.distributed.is_initialized():
+            backend = "nccl"
+            init_method = os.environ.get("DIST_URL", "env://")
+            torch.distributed.init_process_group(backend=backend, init_method=init_method)
+        # Resolve ranks
+        if "LOCAL_RANK" in os.environ:
+            local_rank = int(os.environ["LOCAL_RANK"])
+        else:
+            # Fallback: assume rank 0
+            local_rank = 0
+        device = torch.device("cuda", local_rank)
+        torch.cuda.set_device(device)
+        # Silence non-master prints
+        setup_for_distributed(is_main_process())
 
     # Determine target size for resizing
     target_size = None
@@ -480,14 +504,30 @@ def _run_training(
     aug_str = f"{len(config.augmentation.augmentations)} transforms" if config.augmentation.enabled else "Disabled"
     _print_kv("Augmentation", aug_str)
 
-    # Create data loaders
+    # Create data loaders (use DistributedSampler if distributed)
+    train_sampler = None
+    val_sampler = None
+    if 'torch' in globals():
+        try:
+            from torch.utils.data.distributed import DistributedSampler  # type: ignore
+        except Exception:
+            DistributedSampler = None  # type: ignore
+    else:
+        DistributedSampler = None  # type: ignore
+
+    if distributed and DistributedSampler is not None:
+        train_sampler = DistributedSampler(dataset, shuffle=True)
+        # For validation, avoid DistributedSampler to keep evaluation logic simple and consistent.
+        val_sampler = None
+
     data_loader = DataLoader(
         dataset,
         batch_size=config.data.batch_size,
-        shuffle=True,
+        shuffle=(train_sampler is None),
         num_workers=config.data.num_workers,
         collate_fn=collate_fn,
         pin_memory=config.data.pin_memory and torch.cuda.is_available(),
+        sampler=train_sampler,
     )
 
     val_batch_size = config.data.val_batch_size or config.data.batch_size
@@ -498,11 +538,25 @@ def _run_training(
         num_workers=config.data.num_workers,
         collate_fn=collate_fn,
         pin_memory=config.data.pin_memory and torch.cuda.is_available(),
+        sampler=val_sampler,
     )
 
     # Initialize model
     model = init_untrained_model(config.num_classes)
+
+    # Convert BatchNorm layers to SyncBatchNorm for multi-GPU distributed training
+    if distributed and device.type == 'cuda':
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     model.to(device)
+
+    # Wrap with DistributedDataParallel if distributed
+    if distributed:
+        model = torch.nn.parallel.DistributedDataParallel(
+            model,
+            device_ids=[local_rank] if device.type == 'cuda' else None
+        )
+
     _, trainable_params = _count_parameters(model)
 
     _print_header("MODEL")
@@ -593,9 +647,9 @@ def _run_training(
         else:
             print(f"[-] Mixed precision unavailable (no CUDA)")
 
-    # Setup TensorBoard
+    # Setup TensorBoard (master process only in distributed mode)
     writer = None
-    if config.logging.use_tensorboard:
+    if config.logging.use_tensorboard and (not distributed or is_main_process()):
         if TENSORBOARD_AVAILABLE:
             log_dir = config.logging.log_dir
             writer = SummaryWriter(log_dir=log_dir)
@@ -649,6 +703,13 @@ def _run_training(
         epoch_start_time = time_module.time()
         state.epoch = epoch
         callbacks.on_epoch_start(state)
+
+        # Set epoch for distributed sampler
+        if distributed and train_sampler is not None:
+            try:
+                train_sampler.set_epoch(epoch)
+            except Exception:
+                pass
 
         # Train one epoch
         model.train()
@@ -1072,15 +1133,23 @@ def train(
     # Build callback list
     callback_list = CallbackList(callbacks or [])
 
-    # Add checkpoint callback if configured
+    # Add checkpoint callback if configured (only on main process if distributed)
+    distributed_env = os.environ.get("WORLD_SIZE")
+    is_distrib = False
+    try:
+        is_distrib = int(distributed_env) > 1 if distributed_env is not None else False
+    except ValueError:
+        is_distrib = False
+
     if config.checkpoint.save_frequency > 0 or config.checkpoint.save_best:
-        checkpoint_callback = ModelCheckpointCallback(
-            save_dir=str(config.checkpoint.save_dir),
-            save_frequency=config.checkpoint.save_frequency,
-            save_best=config.checkpoint.save_best,
-            filename_template=config.checkpoint.filename_template,
-        )
-        callback_list.add(checkpoint_callback)
+        if not is_distrib or is_main_process():
+            checkpoint_callback = ModelCheckpointCallback(
+                save_dir=str(config.checkpoint.save_dir),
+                save_frequency=config.checkpoint.save_frequency,
+                save_best=config.checkpoint.save_best,
+                filename_template=config.checkpoint.filename_template,
+            )
+            callback_list.add(checkpoint_callback)
 
     # Add lambda callbacks for simple functions
     if on_epoch_end is not None or on_train_end is not None:

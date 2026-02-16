@@ -5,6 +5,7 @@ and result processing used across the paper scripts.
 """
 
 import os
+import tarfile
 from pathlib import Path
 from typing import Optional, Union, List, Tuple, Any, Literal
 
@@ -21,8 +22,8 @@ from alveoleye._dataset_utils import (
 # Constants
 # =============================================================================
 
-# Google Drive folder containing the training dataset
-TRAINING_DATASET_DRIVE_URL = "https://drive.google.com/drive/folders/1fH7Qm6I9udircffEEqUmef8TM7baYz2-?usp=drive_link"
+# Google Drive archive (tar.gz) containing the training dataset
+TRAINING_DATASET_DRIVE_URL = "https://drive.google.com/file/d/1-jm7jUJJPdIfC_82ooOoWbpcIX2PBgq-/view?usp=sharing"
 
 # Default location for training dataset
 DEFAULT_TRAINING_DATASET_DIR = Path(__file__).parent.parent.parent / "training_dataset"
@@ -75,10 +76,10 @@ def download_training_dataset(
     output_dir: Optional[Union[str, Path]] = None,
     quiet: bool = False,
 ) -> str:
-    """Download the training dataset from Google Drive.
+    """Download and extract the training dataset from Google Drive.
 
-    Downloads the dataset folder to the specified output directory. The Google Drive
-    folder will be created as a subdirectory within output_dir.
+    Downloads the dataset archive to the specified output directory and extracts it.
+    The extracted content will be located within output_dir.
 
     Args:
         output_dir: Parent directory where the dataset folder will be created.
@@ -111,30 +112,44 @@ def download_training_dataset(
         print(f"[+] Downloading training dataset from Google Drive...")
         print(f"    Destination directory: {output_dir}")
 
-    # gdown.download_folder returns the path to the downloaded folder
-    downloaded_path = gdown.download_folder(
+    # Download the tar.gz file
+    archive_path = output_dir / "dataset.tar.gz"
+    downloaded_archive = gdown.download(
         url=TRAINING_DATASET_DRIVE_URL,
-        output=str(output_dir),
+        output=str(archive_path),
         quiet=quiet,
+        fuzzy=True,
     )
 
-    if downloaded_path is None:
+    if downloaded_archive is None:
         raise RuntimeError("Failed to download dataset from Google Drive")
 
-    dataset_path = Path(downloaded_path)
-    if not dataset_path.exists():
-        raise RuntimeError(
-            f"Download reported success but path does not exist: {downloaded_path}"
-        )
+    # Extract the archive
+    if not quiet:
+        print(f"[+] Extracting training dataset...")
 
-    if not is_valid_dataset_structure(dataset_path):
+    try:
+        with tarfile.open(downloaded_archive, "r:gz") as tar:
+            tar.extractall(path=output_dir)
+    except Exception as e:
+        raise RuntimeError(f"Failed to extract dataset: {e}") from e
+    finally:
+        # Clean up the archive
+        if os.path.exists(downloaded_archive):
+            os.remove(downloaded_archive)
+
+    # Find the dataset directory (could be output_dir itself or a subfolder)
+    downloaded_path = find_training_dataset(output_dir)
+
+    if downloaded_path is None:
         raise RuntimeError(
-            f"Downloaded dataset has invalid structure in {downloaded_path}. "
+            f"Failed to find a valid dataset structure in {output_dir} after extraction. "
             "Expected either:\n"
             "  1. Split structure: images/train/, images/val/, masks/train/, masks/val/, classes.json\n"
             "  2. Flat structure: images/*.png, masks/*.png, classes.json"
         )
 
+    dataset_path = Path(downloaded_path)
     if not quiet:
         print(f"[+] Dataset downloaded and validated: {downloaded_path}")
 
