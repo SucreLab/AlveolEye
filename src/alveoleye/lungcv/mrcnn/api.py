@@ -70,7 +70,7 @@ from alveoleye.lungcv.mrcnn.dataset import LungDataset, DEFAULT_SEED
 from alveoleye.lungcv.mrcnn.utils import collate_fn, eval_forward, eval_with_metrics, SmoothedValue, _safe_torch_save, is_main_process, setup_for_distributed, get_rank
 from alveoleye.lungcv.mrcnn.metrics import SegmentationMetrics
 from alveoleye.lungcv.mrcnn.engine import train_one_epoch
-from alveoleye.lungcv.model_operations import init_untrained_model
+from alveoleye.lungcv.model_operations import init_untrained_model, load_checkpoint
 from PIL import Image
 from collections import Counter
 
@@ -619,23 +619,38 @@ def _run_training(
 
     if resume_from is not None:
         print(f"\n[+] Resuming from: {resume_from}")
-        checkpoint = torch.load(resume_from, map_location=device)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        if 'optimizer_state_dict' in checkpoint:
+        # Load checkpoint robustly
+        checkpoint = load_checkpoint(resume_from, device)
+        
+        if isinstance(checkpoint, dict):
+            model_sd = checkpoint.get('model_state_dict', checkpoint.get('state_dict'))
+        elif isinstance(checkpoint, torch.nn.Module):
+            model_sd = checkpoint.state_dict()
+        else:
+            model_sd = None
+
+        if model_sd is None:
+            raise ValueError(f"Invalid checkpoint format at {resume_from}: missing state dict.")
+        
+        # Remove optional 'module.' prefix
+        model_sd = { (k[7:] if k.startswith('module.') else k): v for k, v in model_sd.items() }
+        model.load_state_dict(model_sd)
+        
+        if isinstance(checkpoint, dict) and 'optimizer_state_dict' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        if 'epoch' in checkpoint:
+        if isinstance(checkpoint, dict) and 'epoch' in checkpoint:
             start_epoch = checkpoint['epoch'] + 1
-        if 'best_val_loss' in checkpoint:
+        if isinstance(checkpoint, dict) and 'best_val_loss' in checkpoint:
             best_val_loss = checkpoint['best_val_loss']
-        if 'best_val_f1' in checkpoint:
+        if isinstance(checkpoint, dict) and 'best_val_f1' in checkpoint:
             best_val_f1 = checkpoint['best_val_f1']
-        if 'best_val_precision' in checkpoint:
+        if isinstance(checkpoint, dict) and 'best_val_precision' in checkpoint:
             best_val_precision = checkpoint['best_val_precision']
-        if 'best_val_recall' in checkpoint:
+        if isinstance(checkpoint, dict) and 'best_val_recall' in checkpoint:
             best_val_recall = checkpoint['best_val_recall']
-        if 'best_val_f1_agnostic' in checkpoint:
+        if isinstance(checkpoint, dict) and 'best_val_f1_agnostic' in checkpoint:
             best_val_f1_agnostic = checkpoint['best_val_f1_agnostic']
-        if 'history' in checkpoint:
+        if isinstance(checkpoint, dict) and 'history' in checkpoint:
             history = checkpoint['history']
         print(f"    Epoch {start_epoch}, best val loss: {best_val_loss:.4f}")
 

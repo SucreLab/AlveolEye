@@ -21,7 +21,7 @@ Available Augmentations:
     - zoom_out: Random zoom out (from transforms.py)
 """
 
-from typing import Dict, Callable, List
+from typing import Dict, Callable, List, Any
 
 import torch
 from torchvision.transforms import v2 as T
@@ -47,13 +47,15 @@ def register_augmentation(name: str):
 @register_augmentation('horizontal_flip')
 def _build_horizontal_flip(params: dict) -> T.Transform:
     """Build horizontal flip transform."""
-    return T.RandomHorizontalFlip(p=1.0)  # Probability handled externally
+    #from alveoleye.lungcv.mrcnn.transforms import RandomHorizontalFlip
+    return T.RandomHorizontalFlip(p=0.5)  # Probability handled externally
 
 
 @register_augmentation('vertical_flip')
 def _build_vertical_flip(params: dict) -> T.Transform:
     """Build vertical flip transform."""
-    return T.RandomVerticalFlip(p=1.0)
+    #from alveoleye.lungcv.mrcnn.transforms import RandomVerticalFlip
+    return T.RandomVerticalFlip(p=0.5)
 
 
 @register_augmentation('color_jitter')
@@ -248,6 +250,16 @@ def build_transforms(
     """
     transform_list = [T.PILToTensor()]
 
+    # Wrap into tv_tensors so v2 geometric transforms also update masks/boxes
+    try:
+        from alveoleye.lungcv.mrcnn.transforms import WrapTvTensors, UnwrapTvTensors  # type: ignore
+        wrap_supported = True
+    except Exception:
+        wrap_supported = False
+
+    if wrap_supported:
+        transform_list.append(WrapTvTensors())
+
     # Add resize transform if target_size is specified
     if target_size is not None:
         transform_list.append(T.Resize(target_size, antialias=True))
@@ -275,6 +287,10 @@ def build_transforms(
         T.ToDtype(torch.float, scale=True),
         T.ToPureTensor(),
     ])
+
+    # Unwrap back to pure tensors for the model
+    if wrap_supported:
+        transform_list.append(UnwrapTvTensors())
 
     return T.Compose(transform_list)
 

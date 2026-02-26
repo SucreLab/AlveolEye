@@ -27,15 +27,15 @@ class TestBuildTransforms:
         """Test that no augmentations are added when disabled."""
         config = AugmentationConfig(enabled=False)
         transforms = build_transforms(config, train=True)
-        # Should only have base transforms: PILToTensor, ToDtype, ToPureTensor
-        assert len(transforms.transforms) == 3
+        # Should have base transforms: PILToTensor, WrapTvTensors, ToDtype, ToPureTensor, UnwrapTvTensors
+        assert len(transforms.transforms) == 5
 
     def test_no_augmentation_for_validation(self):
         """Test that augmentations aren't applied during validation."""
         config = AugmentationConfig.default()
         transforms = build_transforms(config, train=False)
-        # Should only have base transforms
-        assert len(transforms.transforms) == 3
+        # Should have base transforms
+        assert len(transforms.transforms) == 5
 
     def test_augmentations_added_for_training(self):
         """Test that augmentations are added during training."""
@@ -46,8 +46,8 @@ class TestBuildTransforms:
             ]
         )
         transforms = build_transforms(config, train=True)
-        # Should have base transforms (3) + augmentations (2)
-        assert len(transforms.transforms) >= 5
+        # Should have base transforms (5) + augmentations (2)
+        assert len(transforms.transforms) >= 7
 
     def test_unknown_augmentation_raises(self):
         """Test that unknown augmentation raises ValueError."""
@@ -63,8 +63,8 @@ class TestBuildTransforms:
         """Test with empty augmentation list."""
         config = AugmentationConfig(enabled=True, augmentations=[])
         transforms = build_transforms(config, train=True)
-        # Should only have base transforms
-        assert len(transforms.transforms) == 3
+        # Should have base transforms
+        assert len(transforms.transforms) == 5
 
     def test_probability_zero_wraps_in_random_apply(self):
         """Test that probability < 1.0 wraps transform in RandomApply."""
@@ -75,7 +75,7 @@ class TestBuildTransforms:
         )
         transforms = build_transforms(config, train=True)
         # The wrapped transform should exist
-        assert len(transforms.transforms) >= 4
+        assert len(transforms.transforms) >= 6
 
     def test_probability_one_no_random_apply(self):
         """Test that probability = 1.0 doesn't wrap in RandomApply."""
@@ -86,7 +86,7 @@ class TestBuildTransforms:
         )
         transforms = build_transforms(config, train=True)
         # Transform should be added directly (still works)
-        assert len(transforms.transforms) >= 4
+        assert len(transforms.transforms) >= 6
 
 
 class TestAugmentationRegistry:

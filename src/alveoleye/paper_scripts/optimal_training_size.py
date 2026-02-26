@@ -121,6 +121,7 @@ def run_training_experiment(
     seed: Optional[int],
     save_dir: Optional[str],
     val_split: float = 0.2,
+    save_frequency: int = 0,
 ) -> TrainingRun:
     """Run a single training experiment with a specified number of images.
 
@@ -131,6 +132,8 @@ def run_training_experiment(
         device: Device to train on
         seed: Random seed for reproducibility
         save_dir: Directory to save checkpoints (None to disable)
+        val_split: Validation split fraction
+        save_frequency: Frequency to save checkpoints (0 to disable)
 
     Returns:
         TrainingRun with the results
@@ -154,7 +157,7 @@ def run_training_experiment(
         seed=seed,
         val_split=val_split,
         save_dir=actual_save_dir if actual_save_dir else ".",
-        save_frequency=0 if not save_dir else 50,  # Disable periodic saves if no save_dir
+        save_frequency=save_frequency if save_dir else 0,
         save_best=bool(save_dir),  # Only save best if save_dir provided
         use_tensorboard=False,  # Disable tensorboard for cleaner output
         print_freq=50,  # Less verbose output
@@ -189,6 +192,7 @@ def run_optimal_size_experiment(
     save_dir: Optional[str],
     val_split: float = 0.2,
     metric: str = "f1",
+    save_frequency: int = 0,
 ) -> Tuple[List[TrainingRun], Optional[int]]:
     """Run the full experiment to find optimal training size.
 
@@ -204,6 +208,7 @@ def run_optimal_size_experiment(
         save_dir: Directory to save results and checkpoints
         val_split: Validation split fraction
         metric: Metric to use for threshold ('f1', 'f1_agnostic', 'loss')
+        save_frequency: Frequency to save checkpoints (0 to disable)
 
     Returns:
         Tuple of (list of all TrainingRuns, optimal number of images or None)
@@ -248,6 +253,7 @@ def run_optimal_size_experiment(
             seed=seed,
             save_dir=save_dir,
             val_split=val_split,
+            save_frequency=save_frequency,
         )
 
         # Get the metric value for comparison
@@ -275,12 +281,20 @@ def run_optimal_size_experiment(
         print(f"    Training time: {run.training_time:.1f}s")
         print(f"    Meets threshold ({metric_desc} >= {threshold}): {'YES' if run.meets_threshold else 'NO'}")
 
-        if run.meets_threshold:
+        if run.meets_threshold and optimal_n_images is None:
             optimal_n_images = n_images
             print(f"\n  ** Threshold met with {n_images} images! **")
+
+        # Determine next n_images or exit
+        if n_images == max_images:
             break
 
-        n_images += step_size
+        if optimal_n_images is not None:
+            # Threshold met early, jump to the full image set for the final run
+            n_images = max_images
+        else:
+            # Increment and cap at max_images
+            n_images = min(n_images + step_size, max_images)
 
     return results, optimal_n_images
 
@@ -413,6 +427,9 @@ def validate_arguments(args) -> None:
     if args.max_images is not None and args.max_images < args.start_images:
         raise ValueError("max-images must be >= start-images")
 
+    if args.save_frequency < 0:
+        raise ValueError("save-frequency must be at least 0")
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
@@ -534,6 +551,13 @@ Examples:
         action="store_true",
         help="Save model checkpoints for each run (requires --output-dir)",
     )
+    
+    parser.add_argument(
+        "--save-frequency",
+        type=int,
+        default=0,
+        help="Frequency (in epochs) to save checkpoints. 0 means only save best model (default: 0)",
+    )
 
     return parser
 
@@ -594,6 +618,7 @@ def main():
             save_dir=save_dir,
             val_split=args.val_split,
             metric=args.metric,
+            save_frequency=args.save_frequency,
         )
 
         # Print summary

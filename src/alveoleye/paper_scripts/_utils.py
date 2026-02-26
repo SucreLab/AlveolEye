@@ -130,7 +130,12 @@ def download_training_dataset(
 
     try:
         with tarfile.open(downloaded_archive, "r:gz") as tar:
-            tar.extractall(path=output_dir)
+            # Filter out members that begin with a period (hidden files/folders)
+            members = [
+                m for m in tar.getmembers()
+                if not any(part.startswith(".") for part in Path(m.name).parts)
+            ]
+            tar.extractall(path=output_dir, members=members)
     except Exception as e:
         raise RuntimeError(f"Failed to extract dataset: {e}") from e
     finally:

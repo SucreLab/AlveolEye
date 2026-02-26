@@ -5,7 +5,7 @@ inference with Mask R-CNN models for lung tissue segmentation.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 
 import torch
 from PIL import Image
@@ -67,6 +67,16 @@ def get_transform(train: bool = True) -> T.Compose:
     """
     transform_list = [T.PILToTensor()]
 
+    # Ensure v2 transforms also update masks/boxes by wrapping into tv_tensors
+    try:
+        from alveoleye.lungcv.mrcnn.transforms import WrapTvTensors, UnwrapTvTensors  # type: ignore
+        wrap_supported = True
+    except Exception:
+        wrap_supported = False
+
+    if wrap_supported:
+        transform_list.append(WrapTvTensors())
+
     if train:
         prob = DEFAULT_AUGMENTATION_PROBABILITY
         transform_list.extend([
@@ -87,12 +97,101 @@ def get_transform(train: bool = True) -> T.Compose:
         T.ToPureTensor(),
     ])
 
+    if wrap_supported:
+        transform_list.append(UnwrapTvTensors())
+
     return T.Compose(transform_list)
 
 
 # =============================================================================
 # Model Initialization
 # =============================================================================
+
+def load_checkpoint(path: Union[str, Path], device: torch.device) -> Any:
+    """Load a PyTorch checkpoint robustly.
+    
+    Handles:
+    - weights_only=True (PyTorch >= 1.12)
+    - Fallback to weights_only=False for full model pickles
+    - DDP-wrapped models saved as full models (requires process group init)
+    """
+    path = str(path)
+    
+    # 1. Try weights_only=True (safest, works for state_dict)
+    try:
+        return torch.load(path, map_location=device, weights_only=True)  # type: ignore[call-arg]
+    except Exception:
+        pass
+
+    # 2. Try weights_only=False (explicitly for PyTorch 2.4+ compatibility)
+    last_err = None
+    try:
+        return torch.load(path, map_location=device, weights_only=False)  # type: ignore[call-arg]
+    except TypeError:
+        # Older PyTorch: weights_only not supported
+        try:
+            return torch.load(path, map_location=device)
+        except Exception as e:
+            last_err = e
+    except Exception as e:
+        last_err = e
+    
+    if last_err is not None:
+        # 3. Check for process group error (DDP model)
+        err_msg = str(last_err)
+        if "process group" in err_msg or "Default process group" in err_msg:
+            import torch.distributed as dist
+            if dist.is_available() and not dist.is_initialized():
+                try:
+                    # Initialize dummy process group to allow unpickling DDP models
+                    dist.init_process_group(
+                        backend='gloo',
+                        rank=0,
+                        world_size=1,
+                        store=dist.HashStore()
+                    )
+                    # Retry load (must be weights_only=False since it's a DDP model)
+                    try:
+                        return torch.load(path, map_location=device, weights_only=False)  # type: ignore[call-arg]
+                    except TypeError:
+                        return torch.load(path, map_location=device)
+                except Exception:
+                    # If dummy init fails, we still raise the original error
+                    pass
+        
+        raise last_err
+
+    return None # Should not be reached
+
+
+def convert_syncbn_to_bn(model: torch.nn.Module) -> torch.nn.Module:
+    """Recursively convert SyncBatchNorm layers to BatchNorm2d layers.
+    
+    This is important when loading models trained with DistributedDataParallel (DDP)
+    that used SyncBatchNorm for inference on a single device.
+    
+    Args:
+        model: The PyTorch model to convert.
+        
+    Returns:
+        The model with SyncBatchNorm layers replaced by BatchNorm2d.
+    """
+    for name, child in model.named_children():
+        if hasattr(torch.nn, 'SyncBatchNorm') and isinstance(child, torch.nn.SyncBatchNorm):
+            new_bn = torch.nn.BatchNorm2d(
+                child.num_features,
+                child.eps,
+                child.momentum,
+                child.affine,
+                child.track_running_stats
+            )
+            # Copy parameters and buffers
+            new_bn.load_state_dict(child.state_dict())
+            setattr(model, name, new_bn)
+        else:
+            convert_syncbn_to_bn(child)
+    return model
+
 
 def init_untrained_model(num_classes: int = DEFAULT_NUM_CLASSES) -> MaskRCNN:
     """Initialize a Mask R-CNN model with custom number of classes.
@@ -168,10 +267,36 @@ def init_trained_model(
                 fuzzy=True,
             )
 
-    # Load weights
-    loaded_model = torch.load(weights_path, map_location=device)
-    model.load_state_dict(loaded_model.state_dict())
+    # Load weights robustly, avoiding unpickling full DDP-wrapped models
+    checkpoint = load_checkpoint(weights_path, device)
+    
+    # Extract state dict
+    if isinstance(checkpoint, dict):
+        if 'model_state_dict' in checkpoint:
+            state_dict = checkpoint['model_state_dict']
+        elif 'state_dict' in checkpoint:
+            state_dict = checkpoint['state_dict']
+        else:
+            state_dict = checkpoint
+    elif isinstance(checkpoint, torch.nn.Module):
+        # Full model pickle (can happen with DDP saved whole models)
+        state_dict = checkpoint.state_dict()
+    else:
+        state_dict = checkpoint
+
+    # Remove 'module.' prefix if it exists (for models saved from DDP)
+    new_state_dict = {
+        (k[7:] if k.startswith('module.') else k): v 
+        for k, v in state_dict.items()
+    }
+    
+    model.load_state_dict(new_state_dict)
+    
+    # Convert SyncBatchNorm for inference
+    model = convert_syncbn_to_bn(model)
+    
     model.to(device)
+    model.eval()
 
     return model
 

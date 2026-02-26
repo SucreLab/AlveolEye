@@ -5,19 +5,96 @@ import torchvision
 from torch import nn, Tensor
 from torchvision import ops
 from torchvision.transforms import functional as F, InterpolationMode, transforms as T
+from typing import Any
 
 
 class Compose:
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, image, target):
+    def __call__(self, image, target=None):
         for t in self.transforms:
-            image, target = t(image, target)
+            if target is None:
+                image = t(image)
+            else:
+                image, target = t(image, target)
+        if target is None:
+            return image
         return image, target
 
 
-class RandomHorizontalFlip(T.RandomHorizontalFlip):
+class WrapTvTensors(nn.Module):
+    """Wrap image, boxes, and masks into torchvision v2 tv_tensors.
+
+    This enables torchvision v2 transforms (e.g., RandomRotation, RandomAffine)
+    to correctly apply geometric ops to targets.
+    """
+
+    def forward(self, image: Tensor, target: Optional[Dict[str, Any]] = None):
+        try:
+            from torchvision import tv_tensors
+        except Exception:
+            # If tv_tensors is not available, no-op
+            return image, target
+
+        # Determine image dims (C, H, W) works for both PIL and Tensor
+        if isinstance(image, torch.Tensor):
+            _, H, W = F.get_dimensions(image)
+        else:
+            # PIL Image path: let v2 handle it, but we still need canvas for boxes
+            w, h = image.size
+            H, W = h, w
+
+        # Wrap image
+        if not isinstance(image, torch.Tensor) or not isinstance(image, tv_tensors.Image):
+            # Ensure tensor first
+            if not isinstance(image, torch.Tensor):
+                image = F.pil_to_tensor(image)
+            image = tv_tensors.Image(image)
+
+        # Wrap targets
+        if target is not None:
+            if "boxes" in target and not isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                target["boxes"] = tv_tensors.BoundingBoxes(
+                    target["boxes"], format="XYXY", canvas_size=(H, W)
+                )
+            if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                target["masks"] = tv_tensors.Mask(target["masks"])  # (N, H, W)
+        if target is None:
+            return image
+        return image, target
+
+
+class UnwrapTvTensors(nn.Module):
+    """Convert tv_tensors back to plain tensors for the model consumption."""
+
+    def forward(self, image: Tensor, target: Optional[Dict[str, Any]] = None):
+        try:
+            from torchvision import tv_tensors
+        except Exception:
+            return image, target
+
+        # Unwrap image
+        if isinstance(image, torch.Tensor) and isinstance(image, tv_tensors.Image):
+            image = torch.as_tensor(image)
+
+        # Unwrap targets
+        if target is not None:
+            if "boxes" in target and isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                # Ensure float32 dtype
+                target["boxes"] = torch.as_tensor(target["boxes"]).to(torch.float32)
+            if "masks" in target and isinstance(target["masks"], tv_tensors.Mask):
+                target["masks"] = torch.as_tensor(target["masks"]).to(torch.uint8)
+        if target is None:
+            return image
+        return image, target
+
+
+class RandomHorizontalFlip(nn.Module):
+    def __init__(self, p: float = 0.5) -> None:
+        super().__init__()
+        self.p = p
+
     def forward(
         self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
     ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
@@ -28,6 +105,28 @@ class RandomHorizontalFlip(T.RandomHorizontalFlip):
                 target["boxes"][:, [0, 2]] = width - target["boxes"][:, [2, 0]]
                 if "masks" in target:
                     target["masks"] = target["masks"].flip(-1)
+        if target is None:
+            return image
+        return image, target
+
+
+class RandomVerticalFlip(nn.Module):
+    def __init__(self, p: float = 0.5) -> None:
+        super().__init__()
+        self.p = p
+
+    def forward(
+        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
+    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+        if torch.rand(1) < self.p:
+            image = F.vflip(image)
+            if target is not None:
+                _, height, _ = F.get_dimensions(image)
+                target["boxes"][:, [1, 3]] = height - target["boxes"][:, [3, 1]]
+                if "masks" in target:
+                    target["masks"] = target["masks"].flip(-2)
+        if target is None:
+            return image
         return image, target
 
 
@@ -36,6 +135,8 @@ class PILToTensor(nn.Module):
         self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
     ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         image = F.pil_to_tensor(image)
+        if target is None:
+            return image
         return image, target
 
 
@@ -49,8 +150,11 @@ class ToDtype(nn.Module):
         self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
     ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         if not self.scale:
-            return image.to(dtype=self.dtype), target
-        image = F.convert_image_dtype(image, self.dtype)
+            image = image.to(dtype=self.dtype)
+        else:
+            image = F.convert_image_dtype(image, self.dtype)
+        if target is None:
+            return image
         return image, target
 
 
@@ -136,7 +240,32 @@ class RandomIoUCrop(nn.Module):
                 target["boxes"][:, 1::2] -= top
                 target["boxes"][:, 0::2].clamp_(min=0, max=new_w)
                 target["boxes"][:, 1::2].clamp_(min=0, max=new_h)
+
+                # Crop image and masks
                 image = F.crop(image, top, left, new_h, new_w)
+                if target is not None and "masks" in target:
+                    target["masks"] = F.crop(target["masks"][is_within_crop_area], top, left, new_h, new_w)
+
+                # Preserve tv_tensors semantics and update canvas_size for boxes
+                try:
+                    from torchvision import tv_tensors
+                    # Ensure image is tv_tensors.Image
+                    if not isinstance(image, tv_tensors.Image):
+                        image = tv_tensors.Image(image)
+                    # Wrap masks back to tv_tensors.Mask
+                    if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                        target["masks"] = tv_tensors.Mask(target["masks"])  # (N, H, W)
+                    # Rebuild boxes with updated canvas_size
+                    if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                        target["boxes"] = tv_tensors.BoundingBoxes(
+                            target["boxes"], format="XYXY", canvas_size=(new_h, new_w)
+                        )
+                    else:
+                        target["boxes"] = tv_tensors.BoundingBoxes(
+                            target["boxes"], format="XYXY", canvas_size=(new_h, new_w)
+                        )
+                except Exception:
+                    pass
 
                 return image, target
 
@@ -198,9 +327,38 @@ class RandomZoomOut(nn.Module):
             ] = v
 
         if target is not None:
+            # Shift boxes by the padding amounts
             target["boxes"][:, 0::2] += left
             target["boxes"][:, 1::2] += top
+            # Pad masks to match new canvas size
+            if "masks" in target:
+                target["masks"] = F.pad(target["masks"], [left, top, right, bottom], 0, "constant")
 
+            # Preserve tv_tensors semantics and update canvas_size for boxes
+            try:
+                from torchvision import tv_tensors
+                new_canvas_h, new_canvas_w = canvas_height, canvas_width
+                # Ensure image is tv_tensors.Image
+                if not isinstance(image, tv_tensors.Image):
+                    image = tv_tensors.Image(image)
+                # Wrap masks back to tv_tensors.Mask
+                if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                    target["masks"] = tv_tensors.Mask(target["masks"])  # (N, H, W)
+                # Rebuild boxes with updated canvas_size
+                if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_canvas_h, new_canvas_w)
+                    )
+                else:
+                    # If plain tensor, make it BoundingBoxes so downstream v2 ops track geometry
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_canvas_h, new_canvas_w)
+                    )
+            except Exception:
+                pass
+
+        if target is None:
+            return image
         return image, target
 
 
@@ -261,6 +419,8 @@ class RandomPhotometricDistort(nn.Module):
             if is_pil:
                 image = F.to_pil_image(image)
 
+        if target is None:
+            return image
         return image, target
 
 
@@ -319,7 +479,26 @@ class ScaleJitter(nn.Module):
                     interpolation=InterpolationMode.NEAREST,
                     antialias=self.antialias,
                 )
+            # Preserve tv_tensors semantics and update canvas_size for boxes
+            try:
+                from torchvision import tv_tensors
+                if not isinstance(image, tv_tensors.Image):
+                    image = tv_tensors.Image(image)
+                if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                    target["masks"] = tv_tensors.Mask(target["masks"])
+                if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_height, new_width)
+                    )
+                else:
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_height, new_width)
+                    )
+            except Exception:
+                pass
 
+        if target is None:
+            return image
         return image, target
 
 
@@ -354,7 +533,28 @@ class FixedSizeCrop(nn.Module):
             target["boxes"][:, 1::2] += pad_top
             if "masks" in target:
                 target["masks"] = F.pad(target["masks"], padding, 0, "constant")
+            # Preserve tv_tensors semantics and update canvas_size for boxes
+            try:
+                from torchvision import tv_tensors
+                # Determine new size from padded image
+                _, new_h, new_w = F.get_dimensions(img)
+                if not isinstance(img, tv_tensors.Image):
+                    img = tv_tensors.Image(img)
+                if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                    target["masks"] = tv_tensors.Mask(target["masks"])
+                if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_h, new_w)
+                    )
+                else:
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_h, new_w)
+                    )
+            except Exception:
+                pass
 
+        if target is None:
+            return img
         return img, target
 
     def _crop(self, img, target, top, left, height, width):
@@ -373,6 +573,26 @@ class FixedSizeCrop(nn.Module):
             if "masks" in target:
                 target["masks"] = F.crop(target["masks"][is_valid], top, left, height, width)
 
+            # Preserve tv_tensors semantics and update canvas_size for boxes
+            try:
+                from torchvision import tv_tensors
+                if not isinstance(img, tv_tensors.Image):
+                    img = tv_tensors.Image(img)
+                if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                    target["masks"] = tv_tensors.Mask(target["masks"])
+                if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(height, width)
+                    )
+                else:
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(height, width)
+                    )
+            except Exception:
+                pass
+
+        if target is None:
+            return img
         return img, target
 
     def forward(self, img, target=None):
@@ -395,6 +615,8 @@ class FixedSizeCrop(nn.Module):
         if pad_bottom != 0 or pad_right != 0:
             img, target = self._pad(img, target, [0, 0, pad_right, pad_bottom])
 
+        if target is None:
+            return img
         return img, target
 
 
@@ -430,7 +652,26 @@ class RandomShortestSize(nn.Module):
                 target["masks"] = F.resize(
                     target["masks"], [new_height, new_width], interpolation=InterpolationMode.NEAREST
                 )
+            # Preserve tv_tensors semantics and update canvas_size for boxes
+            try:
+                from torchvision import tv_tensors
+                if not isinstance(image, tv_tensors.Image):
+                    image = tv_tensors.Image(image)
+                if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
+                    target["masks"] = tv_tensors.Mask(target["masks"])
+                if isinstance(target["boxes"], tv_tensors.BoundingBoxes):
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_height, new_width)
+                    )
+                else:
+                    target["boxes"] = tv_tensors.BoundingBoxes(
+                        target["boxes"], format="XYXY", canvas_size=(new_height, new_width)
+                    )
+            except Exception:
+                pass
 
+        if target is None:
+            return image
         return image, target
 
 
