@@ -30,7 +30,7 @@ jobs:
         name: Install openCV - Mac
         shell: bash -l {0}
         run: |
-          pip install opencv-python
+          pip install opencv-python numpy<2
           
       - if: runner.os != 'Windows'  # Mac and Linux
         name: Install AlveolEye - Unix
