@@ -8,7 +8,7 @@ jobs:
   build-conda:
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -30,8 +30,8 @@ jobs:
         name: Install openCV - Mac
         shell: bash -l {0}
         run: |
-          pip install 'opencv-python==4.8.0.74' 'numpy<2'
-          
+          pip install 'opencv-python==4.8.0.74' 'numpy<2.3'
+
       - if: runner.os != 'Windows'  # Mac and Linux
         name: Install AlveolEye - Unix
         shell: bash -l {0}
