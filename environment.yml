@@ -5,17 +5,17 @@ channels:
   - pytorch
   - nvidia
 dependencies:
-  - python>=3.10, <=3.12
+  - python>=3.10
   - pydantic>=2.7.4
   - torchvision>=0.16.2
   - napari>=0.4.17
   - pyqt<5.16.0
   - qtpy
   - pytorch
-  - pillow>=10.2.0, <11.0.0
+  - pillow>=10.2.0
   - pip
   - gdown
-  - numpy<2.0.0
+  - numpy>=2.0.0,<2.3
   - matplotlib
   - typeguard
   - opencv
