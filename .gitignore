@@ -1,5 +1,6 @@
 # Data files and directories common in repo root
 datasets/
+src/training_dataset/
 logs/
 *.h5
 results/
@@ -72,3 +73,6 @@ Thumbs.db
 htmlcov/
 
 tox_conda*
+/src/alveoleye/paper_scripts/training_dataset/
+/src/alveoleye/paper_scripts/augment_out/
+/src/alveoleye/paper_scripts/evaluaton_dataset/

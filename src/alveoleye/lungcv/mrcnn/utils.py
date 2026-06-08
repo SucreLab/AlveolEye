@@ -1,17 +1,18 @@
 import datetime
-import errno
 import os
+import shutil
+import tempfile
 import time
 from collections import defaultdict, deque, OrderedDict
+from typing import Any, Tuple, List, Dict, Optional
 
 import torch
-import torchvision
 import torch.distributed as dist
-
-from typing import Tuple, List, Dict, Optional
 from torch import Tensor
 from torchvision.models.detection.roi_heads import fastrcnn_loss
 from torchvision.models.detection.rpn import concat_box_prediction_layers
+
+from alveoleye.lungcv.mrcnn.metrics import SegmentationMetrics, compute_batch_metrics
 
 
 class SmoothedValue:
@@ -157,8 +158,9 @@ class MetricLogger:
         iter_time = SmoothedValue(fmt="{avg:.4f}")
         data_time = SmoothedValue(fmt="{avg:.4f}")
         space_fmt = ":" + str(len(str(len(iterable)))) + "d"
+        prefix = "  [+] "
         if torch.cuda.is_available():
-            log_msg = self.delimiter.join(
+            log_msg = prefix + self.delimiter.join(
                 [
                     header,
                     "[{0" + space_fmt + "}/{1}]",
@@ -170,7 +172,7 @@ class MetricLogger:
                 ]
             )
         else:
-            log_msg = self.delimiter.join(
+            log_msg = prefix + self.delimiter.join(
                 [header, "[{0" + space_fmt + "}/{1}]", "eta: {eta}", "{meters}", "time: {time}", "data: {data}"]
             )
         MB = 1024.0 * 1024.0
@@ -203,35 +205,11 @@ class MetricLogger:
             end = time.time()
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print(f"{header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
+        print(f"  [+] {header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
 
 
 def collate_fn(batch):
     return tuple(zip(*batch))
-
-
-def mkdir(path):
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
-
-def setup_for_distributed(is_master):
-    """
-    This function disables printing when not in master process
-    """
-    import builtins as __builtin__
-
-    builtin_print = __builtin__.print
-
-    def print(*args, **kwargs):
-        force = kwargs.pop("force", False)
-        if is_master or force:
-            builtin_print(*args, **kwargs)
-
-    __builtin__.print = print
 
 
 def is_dist_avail_and_initialized():
@@ -258,9 +236,46 @@ def is_main_process():
     return get_rank() == 0
 
 
-def save_on_master(*args, **kwargs):
+def _safe_torch_save(obj: Any, path: str) -> None:
+    """Save a PyTorch object safely using atomic write.
+
+    This works around a known PyTorch bug on macOS where torch.save()
+    can fail with 'unexpected pos' errors when writing large models.
+    """
+    dir_path = os.path.dirname(path) or '.'
+    os.makedirs(dir_path, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(dir=dir_path, suffix='.tmp')
+    try:
+        os.close(fd)
+        torch.save(obj, temp_path)
+        shutil.move(temp_path, path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+
+
+def save_on_master(obj: Any, path: str, **kwargs):
+    """Save on master process only, using atomic write for safety."""
     if is_main_process():
-        torch.save(*args, **kwargs)
+        _safe_torch_save(obj, path)
+
+
+def setup_for_distributed(is_master):
+    """
+    This function disables printing when not in master process
+    """
+    import builtins as __builtin__
+
+    builtin_print = __builtin__.print
+
+    def print(*args, **kwargs):
+        force = kwargs.pop("force", False)
+        if is_master or force:
+            builtin_print(*args, **kwargs)
+
+    __builtin__.print = print
 
 
 def init_distributed_mode(args):
@@ -307,13 +322,16 @@ def eval_forward(model: List[Tensor],
     model.to(device)
     model.eval()
 
+    # Support both wrapped (DDP) and unwrapped models
+    m = model.module if hasattr(model, 'module') else model
+
     original_image_sizes: List[Tuple[int, int]] = []
     for img in images:
         val = img.shape[-2:]
         assert len(val) == 2
         original_image_sizes.append((val[0], val[1]))
 
-    images, targets = model.transform(images, targets)
+    images, targets = m.transform(images, targets)
 
     # Check for degenerate boxes
     if targets is not None:
@@ -329,16 +347,16 @@ def eval_forward(model: List[Tensor],
                     f" Found invalid box {degen_bb} for target at index {target_idx}."
                 )
 
-    features = model.backbone(images.tensors)
+    features = m.backbone(images.tensors)
     if isinstance(features, torch.Tensor):
         features = OrderedDict([("0", features)])
-    model.rpn.training = True
+    m.rpn.training = True
     # model.roi_heads.training=True
 
     # ####proposals, proposal_losses = model.rpn(images, features, targets)
     features_rpn = list(features.values())
-    objectness, pred_bbox_deltas = model.rpn.head(features_rpn)
-    anchors = model.rpn.anchor_generator(images, features_rpn)
+    objectness, pred_bbox_deltas = m.rpn.head(features_rpn)
+    anchors = m.rpn.anchor_generator(images, features_rpn)
 
     num_images = len(anchors)
     num_anchors_per_level_shape_tensors = [o[0].shape for o in objectness]
@@ -347,15 +365,15 @@ def eval_forward(model: List[Tensor],
     # apply pred_bbox_deltas to anchors to obtain the decoded proposals
     # note that we detach the deltas because Faster R-CNN do not backprop through
     # the proposals
-    proposals = model.rpn.box_coder.decode(pred_bbox_deltas.detach(), anchors)
+    proposals = m.rpn.box_coder.decode(pred_bbox_deltas.detach(), anchors)
     proposals = proposals.view(num_images, -1, 4)
-    proposals, scores = model.rpn.filter_proposals(proposals, objectness, images.image_sizes, num_anchors_per_level)
+    proposals, scores = m.rpn.filter_proposals(proposals, objectness, images.image_sizes, num_anchors_per_level)
 
     proposal_losses = {}
     assert targets is not None
-    labels, matched_gt_boxes = model.rpn.assign_targets_to_anchors(anchors, targets)
-    regression_targets = model.rpn.box_coder.encode(matched_gt_boxes, anchors)
-    loss_objectness, loss_rpn_box_reg = model.rpn.compute_loss(
+    labels, matched_gt_boxes = m.rpn.assign_targets_to_anchors(anchors, targets)
+    regression_targets = m.rpn.box_coder.encode(matched_gt_boxes, anchors)
+    loss_objectness, loss_rpn_box_reg = m.rpn.compute_loss(
         objectness, pred_bbox_deltas, labels, regression_targets
     )
     proposal_losses = {
@@ -365,16 +383,16 @@ def eval_forward(model: List[Tensor],
 
     # ####detections, detector_losses = model.roi_heads(features, proposals, images.image_sizes, targets)
     image_shapes = images.image_sizes
-    proposals, matched_idxs, labels, regression_targets = model.roi_heads.select_training_samples(proposals, targets)
-    box_features = model.roi_heads.box_roi_pool(features, proposals, image_shapes)
-    box_features = model.roi_heads.box_head(box_features)
-    class_logits, box_regression = model.roi_heads.box_predictor(box_features)
+    proposals, matched_idxs, labels, regression_targets = m.roi_heads.select_training_samples(proposals, targets)
+    box_features = m.roi_heads.box_roi_pool(features, proposals, image_shapes)
+    box_features = m.roi_heads.box_head(box_features)
+    class_logits, box_regression = m.roi_heads.box_predictor(box_features)
 
     result: List[Dict[str, torch.Tensor]] = []
     detector_losses = {}
     loss_classifier, loss_box_reg = fastrcnn_loss(class_logits, box_regression, labels, regression_targets)
     detector_losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
-    boxes, scores, labels = model.roi_heads.postprocess_detections(class_logits, box_regression,
+    boxes, scores, labels = m.roi_heads.postprocess_detections(class_logits, box_regression,
                                                                    proposals, image_shapes)
     num_images = len(boxes)
     for i in range(num_images):
@@ -386,10 +404,51 @@ def eval_forward(model: List[Tensor],
             }
         )
     detections = result
-    detections = model.transform.postprocess(detections, images.image_sizes, original_image_sizes)
-    model.rpn.training = False
-    model.roi_heads.training = False
+    detections = m.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+    m.rpn.training = False
+    m.roi_heads.training = False
     losses = {}
     losses.update(detector_losses)
     losses.update(proposal_losses)
     return losses, detections
+
+
+@torch.no_grad()
+def eval_with_metrics(
+    model,
+    data_loader,
+    device,
+    threshold: float = 0.5,
+) -> Tuple[Dict[str, Tensor], SegmentationMetrics]:
+    """Evaluate model and compute both losses and pixel-level metrics.
+
+    Args:
+        model: The Mask R-CNN model
+        data_loader: Validation data loader
+        device: Device to run on
+        threshold: Threshold for binarizing predicted masks
+
+    Returns:
+        Tuple of (losses_dict, SegmentationMetrics)
+    """
+    losses, _ = eval_forward(model, data_loader, device)
+
+    model.eval()
+    batch_predictions = []
+    batch_targets = []
+
+    # Match the data access pattern from eval_forward
+    for batch in data_loader:
+        # batch is ((img1, img2, ...), (target1, target2, ...)) from collate_fn
+        images_tuple, targets_tuple = batch
+        images = [img.to(device) for img in images_tuple]
+        targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v
+                    for k, v in t.items()} for t in targets_tuple]
+
+        predictions = model(images)
+        batch_predictions.extend(predictions)
+        batch_targets.extend(targets)
+
+    metrics = compute_batch_metrics(batch_predictions, batch_targets, threshold=threshold)
+
+    return losses, metrics

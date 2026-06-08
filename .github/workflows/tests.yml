@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
-        os: [ubuntu-latest, windows-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +25,13 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
           cache-environment: true
-
+          
+      - if: runner.os == 'macOS'  # Opencv on mac
+        name: Install openCV - Mac
+        shell: bash -l {0}
+        run: |
+          pip install 'opencv-python==4.8.0.74' 'numpy<2'
+          
       - if: runner.os != 'Windows'  # Mac and Linux
         name: Install AlveolEye - Unix
         shell: bash -l {0}
