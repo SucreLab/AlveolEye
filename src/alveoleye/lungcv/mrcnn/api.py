@@ -43,7 +43,7 @@ from torchvision.utils import make_grid
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_AVAILABLE = True
-except ImportError:
+except (ImportError, TypeError):
     SummaryWriter = None
     TENSORBOARD_AVAILABLE = False
 
