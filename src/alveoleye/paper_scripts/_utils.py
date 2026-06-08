@@ -8,6 +8,7 @@ import os
 import tarfile
 from pathlib import Path
 from typing import Optional, Union, List, Tuple, Any, Literal
+from packaging.version import Version
 
 # Re-export dataset utilities from shared module for convenience
 from alveoleye._dataset_utils import (
@@ -114,12 +115,20 @@ def download_training_dataset(
 
     # Download the tar.gz file
     archive_path = output_dir / "dataset.tar.gz"
-    downloaded_archive = gdown.download(
-        url=TRAINING_DATASET_DRIVE_URL,
-        output=str(archive_path),
-        quiet=quiet,
-        fuzzy=True,
-    )
+    # gdown v6 drops the fuzzy option
+    if Version(gdown.__version__) >= Version("6.0.0"):
+        downloaded_archive = gdown.download(
+            url=TRAINING_DATASET_DRIVE_URL,
+            output=str(archive_path),
+            quiet=quiet
+        )
+    else:
+        downloaded_archive = gdown.download(
+            url=TRAINING_DATASET_DRIVE_URL,
+            output=str(archive_path),
+            quiet=quiet,
+            fuzzy=True
+        )
 
     if downloaded_archive is None:
         raise RuntimeError("Failed to download dataset from Google Drive")
