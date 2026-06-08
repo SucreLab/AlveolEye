@@ -6,6 +6,7 @@ inference with Mask R-CNN models for lung tissue segmentation.
 
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, List
+from packaging.version import Version
 
 import torch
 from PIL import Image
@@ -261,12 +262,17 @@ def init_trained_model(
                     "Install it with: pip install gdown"
                 ) from e
 
-            gdown.download(
-                url=DEFAULT_WEIGHTS_DRIVE_URL,
-                output=str(weights_path),
-                fuzzy=True,
-            )
-
+            if Version(gdown.__version__) < Version("6.0.0"):
+                gdown.download(
+                    url=DEFAULT_WEIGHTS_DRIVE_URL,
+                    output=str(weights_path),
+                    fuzzy=True,
+                )
+            else:
+                gdown.download(
+                    url=DEFAULT_WEIGHTS_DRIVE_URL,
+                    output=str(weights_path)
+                )
     # Load weights robustly, avoiding unpickling full DDP-wrapped models
     checkpoint = load_checkpoint(weights_path, device)
     
