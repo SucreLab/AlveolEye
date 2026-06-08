@@ -25,12 +25,6 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
           cache-environment: true
-          
-      - if: runner.os == 'macOS'  # Opencv on mac
-        name: Install openCV - Mac
-        shell: bash -l {0}
-        run: |
-          pip install 'opencv-python==4.8.0.74'
 
       - if: runner.os != 'Windows'  # Mac and Linux
         name: Install AlveolEye - Unix
