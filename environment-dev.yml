@@ -15,7 +15,7 @@ dependencies:
   - tensorboard
   - pillow>=10.2.0
   - gdown
-  - numpy>=2.0.0,<2.3
+  - numpy
   - pip
   - matplotlib
   - typeguard

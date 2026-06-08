@@ -8,4 +8,4 @@ pillow>=10.2.0
 gdown
 matplotlib
 typeguard
-numpy>=2.0.0,<2.3
+numpy

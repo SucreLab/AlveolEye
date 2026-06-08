@@ -15,7 +15,7 @@ dependencies:
   - pillow>=10.2.0
   - pip
   - gdown
-  - numpy>=2.0.0,<2.3
+  - numpy
   - matplotlib
   - typeguard
   - opencv
