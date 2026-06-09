@@ -6,7 +6,7 @@
 ![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
 ![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/AlveolEye)](https://pypi.org/project/AlveolEye/)
-![Maintenance](https://img.shields.io/maintenance/yes/2025)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
 ![Last Commit](https://img.shields.io/github/last-commit/SucreLab/AlveolEye)
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
 
