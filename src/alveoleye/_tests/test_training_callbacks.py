@@ -333,7 +333,7 @@ class TestModelCheckpointCallback:
         sample_training_state.epoch = 1
         cb.on_epoch_end(sample_training_state)
 
-        checkpoint = torch.load(tmp_path / "checkpoint_epoch_1.pth")
+        checkpoint = torch.load(tmp_path / "checkpoint_epoch_1.pth", weights_only=False)
 
         assert "epoch" in checkpoint
         assert "model_state_dict" in checkpoint

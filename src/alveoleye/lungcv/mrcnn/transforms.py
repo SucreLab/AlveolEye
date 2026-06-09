@@ -46,11 +46,19 @@ class WrapTvTensors(nn.Module):
             H, W = h, w
 
         # Wrap image
-        if not isinstance(image, torch.Tensor) or not isinstance(image, tv_tensors.Image):
+        if not isinstance(image, torch.Tensor) or not (
+            isinstance(image, tv_tensors.Image)
+            if hasattr(tv_tensors, "Image")
+            else isinstance(image, tv_tensors.Image)
+        ):
             # Ensure tensor first
             if not isinstance(image, torch.Tensor):
                 image = F.pil_to_tensor(image)
-            image = tv_tensors.Image(image)
+
+            if hasattr(tv_tensors, "Image"):
+                image = tv_tensors.Image(image)
+            else:
+                image = tv_tensors.Image(image)
 
         # Wrap targets
         if target is not None:
@@ -58,8 +66,17 @@ class WrapTvTensors(nn.Module):
                 target["boxes"] = tv_tensors.BoundingBoxes(
                     target["boxes"], format="XYXY", canvas_size=(H, W)
                 )
-            if "masks" in target and not isinstance(target["masks"], tv_tensors.Mask):
-                target["masks"] = tv_tensors.Mask(target["masks"])  # (N, H, W)
+            if "masks" in target:
+                is_tv_mask = (
+                    isinstance(target["masks"], tv_tensors.Mask)
+                    if hasattr(tv_tensors, "Mask")
+                    else isinstance(target["masks"], tv_tensors.Mask)
+                )
+                if not is_tv_mask:
+                    if hasattr(tv_tensors, "Mask"):
+                        target["masks"] = tv_tensors.Mask(target["masks"])
+                    else:
+                        target["masks"] = tv_tensors.Mask(target["masks"])  # (N, H, W)
         if target is None:
             return image
         return image, target
@@ -75,7 +92,12 @@ class UnwrapTvTensors(nn.Module):
             return image, target
 
         # Unwrap image
-        if isinstance(image, torch.Tensor) and isinstance(image, tv_tensors.Image):
+        is_tv_image = (
+            isinstance(image, tv_tensors.Image)
+            if hasattr(tv_tensors, "Image")
+            else isinstance(image, tv_tensors.Image)
+        )
+        if isinstance(image, torch.Tensor) and is_tv_image:
             image = torch.as_tensor(image)
 
         # Unwrap targets
@@ -83,7 +105,13 @@ class UnwrapTvTensors(nn.Module):
             if "boxes" in target and isinstance(target["boxes"], tv_tensors.BoundingBoxes):
                 # Ensure float32 dtype
                 target["boxes"] = torch.as_tensor(target["boxes"]).to(torch.float32)
-            if "masks" in target and isinstance(target["masks"], tv_tensors.Mask):
+
+            is_tv_mask = (
+                isinstance(target["masks"], tv_tensors.Mask)
+                if hasattr(tv_tensors, "Mask")
+                else isinstance(target["masks"], tv_tensors.Mask)
+            )
+            if "masks" in target and is_tv_mask:
                 target["masks"] = torch.as_tensor(target["masks"]).to(torch.uint8)
         if target is None:
             return image

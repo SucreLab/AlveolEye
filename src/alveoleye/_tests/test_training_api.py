@@ -828,7 +828,7 @@ class TestTrainingResult:
         result.save(path)
 
         assert path.exists()
-        loaded = torch.load(path)
+        loaded = torch.load(path, weights_only=False)
         assert loaded is not None
 
     def test_save_checkpoint(self, tmp_path: Path, mock_model):
@@ -847,7 +847,7 @@ class TestTrainingResult:
 
         assert path.exists()
 
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, weights_only=False)
         assert "model_state_dict" in checkpoint
         assert "history" in checkpoint
         assert "best_val_loss" in checkpoint
@@ -871,7 +871,7 @@ class TestTrainingResult:
 
         result.save_checkpoint(path)
 
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, weights_only=False)
         assert "config" not in checkpoint
 
 
@@ -1268,7 +1268,7 @@ class TestIntegrationTraining:
         model_path = tmp_path / "model.pth"
         result.save(model_path)
 
-        loaded_model = torch.load(model_path)
+        loaded_model = torch.load(model_path, weights_only=False)
         assert loaded_model is not None
 
     def test_result_checkpoint_save_and_load(self, mock_dataset, tmp_path):
@@ -1291,7 +1291,7 @@ class TestIntegrationTraining:
         checkpoint_path = tmp_path / "checkpoint.pth"
         result.save_checkpoint(checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
 
         assert "model_state_dict" in checkpoint
         assert "history" in checkpoint

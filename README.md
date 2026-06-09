@@ -1,7 +1,7 @@
 # AlveolEye: Automated Lung Morphometry Made Easy
 
 [![Napari Plugin](https://img.shields.io/badge/Napari-Plugin-1157c4?logo=napari)](https://www.napari-hub.org/plugins/AlveolEye)
-![Python Version](https://img.shields.io/badge/Python-3.9%20|%203.10%20|%203.11-blue)
+![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 ![OS Support](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 ![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
 ![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
