@@ -11,7 +11,7 @@
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
 
 This repository contains the beta version of AlveolEye, created by the [Sucre lab](https://www.sucrelab.org/).  
-The code is authored by Samuel Hirsh, Joseph Hirsh, JameNick Negretti, and Shawyon Shirazi.
+The code is authored by Samuel Hirsh, Joseph Hirsh, James Hirsh, Nick Negretti, and Shawyon Shirazi.
 
 AlveolEye is a Napari plugin that uses computer vision and classical image processing  
 to calculate mean linear intercept (MLI) and airspace volume density (ASVD) of histologic images.
