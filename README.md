@@ -26,19 +26,19 @@ The goal of this process is to create a conda environment containing Napari and 
 
 *If you already have conda set up, you can skip step 1.*
 
-1. **Install Miniconda** by downloading the appropriate version miniconda from [here](https://www.anaconda.com/docs/getting-started/installation):  
+1. **Install Miniforge** by downloading the appropriate version miniforge from [here](https://github.com/conda-forge/miniforge#install):  
    - Choose the version that matches your operating system.  
 
 2. **Install from conda-forge**
-   - Open a terminal or Miniconda prompt and run the following: 
+   - Open a terminal or Miniforge prompt and run the following: 
    ```
-   conda create -n AlveolEye
+   conda create -y -n AlveolEye
    conda activate AlveolEye
-   conda install -c conda-forge AlveolEye
+   conda install -y -c conda-forge AlveolEye
    ```
 
 3. **Launch Napari** and locate the plugin in the plugin menu:
-   - Open a terminal or Miniconda prompt and run the following: 
+   - Open a terminal or Miniforge prompt and run the following: 
    ```
    conda activate AlveolEye
    napari
@@ -47,7 +47,7 @@ The goal of this process is to create a conda environment containing Napari and 
 
 ----
 ### Development Installation
-2. **Clone the repository** (by opening a terminal or Miniconda prompt and running the following)
+2. **Clone the repository** (by opening a terminal or Miniforge prompt and running the following)
    ```
    git clone https://github.com/SucreLab/AlveolEye
    cd AlveolEye
