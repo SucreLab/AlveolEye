@@ -1,7 +1,7 @@
 # AlveolEye: Automated Lung Morphometry Made Easy
 
 [![Napari Plugin](https://img.shields.io/badge/Napari-Plugin-1157c4?logo=napari)](https://www.napari-hub.org/plugins/AlveolEye)
-![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
+![Python Version](https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-blue)
 ![OS Support](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 ![GitHub Release](https://img.shields.io/github/v/release/SucreLab/AlveolEye?display_name=tag)
 ![License](https://img.shields.io/github/license/SucreLab/AlveolEye)
@@ -11,7 +11,7 @@
 ![Issues](https://img.shields.io/github/issues/SucreLab/AlveolEye)
 
 This repository contains the beta version of AlveolEye, created by the [Sucre lab](https://www.sucrelab.org/).  
-The code is authored by Samuel Hirsh, Joseph Hirsh, Nick Negretti, and Shawyon Shirazi.
+The code is authored by Samuel Hirsh, Joseph Hirsh, JameNick Negretti, and Shawyon Shirazi.
 
 AlveolEye is a Napari plugin that uses computer vision and classical image processing  
 to calculate mean linear intercept (MLI) and airspace volume density (ASVD) of histologic images.
@@ -20,46 +20,47 @@ The goal of this tool is to aid researchers, not provide a complete automated an
 
 We welcome GitHub issues and feedback!
 
-## Installation
+## Easy Installation
 
 The goal of this process is to create a conda environment containing Napari and all AlveolEye requirements.
 
 *If you already have conda set up, you can skip step 1.*
 
-1. **Install Miniconda** by downloading the appropriate version from [here](https://www.anaconda.com/docs/getting-started/miniconda/install):  
-   - Choose the version that matches your processor.  
-   - Download the `.pkg` version for easy installation.
+1. **Install Miniconda** by downloading the appropriate version miniconda from [here](https://www.anaconda.com/docs/getting-started/installation):  
+   - Choose the version that matches your operating system.  
 
+2. **Install from conda-forge**
+   - Open a terminal or Miniconda prompt and run the following: 
+   ```
+   conda create -n AlveolEye
+   conda activate AlveolEye
+   conda install -c conda-forge AlveolEye
+   ```
+
+3. **Launch Napari** and locate the plugin in the plugin menu:
+   - Open a terminal or Miniconda prompt and run the following: 
+   ```
+   conda activate AlveolEye
+   napari
+   ```
+   ** Note that several items will be downloaded on the first run, it will get faster after that.
+
+----
+### Development Installation
 2. **Clone the repository** (by opening a terminal or Miniconda prompt and running the following)
    ```
    git clone https://github.com/SucreLab/AlveolEye
-   ```
-
-3. **Navigate to the directory**:
-   ```
    cd AlveolEye
-   ```
-
-4. **Create the conda environment**:
-   ```
    conda env create -f ./environment.yml
-   ```
-
-5. **Activate the environment**:
-   ```
    conda activate AlveolEye
-   ```
-
-6. **Install the plugin**:
-   ```
    pip install .
    ```
 
-7. **Launch Napari** and locate the plugin in the plugin menu:
+3. **Launch Napari** and locate the plugin in the plugin menu:
    ```
    napari
    ```
-
+----
 ## Running Post-Installation
 
 1. **Activate the environment** in the terminal or Miniconda prompt:
